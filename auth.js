@@ -17,9 +17,10 @@
   // ── SUPABASE CONFIG ───────────────────────────
   var SUPABASE_URL = "https://pffaflasgwhydkmxwkky.supabase.co";
   var SUPABASE_ANON_KEY = "sb_publishable__tFDYhkM3blZ0pIVT0YxLA_YvkKq79L";
-  // ⚠️ Supabase dashboard > Settings > API me jaakar yeh key ek baar
-  // copy-paste karke confirm kar lein — double underscore "publishable__t"
-  // thoda unusual lag raha hai, typo ho sakta hai.
+  // Note: "sb_publishable_" is Supabase's current key prefix (replaces the
+  // old JWT anon key). The random portion after it just happens to start
+  // with "_" — that's normal, not a typo. Confirm against Settings > API
+  // if you ever see auth calls fail with an invalid-key error.
 
   if (!window.supabase || !window.supabase.createClient) {
     console.error(
@@ -149,8 +150,8 @@
       password: password,
       options: {
         data: { name: name.trim() },
-        // ✅ FIX: confirmation email ab "email-verified.html" par
-        // redirect karegi, default Supabase Site URL par nahi.
+        // ✅ confirmation email redirects to email-verified.html —
+        // kept exactly as-is, signup flow is untouched.
         emailRedirectTo: window.location.origin + "/email-verified.html",
       },
     });
@@ -174,9 +175,13 @@
   }
 
   async function doForgotPassword(email) {
-    // ✅ FIX: pehle "/auth/login.html" tha jo 404 deta tha kyunki
-    // saari files root me hain, koi /auth/ folder nahi hai.
-    var redirectUrl = window.location.origin + "/login.html";
+    // ✅ FIX: pehle "/login.html" tha — Supabase recovery link login.html
+    // par hi land karta tha, jahan ek already-existing session jaisa
+    // dikhta tha aur naya-password form kabhi nahi dikhta tha (yehi
+    // "auto-login" bug tha). Ab dedicated reset-password.html par jaata
+    // hai, jo recovery session ko explicitly detect karke password update
+    // form dikhata hai aur update ke baad session clear karta hai.
+    var redirectUrl = window.location.origin + "/reset-password.html";
     var res = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: redirectUrl,
     });
@@ -199,6 +204,8 @@
       return "Network error. Internet check karein.";
     if (msg.indexOf("Password should be") !== -1)
       return "Password kam se kam 6 characters ka hona chahiye.";
+    if (msg.indexOf("Auth session missing") !== -1 || msg.indexOf("session missing") !== -1)
+      return "Reset link expire ho gaya ya pehle use ho chuka hai. Naya link mangwayein.";
     return msg || "Kuch error hua. Dobara try karein.";
   }
 
