@@ -15,6 +15,10 @@
 <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png"/>
 <link rel="shortcut icon" href="/icons/favicon.ico"/>
 <link rel="stylesheet" href="/pwa.css"/>
+<!-- ── CHANGE A: Business Logic Modules ── -->
+<script src="/js/cart.js"></script>
+<script src="/js/profile.js"></script>
+<script src="/js/orders.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
@@ -88,7 +92,7 @@ input,select,textarea{outline:none;border:none;font-family:'Inter',sans-serif;fo
 .desktop-offer-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;}
 .desktop-cats-wrap{background:#fff;border-radius:16px;padding:16px 20px;margin-bottom:16px;}
 .desktop-cat-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
-.desktop-cat-chip{display:flex;align-items:center;gap:8px;background:#F7FAFC;border:1.5px solid var(--border);border-radius:10px;padding:7px 14px;cursor:pointer;font-size:0.8rem;font-weight:600;color:var(--dark);transition:all 0.15s;}
+.desktop-cat-chip{display:flex;align-items:center;gap:8px;background:#F7FAFC;border:1.5px solid var(--border);border-radius:10px;padding:7px 14px;cursor:pointer;font-size:0.8rem;font-weight:600;color:var(--dark);transition:all 0.15px;}
 .desktop-cat-chip:hover{border-color:var(--primary);}
 .desktop-cat-chip.on{background:var(--primary-light);border-color:var(--primary);color:var(--primary);}
 .offer-banner-full{border-radius:16px;background:linear-gradient(135deg,#FFF3E0,#FFE0B2);padding:16px 20px;display:flex;align-items:center;gap:14px;border:1.5px solid #FFB74D;}
@@ -246,10 +250,8 @@ const SUPABASE_URL='https://pffaflasgwhydkmxwkky.supabase.co';
 const SUPABASE_ANON_KEY='sb_publishable__tFDYhkM3blZ0pIVT0YxLA_YvkKq79L';
 const supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 
-// ── Login/Signup ke liye redirect helpers ──
 const goLogin=()=>{ window.location.href='login.html'; };
 const goSignup=()=>{ window.location.href='signup.html'; };
-// Checkout redirect — login ke baad wapas checkout par aane ke liye
 const goLoginForCheckout=()=>{ sessionStorage.setItem('rk_redirect','checkout'); window.location.href='login.html'; };
 
 const CATS=[
@@ -350,26 +352,43 @@ function App(){
     return()=>clearInterval(t);
   },[]);
 
-  // ✅ Supabase session check — login.html se wapas aane par bhi user set hoga
+  /* ── CHANGE B: Init RKCart + wire auth to modules ── */
   useEffect(()=>{
+    if(window.RKCart) window.RKCart.init();
+
     supabase.auth.getSession().then(({data:{session}})=>{
       if(session?.user){
         const meta=session.user.user_metadata;
-        setUser({uid:session.user.id,email:session.user.email,name:meta?.name||session.user.email.split('@')[0]});
+        const u={uid:session.user.id,email:session.user.email,name:meta?.name||session.user.email.split('@')[0]};
+        setUser(u);
+        if(window.RKCart) window.RKCart.setUser(u);
+        if(window.RKProfile) window.RKProfile.loadProfile(session.user.id);
       }
     });
+
     const {data:{subscription}}=supabase.auth.onAuthStateChange((_,session)=>{
       if(session?.user){
         const meta=session.user.user_metadata;
-        setUser({uid:session.user.id,email:session.user.email,name:meta?.name||session.user.email.split('@')[0]});
+        const u={uid:session.user.id,email:session.user.email,name:meta?.name||session.user.email.split('@')[0]};
+        setUser(u);
+        if(window.RKCart) window.RKCart.setUser(u);
       } else {
         setUser(null);
+        if(window.RKCart) window.RKCart.setUser(null);
       }
     });
     return()=>subscription.unsubscribe();
   },[]);
 
-  // ✅ Login ke baad checkout redirect handle karo
+  /* ── CHANGE D: Sync RKCart changes to React state ── */
+  useEffect(()=>{
+    if(!window.RKCart) return;
+    const unsub=window.RKCart.onCartChange(updatedCart=>{
+      setCart(updatedCart);
+    });
+    return unsub;
+  },[]);
+
   useEffect(()=>{
     if(user){
       const redirect=sessionStorage.getItem('rk_redirect');
@@ -381,20 +400,35 @@ function App(){
   },[user]);
 
   const showToast=msg=>{setToast(msg);setTimeout(()=>setToast(''),2200);};
-  const addToCart=p=>{setCart(prev=>{const ex=prev.find(i=>i.id===p.id);return ex?prev.map(i=>i.id===p.id?{...i,qty:i.qty+1}:i):[...prev,{...p,qty:1}];});showToast(`${p.name} added! 🛒`);};
-  const updQty=(id,d)=>setCart(prev=>prev.map(i=>i.id===id?{...i,qty:i.qty+d}:i).filter(i=>i.qty>0));
+
+  /* ── CHANGE C: addToCart + updQty delegate to RKCart ── */
+  const addToCart=p=>{
+    if(window.RKCart){
+      window.RKCart.addToCart(p);
+    } else {
+      setCart(prev=>{const ex=prev.find(i=>i.id===p.id);return ex?prev.map(i=>i.id===p.id?{...i,qty:i.qty+1}:i):[...prev,{...p,qty:1}];});
+    }
+    showToast(`${p.name} added! 🛒`);
+  };
+
+  const updQty=(id,d)=>{
+    if(window.RKCart){
+      window.RKCart.updateQuantity(id,d);
+    } else {
+      setCart(prev=>prev.map(i=>i.id===id?{...i,qty:i.qty+d}:i).filter(i=>i.qty>0));
+    }
+  };
+
   const total=cart.reduce((s,i)=>s+i.price*i.qty,0);
   const count=cart.reduce((s,i)=>s+i.qty,0);
   const filtered=PRODUCTS.filter(p=>(activeCat==='all'||p.cat===activeCat)&&p.name.toLowerCase().includes(search.toLowerCase()));
 
-  // ✅ Checkout: user hai to checkout, nahi to login.html
   const goToCheckout=()=>{
     setCartOpen(false);
     if(user){setPage('checkout');}
     else{goLoginForCheckout();}
   };
 
-  // ✅ Logout
   const handleLogout=async()=>{
     await supabase.auth.signOut();
     setUser(null);
@@ -510,7 +544,6 @@ function App(){
 
   return(
     <div style={{background:'#F5F5F5',minHeight:'100vh'}}>
-      {/* ── DESKTOP HEADER ── */}
       <div className="desktop-header">
         <div className="dh-inner">
           <div className="logo" onClick={()=>setPage('home')}>rinku<span>.</span></div>
@@ -532,7 +565,6 @@ function App(){
         </div>
       </div>
 
-      {/* ── MOBILE HEADER ── */}
       <div className="header">
         <div className="header-top">
           <div className="logo-sm">rinku<span>.</span></div>
@@ -555,7 +587,6 @@ function App(){
         </div>
       </div>
 
-      {/* ── TICKER ── */}
       <div className="ticker">
         <div className="ticker-track">
           {[...TICKER,...TICKER].map((t,i)=><span key={i} className="ticker-item">✦ {t}</span>)}
@@ -563,7 +594,6 @@ function App(){
       </div>
 
       <div className="page-pad">
-        {/* ── HOME ── */}
         {page==='home'&&(
           <>
             <div className="d-view"><DesktopHome/></div>
@@ -632,7 +662,6 @@ function App(){
           </>
         )}
 
-        {/* ── SHOP ── */}
         {page==='shop'&&(
           <>
             <div className="d-view"><DesktopShop/></div>
@@ -658,7 +687,6 @@ function App(){
           </>
         )}
 
-        {/* ── ACCOUNT ── */}
         {page==='account'&&user&&(
           <div className="account-page">
             <div className="acc-card">
@@ -674,15 +702,13 @@ function App(){
           </div>
         )}
 
-        {/* ── CHECKOUT ── */}
         {page==='checkout'&&(
           <div className="checkout-page">
             <h2>← Checkout</h2>
-            <CheckoutForm cart={cart} total={total} showToast={showToast} user={user} onSuccess={(id,pay)=>{setSuccess({id,pay});setCart([]);setPage('success');}}/>
+            <CheckoutForm cart={cart} total={total} showToast={showToast} user={user} onSuccess={(id,pay)=>{setSuccess({id,pay});if(window.RKCart)window.RKCart.clearCart();else setCart([]);setPage('success');}}/>
           </div>
         )}
 
-        {/* ── SUCCESS ── */}
         {page==='success'&&success&&(
           <div className="success-page">
             <div className="success-anim">🎉</div>
@@ -695,7 +721,6 @@ function App(){
         )}
       </div>
 
-      {/* ── CART DRAWER ── */}
       {cartOpen&&(
         <>
           <div className="drawer-bg" onClick={()=>setCartOpen(false)}/>
@@ -735,7 +760,6 @@ function App(){
         </>
       )}
 
-      {/* ── BOTTOM NAV ── */}
       <div className="bottom-nav">
         {[
           {id:'home',i:'🏠',l:'Home'},
@@ -763,7 +787,26 @@ function App(){
 function CheckoutForm({cart,total,showToast,onSuccess,user}){
   const [pay,setPay]=useState('');
   const [f,setF]=useState({name:user?.name||'',phone:'',address:''});
-  const id='RK'+Math.floor(1000+Math.random()*9000);
+  const fallbackId='RK'+Math.floor(1000+Math.random()*9000);
+
+  /* ── CHANGE E: Place order via RKOrders ── */
+  const handlePlaceOrder=async()=>{
+    if(!f.name||!f.phone||!f.address){showToast('Sab fields bharein!');return;}
+    if(!pay){showToast('Payment method chunein!');return;}
+
+    if(window.RKOrders && user){
+      const result=await window.RKOrders.createOrder(user.uid,{
+        cart,
+        total,
+        address:{name:f.name,phone:f.phone,line1:f.address,city:'Prayagraj',pincode:''},
+        paymentMethod:pay,
+      });
+      if(result){onSuccess(result.orderNumber,pay);return;}
+    }
+    // Fallback agar RKOrders ya user nahi hai
+    onSuccess(fallbackId,pay);
+  };
+
   return(
     <>
       <div className="co-card">
@@ -786,7 +829,7 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
         </div>
         {pay==='upi'&&<div className="qr-area"><div className="qr-box">📲</div><div className="upi-label">📍 rinkukirana@upi</div><div style={{fontSize:'0.72rem',color:'var(--gray)',marginTop:3}}>Kisi bhi UPI app se scan karo</div><div className="upi-amt">₹{total} bhejo</div></div>}
       </div>
-      <button className="place-order-btn" onClick={()=>{if(!f.name||!f.phone||!f.address){showToast('Sab fields bharein!');return;}if(!pay){showToast('Payment method chunein!');return;}onSuccess(id,pay);}}>
+      <button className="place-order-btn" onClick={handlePlaceOrder}>
         {pay==='upi'?'✅ Maine Pay Kar Diya':'🚚 Order Place Karo'} →
       </button>
     </>
