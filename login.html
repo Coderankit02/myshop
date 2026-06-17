@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Login — Rinku Kirana</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="auth.css"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  /* ── Page-specific extras ── */
+  .field-input { padding-right: 44px; }
+</style>
+</head>
+<body>
+
+<!-- Background -->
+<div class="auth-bg">
+  <div class="grid-overlay"></div>
+  <div class="orb-3"></div>
+</div>
+
+<!-- Page -->
+<div class="auth-page">
+  <div class="auth-container">
+
+    <!-- Brand Bar -->
+    <div class="brand-bar">
+      <a href="../index.html" class="brand-logo">
+        <div class="brand-icon">🛒</div>
+        <div>
+          <div class="brand-name">rinku<span>.</span></div>
+          <div class="brand-tagline">KIRANA & GENERAL STORE</div>
+        </div>
+      </a>
+      <div class="trust-badges">
+        <div class="badge-item">⚡ 10-min delivery</div>
+        <div class="badge-item">🔒 100% Secure</div>
+      </div>
+    </div>
+
+    <!-- Grocery Illustrations -->
+    <div class="illus-strip">
+      <div class="illus-item"><div class="illus-emoji">🥦</div><div class="illus-label">Sabzi</div></div>
+      <div class="illus-item"><div class="illus-emoji">🥛</div><div class="illus-label">Dairy</div></div>
+      <div class="illus-item"><div class="illus-emoji">🌾</div><div class="illus-label">Atta</div></div>
+      <div class="illus-item"><div class="illus-emoji">🍿</div><div class="illus-label">Snacks</div></div>
+      <div class="illus-item"><div class="illus-emoji">🥤</div><div class="illus-label">Drinks</div></div>
+    </div>
+
+    <!-- Glass Card -->
+    <div class="glass-card">
+
+      <!-- Header -->
+      <div class="card-head">
+        <div class="head-icon">🔑</div>
+        <div class="card-title">Wapas Aao!</div>
+        <div class="card-subtitle">Apne account mein login karein<br/>aur grocery order karo</div>
+      </div>
+
+      <!-- Social Login (Placeholder) -->
+      <div class="social-grid">
+        <button class="social-btn" onclick="handleSocialLogin('google')">
+          <span class="social-icon">🌐</span> Google
+        </button>
+        <button class="social-btn" onclick="handleSocialLogin('phone')">
+          <span class="social-icon">📱</span> Mobile OTP
+        </button>
+      </div>
+      <div class="social-note">Social login coming soon • Abhi email se login karein</div>
+
+      <div class="divider">
+        <div class="divider-line"></div>
+        <div class="divider-text">ya email se</div>
+        <div class="divider-line"></div>
+      </div>
+
+      <!-- Error Message -->
+      <div class="msg-box error" id="errorMsg" style="display:none"></div>
+      <div class="msg-box success" id="successMsg" style="display:none"></div>
+
+      <!-- Form -->
+      <div class="field-group">
+        <div class="field-label">📧 Email Address</div>
+        <div class="field-wrap">
+          <span class="field-icon">✉️</span>
+          <input
+            class="field-input"
+            id="loginEmail"
+            type="email"
+            inputmode="email"
+            autocomplete="email"
+            placeholder="aapka@email.com"
+          />
+        </div>
+      </div>
+
+      <div class="field-group">
+        <div class="field-label">🔒 Password</div>
+        <div class="field-wrap">
+          <span class="field-icon">🔐</span>
+          <input
+            class="field-input"
+            id="loginPassword"
+            type="password"
+            autocomplete="current-password"
+            placeholder="Apna password daalein"
+          />
+          <button class="pass-toggle" id="passToggle" onclick="togglePw()" type="button">👁️</button>
+        </div>
+      </div>
+
+      <!-- Remember + Forgot -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;margin-top:-2px;">
+        <label class="check-row" style="margin-bottom:0;cursor:pointer;">
+          <input type="checkbox" class="check-box" id="rememberMe"/> 
+          <span class="check-label" style="font-size:0.74rem;color:#64748B;">Yaad rakhein (30 din)</span>
+        </label>
+        <div class="forgot-link" style="margin:0;">
+          <a href="forgot-password.html">🔄 Bhool gaye?</a>
+        </div>
+      </div>
+
+      <!-- Submit -->
+      <button class="submit-btn" id="loginBtn" onclick="handleLogin()">
+        🔑 Login Karo
+      </button>
+
+      <!-- Secure Badge -->
+      <div class="secure-badge">🔒 256-bit SSL encrypted • Supabase Auth</div>
+
+    </div>
+
+    <!-- Bottom link -->
+    <div class="bottom-link">
+      Naya account? <a href="signup.html">✨ Abhi Signup Karein →</a>
+    </div>
+
+    <!-- Feature chips -->
+    <div class="features-row">
+      <div class="feat-chip"><span class="fc-icon">🚀</span> 10-min delivery</div>
+      <div class="feat-chip"><span class="fc-icon">💳</span> UPI & COD</div>
+      <div class="feat-chip"><span class="fc-icon">🛡️</span> Secure login</div>
+      <div class="feat-chip"><span class="fc-icon">📦</span> 500+ products</div>
+    </div>
+
+  </div>
+</div>
+
+<script src="auth.js"></script>
+<script>
+const { showMsg, hideMsg, setLoading, redirectIfLoggedIn, doLogin, friendlyError } = window.RKAuth;
+
+// Redirect if already logged in
+redirectIfLoggedIn();
+
+function togglePw() {
+  RKAuth.togglePass('loginPassword', document.getElementById('passToggle'));
+}
+
+function handleSocialLogin(type) {
+  alert('🚧 Social login coming soon!\nAbhi email se login karein.');
+}
+
+async function handleLogin() {
+  const email    = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const remember = document.getElementById('rememberMe').checked;
+  const btn      = document.getElementById('loginBtn');
+  const errEl    = document.getElementById('errorMsg');
+  const sucEl    = document.getElementById('successMsg');
+
+  hideMsg(errEl); hideMsg(sucEl);
+
+  // Validation
+  if (!email || !email.includes('@')) {
+    showMsg(errEl, 'error', 'Sahi email address daalein!');
+    document.getElementById('loginEmail').classList.add('error');
+    return;
+  }
+  if (!password) {
+    showMsg(errEl, 'error', 'Password daalein!');
+    document.getElementById('loginPassword').classList.add('error');
+    return;
+  }
+
+  document.getElementById('loginEmail').classList.remove('error');
+  document.getElementById('loginPassword').classList.remove('error');
+
+  setLoading(btn, true, '🔑 Login Karo');
+
+  const { data, error } = await doLogin({ email, password, remember });
+
+  if (error) {
+    showMsg(errEl, 'error', friendlyError(error));
+    setLoading(btn, false, '🔑 Login Karo');
+  } else {
+    showMsg(sucEl, 'success', `Welcome back, <b>${data.user?.user_metadata?.name || email.split('@')[0]}</b>! 🎉 Redirect ho rahe hain…`);
+    setLoading(btn, false, '✅ Login Ho Gaya!');
+    setTimeout(() => {
+      window.location.href = '../index.html';
+    }, 1200);
+  }
+}
+
+// Enter key submit
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') handleLogin();
+});
+</script>
+</body>
+</html>
