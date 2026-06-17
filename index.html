@@ -7,7 +7,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
-<!-- ✅ SUPABASE CDN (Firebase ki jagah) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
 <style>
@@ -189,18 +188,6 @@ input,select,textarea{outline:none;border:none;font-family:'Inter',sans-serif;fo
 .success-page p{font-size:0.88rem;color:var(--gray);margin-bottom:4px;}
 .order-pill{background:var(--primary-light);color:var(--primary);font-weight:800;padding:6px 20px;border-radius:50px;font-size:0.9rem;margin:8px 0;}
 .home-btn{margin-top:20px;background:var(--primary);color:#fff;padding:13px 40px;border-radius:50px;font-weight:800;font-size:0.95rem;min-height:48px;cursor:pointer;}
-.auth-page{padding:16px;padding-bottom:90px;max-width:480px;margin:0 auto;}
-.auth-head{text-align:center;margin-bottom:18px;padding-top:6px;}
-.auth-head .ai{font-size:3rem;}
-.auth-head h2{font-size:1.2rem;font-weight:900;color:var(--dark);margin-top:8px;}
-.auth-head p{font-size:0.8rem;color:var(--gray);margin-top:4px;}
-.auth-banner{background:var(--primary-light);border:1.5px solid var(--primary);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin-bottom:16px;}
-.auth-banner .abi{font-size:1.6rem;}
-.auth-banner .abt{font-size:0.78rem;font-weight:700;color:var(--primary-dark);line-height:1.4;}
-.auth-tabs{display:flex;background:#F0F0F0;border-radius:10px;padding:3px;margin-bottom:16px;gap:3px;}
-.auth-tab-btn{flex:1;padding:10px;border-radius:8px;font-weight:700;font-size:0.82rem;color:var(--gray);transition:all 0.2s;min-height:40px;cursor:pointer;background:none;}
-.auth-tab-btn.on{background:#fff;color:var(--primary);box-shadow:0 2px 6px rgba(0,0,0,0.08);}
-.auth-submit-btn{width:100%;padding:15px;background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;border-radius:14px;font-weight:800;font-size:1rem;box-shadow:0 6px 16px rgba(27,166,114,0.35);margin-top:6px;min-height:48px;cursor:pointer;}
 .account-page{padding:16px;padding-bottom:90px;max-width:600px;margin:0 auto;}
 .acc-card{background:#fff;border-radius:16px;padding:18px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,0.06);display:flex;align-items:center;gap:14px;}
 .acc-avatar{width:56px;height:56px;border-radius:50%;background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:1.8rem;flex-shrink:0;}
@@ -210,15 +197,8 @@ input,select,textarea{outline:none;border:none;font-family:'Inter',sans-serif;fo
 .logout-btn{width:100%;background:#FEF2F2;color:#E63946;padding:13px;border-radius:14px;font-weight:800;font-size:0.9rem;margin-top:8px;min-height:48px;cursor:pointer;border:none;}
 .toast{position:fixed;bottom:calc(90px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--dark);color:#fff;padding:10px 22px;border-radius:50px;font-size:0.82rem;font-weight:600;z-index:999;animation:toastUp 0.3s ease;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,0.25);max-width:90%;overflow:hidden;text-overflow:ellipsis;}
 @keyframes toastUp{from{opacity:0;transform:translateX(-50%) translateY(20px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
-.spinner{display:inline-block;width:18px;height:18px;border:2px solid rgba(255,255,255,0.4);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:6px;}
-@keyframes spin{to{transform:rotate(360deg);}}
-.err-msg{color:var(--red);font-size:0.78rem;margin-bottom:10px;text-align:center;background:#FEF2F2;padding:8px 12px;border-radius:8px;}
 .site-footer{background:#1A1A2E;color:rgba(255,255,255,0.6);padding:28px 24px;text-align:center;font-size:0.75rem;line-height:2;border-radius:16px;margin-bottom:16px;}
 .footer-logo{color:#fff;font-weight:900;font-size:1.1rem;margin-bottom:8px;}
-.pass-wrap{position:relative;}
-.pass-wrap input{padding-right:44px;}
-.pass-eye{position:absolute;right:12px;top:50%;transform:translateY(-60%);background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--gray);}
-.info-box{background:#F0FDF4;border:1.5px solid var(--primary);border-radius:10px;padding:10px 12px;font-size:0.76rem;color:var(--primary-dark);font-weight:600;margin-bottom:10px;text-align:center;}
 @media(min-width:768px){
   .header{display:none!important;}
   .bottom-nav{display:none!important;}
@@ -249,16 +229,17 @@ input,select,textarea{outline:none;border:none;font-family:'Inter',sans-serif;fo
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const {useState,useEffect,useRef}=React;
+const {useState,useEffect}=React;
 
-// ============================================
-// ✅ SUPABASE CONFIG — Yahan apni keys daalo
-// Supabase Dashboard → Settings → API
-// ============================================
-const SUPABASE_URL = 'https://pffaflasgwhydkmxwkky.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable__tFDYhkM3blZ0pIVT0YxLA_YvkKq79L';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-// ============================================
+const SUPABASE_URL='https://pffaflasgwhydkmxwkky.supabase.co';
+const SUPABASE_ANON_KEY='sb_publishable__tFDYhkM3blZ0pIVT0YxLA_YvkKq79L';
+const supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+
+// ── Login/Signup ke liye redirect helpers ──
+const goLogin=()=>{ window.location.href='login.html'; };
+const goSignup=()=>{ window.location.href='signup.html'; };
+// Checkout redirect — login ke baad wapas checkout par aane ke liye
+const goLoginForCheckout=()=>{ sessionStorage.setItem('rk_redirect','checkout'); window.location.href='login.html'; };
 
 const CATS=[
   {id:'all',name:'All',bg:'#E8F8F1',e:'🏪'},
@@ -352,40 +333,41 @@ function App(){
   const [bannerIdx,setBannerIdx]=useState(0);
   const [success,setSuccess]=useState(null);
   const [user,setUser]=useState(null);
-  const [authMode,setAuthMode]=useState('signup');
-  const [pendingCheckout,setPendingCheckout]=useState(false);
 
   useEffect(()=>{
     const t=setInterval(()=>setBannerIdx(i=>(i+1)%BANNERS.length),4000);
     return()=>clearInterval(t);
   },[]);
 
-  // ✅ Supabase Auth Session Check
+  // ✅ Supabase session check — login.html se wapas aane par bhi user set hoga
   useEffect(()=>{
     supabase.auth.getSession().then(({data:{session}})=>{
       if(session?.user){
         const meta=session.user.user_metadata;
-        setUser({
-          uid:session.user.id,
-          email:session.user.email,
-          name:meta?.name||session.user.email.split('@')[0],
-        });
+        setUser({uid:session.user.id,email:session.user.email,name:meta?.name||session.user.email.split('@')[0]});
       }
     });
-    const {data:{subscription}}=supabase.auth.onAuthStateChange((_event,session)=>{
+    const {data:{subscription}}=supabase.auth.onAuthStateChange((_,session)=>{
       if(session?.user){
         const meta=session.user.user_metadata;
-        setUser({
-          uid:session.user.id,
-          email:session.user.email,
-          name:meta?.name||session.user.email.split('@')[0],
-        });
+        setUser({uid:session.user.id,email:session.user.email,name:meta?.name||session.user.email.split('@')[0]});
       } else {
         setUser(null);
       }
     });
     return()=>subscription.unsubscribe();
   },[]);
+
+  // ✅ Login ke baad checkout redirect handle karo
+  useEffect(()=>{
+    if(user){
+      const redirect=sessionStorage.getItem('rk_redirect');
+      if(redirect==='checkout'){
+        sessionStorage.removeItem('rk_redirect');
+        setPage('checkout');
+      }
+    }
+  },[user]);
 
   const showToast=msg=>{setToast(msg);setTimeout(()=>setToast(''),2200);};
   const addToCart=p=>{setCart(prev=>{const ex=prev.find(i=>i.id===p.id);return ex?prev.map(i=>i.id===p.id?{...i,qty:i.qty+1}:i):[...prev,{...p,qty:1}];});showToast(`${p.name} added! 🛒`);};
@@ -394,16 +376,14 @@ function App(){
   const count=cart.reduce((s,i)=>s+i.qty,0);
   const filtered=PRODUCTS.filter(p=>(activeCat==='all'||p.cat===activeCat)&&p.name.toLowerCase().includes(search.toLowerCase()));
 
-  const goToCheckout=()=>{setCartOpen(false);if(user){setPage('checkout');}else{setPendingCheckout(true);setAuthMode('signup');setPage('auth');}};
-  
-  const handleAuthSuccess=u=>{
-    setUser(u);
-    showToast(`Welcome ${u.name}! 🎉`);
-    if(pendingCheckout){setPendingCheckout(false);setPage('checkout');}
-    else{setPage('account');}
+  // ✅ Checkout: user hai to checkout, nahi to login.html
+  const goToCheckout=()=>{
+    setCartOpen(false);
+    if(user){setPage('checkout');}
+    else{goLoginForCheckout();}
   };
 
-  // ✅ Supabase Logout
+  // ✅ Logout
   const handleLogout=async()=>{
     await supabase.auth.signOut();
     setUser(null);
@@ -519,6 +499,7 @@ function App(){
 
   return(
     <div style={{background:'#F5F5F5',minHeight:'100vh'}}>
+      {/* ── DESKTOP HEADER ── */}
       <div className="desktop-header">
         <div className="dh-inner">
           <div className="logo" onClick={()=>setPage('home')}>rinku<span>.</span></div>
@@ -531,13 +512,16 @@ function App(){
           <div className="dh-nav">
             <button className={`dh-nav-btn ${page==='home'?'on':''}`} onClick={()=>setPage('home')}>🏠 Home</button>
             <button className={`dh-nav-btn ${page==='shop'?'on':''}`} onClick={()=>setPage('shop')}>🛍️ Shop</button>
-            {user?<button className="dh-user-btn" onClick={()=>setPage('account')}>👤 {user.name.split(' ')[0]}</button>
-              :<button className="dh-user-btn" onClick={()=>{setAuthMode('login');setPendingCheckout(false);setPage('auth');}}>👤 Login</button>}
+            {user
+              ?<button className="dh-user-btn" onClick={()=>setPage('account')}>👤 {user.name.split(' ')[0]}</button>
+              :<button className="dh-user-btn" onClick={goLogin}>👤 Login</button>
+            }
             <button className="dh-cart-btn" onClick={()=>setCartOpen(true)}>🛒 Cart {count>0&&<span className="c-badge">{count}</span>}</button>
           </div>
         </div>
       </div>
 
+      {/* ── MOBILE HEADER ── */}
       <div className="header">
         <div className="header-top">
           <div className="logo-sm">rinku<span>.</span></div>
@@ -546,8 +530,10 @@ function App(){
             <div className="delivery-addr">📍 Aapka Mohalla ▾</div>
           </div>
           <div className="header-right">
-            {user?<button className="user-pill-btn" onClick={()=>setPage('account')}>👤 <span className="upn">{user.name.split(' ')[0]}</span></button>
-              :<button className="user-pill-btn" onClick={()=>{setAuthMode('login');setPendingCheckout(false);setPage('auth');}}>👤 <span className="upn">Login</span></button>}
+            {user
+              ?<button className="user-pill-btn" onClick={()=>setPage('account')}>👤 <span className="upn">{user.name.split(' ')[0]}</span></button>
+              :<button className="user-pill-btn" onClick={goLogin}>👤 <span className="upn">Login</span></button>
+            }
             <button className="cart-icon-btn" onClick={()=>setCartOpen(true)}>🛒 {count>0&&<span className="c-badge">{count}</span>}</button>
           </div>
         </div>
@@ -558,6 +544,7 @@ function App(){
         </div>
       </div>
 
+      {/* ── TICKER ── */}
       <div className="ticker">
         <div className="ticker-track">
           {[...TICKER,...TICKER].map((t,i)=><span key={i} className="ticker-item">✦ {t}</span>)}
@@ -565,6 +552,7 @@ function App(){
       </div>
 
       <div className="page-pad">
+        {/* ── HOME ── */}
         {page==='home'&&(
           <>
             <div className="d-view"><DesktopHome/></div>
@@ -633,6 +621,7 @@ function App(){
           </>
         )}
 
+        {/* ── SHOP ── */}
         {page==='shop'&&(
           <>
             <div className="d-view"><DesktopShop/></div>
@@ -658,9 +647,31 @@ function App(){
           </>
         )}
 
-        {page==='auth'&&<AuthPage authMode={authMode} setAuthMode={setAuthMode} pendingCheckout={pendingCheckout} total={total} count={count} showToast={showToast} onSuccess={handleAuthSuccess}/>}
-        {page==='account'&&user&&<AccountPage user={user} onLogout={handleLogout} setPage={setPage}/>}
-        {page==='checkout'&&<div className="checkout-page"><h2>← Checkout</h2><CheckoutForm cart={cart} total={total} showToast={showToast} user={user} onSuccess={(id,pay)=>{setSuccess({id,pay});setCart([]);setPage('success');}}/></div>}
+        {/* ── ACCOUNT ── */}
+        {page==='account'&&user&&(
+          <div className="account-page">
+            <div className="acc-card">
+              <div className="acc-avatar">👤</div>
+              <div>
+                <div className="acc-name">{user.name}</div>
+                <div className="acc-email">📧 {user.email}</div>
+              </div>
+            </div>
+            <div className="acc-row" onClick={()=>setPage('shop')}>🛍️ Shop par jaayein</div>
+            <div className="acc-row" onClick={()=>setPage('home')}>🏠 Home</div>
+            <button className="logout-btn" onClick={handleLogout}>🚪 Logout</button>
+          </div>
+        )}
+
+        {/* ── CHECKOUT ── */}
+        {page==='checkout'&&(
+          <div className="checkout-page">
+            <h2>← Checkout</h2>
+            <CheckoutForm cart={cart} total={total} showToast={showToast} user={user} onSuccess={(id,pay)=>{setSuccess({id,pay});setCart([]);setPage('success');}}/>
+          </div>
+        )}
+
+        {/* ── SUCCESS ── */}
         {page==='success'&&success&&(
           <div className="success-page">
             <div className="success-anim">🎉</div>
@@ -673,6 +684,7 @@ function App(){
         )}
       </div>
 
+      {/* ── CART DRAWER ── */}
       {cartOpen&&(
         <>
           <div className="drawer-bg" onClick={()=>setCartOpen(false)}/>
@@ -705,16 +717,27 @@ function App(){
               <div className="drawer-foot">
                 {!user&&<div style={{display:'flex',alignItems:'center',gap:8,background:'#FFF8E1',border:'1px solid #FFE0A3',borderRadius:10,padding:'8px 10px',marginBottom:10,fontSize:'0.72rem',color:'#92600B',fontWeight:600}}>🔐 Checkout se pehle login zaroori hai</div>}
                 <div className="total-row"><span>Total</span><span style={{color:'var(--primary)'}}>₹{total}</span></div>
-                <button className="proceed-btn" onClick={goToCheckout}>{user?`Checkout — ₹${total} →`:'Signup & Checkout →'}</button>
+                <button className="proceed-btn" onClick={goToCheckout}>{user?`Checkout — ₹${total} →`:'Login & Checkout →'}</button>
               </div>
             )}
           </div>
         </>
       )}
 
+      {/* ── BOTTOM NAV ── */}
       <div className="bottom-nav">
-        {[{id:'home',i:'🏠',l:'Home'},{id:'shop',i:'🛍️',l:'Shop'},{id:'cart',i:'🛒',l:`Cart${count>0?` (${count})`:''}`},{id:user?'account':'auth',i:'👤',l:user?'Account':'Login'}].map(n=>(
-          <div key={n.id} className={`bn-item ${page===n.id?'on':''}`} onClick={()=>{if(n.id==='cart'){setCartOpen(true);}else if(n.id==='auth'){setAuthMode('login');setPendingCheckout(false);setPage('auth');}else{setPage(n.id);}}}>
+        {[
+          {id:'home',i:'🏠',l:'Home'},
+          {id:'shop',i:'🛍️',l:'Shop'},
+          {id:'cart',i:'🛒',l:`Cart${count>0?` (${count})`:''}` },
+          {id:user?'account':'login',i:'👤',l:user?'Account':'Login'},
+        ].map(n=>(
+          <div key={n.id} className={`bn-item ${page===n.id?'on':''}`}
+            onClick={()=>{
+              if(n.id==='cart'){setCartOpen(true);}
+              else if(n.id==='login'){goLogin();}
+              else{setPage(n.id);}
+            }}>
             <span className="bn-icon">{n.i}</span>
             <span className="bn-label">{n.l}</span>
           </div>
@@ -722,136 +745,6 @@ function App(){
       </div>
 
       {toast&&<div className="toast">{toast}</div>}
-    </div>
-  );
-}
-
-// ✅ SUPABASE AUTH PAGE — Email + Password
-function AuthPage({authMode,setAuthMode,pendingCheckout,total,count,showToast,onSuccess}){
-  const [email,setEmail]=useState('');
-  const [password,setPassword]=useState('');
-  const [name,setName]=useState('');
-  const [loading,setLoading]=useState(false);
-  const [error,setError]=useState('');
-  const [showPass,setShowPass]=useState(false);
-  const [emailSent,setEmailSent]=useState(false);
-
-  const handleSignup=async()=>{
-    if(!name.trim()){setError('Apna naam zaroori hai!');return;}
-    if(!email.includes('@')){setError('Sahi email daalein!');return;}
-    if(password.length<6){setError('Password kam se kam 6 characters ka hona chahiye!');return;}
-    setLoading(true);setError('');
-    const {data,error:err}=await supabase.auth.signUp({
-      email,password,
-      options:{data:{name:name.trim()}}
-    });
-    if(err){
-      setError(err.message==='User already registered'?'Yeh email pehle se registered hai! Login karein.':err.message);
-    } else if(data.user){
-      if(data.user.identities?.length===0){
-        setError('Yeh email pehle se registered hai! Login karein.');
-      } else if(!data.session){
-        setEmailSent(true);
-      } else {
-        onSuccess({uid:data.user.id,email:data.user.email,name:name.trim()});
-      }
-    }
-    setLoading(false);
-  };
-
-  const handleLogin=async()=>{
-    if(!email.includes('@')){setError('Sahi email daalein!');return;}
-    if(!password){setError('Password daalein!');return;}
-    setLoading(true);setError('');
-    const {data,error:err}=await supabase.auth.signInWithPassword({email,password});
-    if(err){
-      setError(err.message==='Invalid login credentials'?'Email ya password galat hai!':'Login mein error hua. Dobara try karein.');
-    } else if(data.user){
-      const meta=data.user.user_metadata;
-      onSuccess({uid:data.user.id,email:data.user.email,name:meta?.name||email.split('@')[0]});
-    }
-    setLoading(false);
-  };
-
-  const handleForgotPassword=async()=>{
-    if(!email.includes('@')){setError('Pehle email daalein!');return;}
-    setLoading(true);setError('');
-    const {error:err}=await supabase.auth.resetPasswordForEmail(email);
-    if(err){setError('Error hua. Dobara try karein.');}
-    else{showToast('Password reset email bhej diya! 📧');}
-    setLoading(false);
-  };
-
-  if(emailSent){
-    return(
-      <div className="auth-page">
-        <div style={{textAlign:'center',padding:'40px 20px'}}>
-          <div style={{fontSize:'4rem',marginBottom:16}}>📧</div>
-          <h2 style={{fontSize:'1.2rem',fontWeight:900,color:'var(--dark)',marginBottom:8}}>Email Verify Karein!</h2>
-          <p style={{fontSize:'0.84rem',color:'var(--gray)',lineHeight:1.6,marginBottom:16}}><b>{email}</b> par ek verification link bheja gaya hai. Link pe click karo aur phir login karo.</p>
-          <button className="auth-submit-btn" onClick={()=>{setEmailSent(false);setAuthMode('login');}}>✅ Login Karein</button>
-        </div>
-      </div>
-    );
-  }
-
-  return(
-    <div className="auth-page">
-      <div className="auth-head">
-        <div className="ai">🔐</div>
-        <h2>{authMode==='signup'?'Account Banayein':'Wapas Aao!'}</h2>
-        <p>{authMode==='signup'?'Apni details bharein — bilkul free!':'Email aur password se login karein'}</p>
-      </div>
-      {pendingCheckout&&<div className="auth-banner"><span className="abi">🛒</span><span className="abt">Aapke cart mein {count} item{count>1?'s':''} hain (₹{total}) — checkout se pehle login karein.</span></div>}
-
-      <div className="auth-tabs">
-        <button className={`auth-tab-btn ${authMode==='signup'?'on':''}`} onClick={()=>{setAuthMode('signup');setError('');}}>✨ Signup</button>
-        <button className={`auth-tab-btn ${authMode==='login'?'on':''}`} onClick={()=>{setAuthMode('login');setError('');}}>🔑 Login</button>
-      </div>
-
-      <div className="co-card">
-        {authMode==='signup'&&(
-          <input className="inp" placeholder="Aapka Poora Naam *" value={name} onChange={e=>setName(e.target.value)}/>
-        )}
-        <input className="inp" type="email" inputMode="email" placeholder="Email Address *" value={email} onChange={e=>setEmail(e.target.value)}/>
-        <div className="pass-wrap">
-          <input className="inp" type={showPass?'text':'password'} placeholder="Password (min 6 characters) *" value={password} onChange={e=>setPassword(e.target.value)} style={{marginBottom:0}}/>
-          <button className="pass-eye" onClick={()=>setShowPass(s=>!s)}>{showPass?'🙈':'👁️'}</button>
-        </div>
-        {authMode==='login'&&(
-          <div style={{textAlign:'right',marginTop:6,marginBottom:4}}>
-            <span style={{fontSize:'0.76rem',color:'var(--primary)',fontWeight:700,cursor:'pointer'}} onClick={handleForgotPassword}>🔄 Password bhool gaye?</span>
-          </div>
-        )}
-        {error&&<div className="err-msg" style={{marginTop:8}}>⚠️ {error}</div>}
-        <button className="auth-submit-btn" onClick={authMode==='signup'?handleSignup:handleLogin} disabled={loading} style={{opacity:loading?0.8:1,marginTop:10}}>
-          {loading?<><span className="spinner"/>Ek second...</>:authMode==='signup'?'🚀 Account Banao':'🔑 Login Karo'}
-        </button>
-      </div>
-
-      <div style={{textAlign:'center',fontSize:'0.72rem',color:'var(--gray)',marginTop:8,lineHeight:1.6}}>
-        {authMode==='signup'
-          ?<span>Pehle se account hai? <b style={{color:'var(--primary)',cursor:'pointer'}} onClick={()=>{setAuthMode('login');setError('');}}>Login karein →</b></span>
-          :<span>Naya account? <b style={{color:'var(--primary)',cursor:'pointer'}} onClick={()=>{setAuthMode('signup');setError('');}}>Signup karein →</b></span>
-        }
-      </div>
-    </div>
-  );
-}
-
-function AccountPage({user,onLogout,setPage}){
-  return(
-    <div className="account-page">
-      <div className="acc-card">
-        <div className="acc-avatar">👤</div>
-        <div>
-          <div className="acc-name">{user.name}</div>
-          <div className="acc-email">📧 {user.email}</div>
-        </div>
-      </div>
-      <div className="acc-row" onClick={()=>setPage('shop')}>🛍️ Shop par jaayein</div>
-      <div className="acc-row" onClick={()=>setPage('home')}>🏠 Home</div>
-      <button className="logout-btn" onClick={onLogout}>🚪 Logout</button>
     </div>
   );
 }
