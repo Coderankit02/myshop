@@ -4,6 +4,7 @@
    ============================================ */
 
 // ── SUPABASE CONFIG ───────────────────────────
+console.log("AUTH START");
 const SUPABASE_URL     = 'https://pffaflasgwhydkmxwkky.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable__tFDYhkM3blZ0pIVT0YxLA_YvkKq79L';
 const { createClient } = window.supabase;
@@ -178,3 +179,4 @@ window.RKAuth = {
   doForgotPassword,
   friendlyError,
 };
+console.log("AUTH START");
