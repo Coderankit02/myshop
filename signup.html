@@ -22,7 +22,7 @@
 
     <!-- Brand Bar -->
     <div class="brand-bar">
-      <a href="../index.html" class="brand-logo">
+      <a href="index.html" class="brand-logo">
         <div class="brand-icon">🛒</div>
         <div>
           <div class="brand-name">rinku<span>.</span></div>
@@ -215,7 +215,7 @@
   </div>
 </div>
 
-<script src="auth.js"></script>
+<script src="auth.js?v=2"></script>
 <script>
 const { showMsg, hideMsg, setLoading, redirectIfLoggedIn, doSignup, friendlyError, togglePass, updateStrengthUI } = window.RKAuth;
 
@@ -278,12 +278,17 @@ async function handleSignup() {
     document.getElementById('mainForm').style.display = 'none';
     document.getElementById('sentToEmail').textContent = email;
     document.getElementById('emailSentWrap').style.display = 'block';
+    setLoading(btn, false, '🚀 Account Banao — Free!');
+    return; // ✅ FIX: pehle yahan return missing tha, isliye neeche ka
+            // setLoading button label ko gadbad kar deta tha.
   } else if (data.session) {
     // Auto-confirmed
     RKAuth.saveUserLocal(data.user);
     showMsg(sucEl, 'success', `Welcome <b>${fullName}</b>! Account ban gaya 🎉 Redirect ho rahe hain…`);
     setLoading(btn, false, '✅ Signup Ho Gaya!');
-    setTimeout(() => { window.location.href = '../index.html'; }, 1200);
+    setTimeout(() => { window.location.href = 'index.html'; }, 1200);
+    return; // ✅ FIX: yahan bhi return — taaki "✅ Signup Ho Gaya!" label
+            // redirect hone tak waisa hi dikhe, turant overwrite na ho.
   }
 
   setLoading(btn, false, '🚀 Account Banao — Free!');
