@@ -557,7 +557,7 @@ function App(){
             <button className={`dh-nav-btn ${page==='home'?'on':''}`} onClick={()=>setPage('home')}>🏠 Home</button>
             <button className={`dh-nav-btn ${page==='shop'?'on':''}`} onClick={()=>setPage('shop')}>🛍️ Shop</button>
             {user
-              ?<button className="dh-user-btn" onClick={()=>setPage('account')}>👤 {user.name.split(' ')[0]}</button>
+              ?<button className="dh-user-btn" onClick={()=>window.location.href='account.html'}>👤 {user.name.split(' ')[0]}</button>
               :<button className="dh-user-btn" onClick={goLogin}>👤 Login</button>
             }
             <button className="dh-cart-btn" onClick={()=>setCartOpen(true)}>🛒 Cart {count>0&&<span className="c-badge">{count}</span>}</button>
@@ -574,7 +574,7 @@ function App(){
           </div>
           <div className="header-right">
             {user
-              ?<button className="user-pill-btn" onClick={()=>setPage('account')}>👤 <span className="upn">{user.name.split(' ')[0]}</span></button>
+              ?<button className="user-pill-btn" onClick={()=>window.location.href='account.html'}>👤 <span className="upn">{user.name.split(' ')[0]}</span></button>
               :<button className="user-pill-btn" onClick={goLogin}>👤 <span className="upn">Login</span></button>
             }
             <button className="cart-icon-btn" onClick={()=>setCartOpen(true)}>🛒 {count>0&&<span className="c-badge">{count}</span>}</button>
@@ -769,9 +769,18 @@ function App(){
         ].map(n=>(
           <div key={n.id} className={`bn-item ${page===n.id?'on':''}`}
             onClick={()=>{
-              if(n.id==='cart'){setCartOpen(true);}
-              else if(n.id==='login'){goLogin();}
-              else{setPage(n.id);}
+              if(n.id==='cart'){
+                setCartOpen(true);
+              }
+              else if(n.id==='login'){
+                goLogin();
+              }
+              else if(n.id==='account'){
+                window.location.href='account.html';
+              }
+              else{
+                setPage(n.id);
+              }
             }}>
             <span className="bn-icon">{n.i}</span>
             <span className="bn-label">{n.l}</span>
