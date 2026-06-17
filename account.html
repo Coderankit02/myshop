@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>My Account - Rinku Kirana</title>
+<link rel="manifest" href="/manifest.json"/>
+<meta name="theme-color" content="#15803D"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Rinku Kirana"/>
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"/>
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png"/>
+<link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png"/>
+<link rel="shortcut icon" href="/icons/favicon.ico"/>
+<link rel="stylesheet" href="/pwa.css"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+:root{
+  --primary:#1BA672;--primary-dark:#158A5E;--primary-light:#E8F8F1;
+  --orange:#FF6B35;--yellow:#FFB800;--red:#E63946;
+  --dark:#1A1A2E;--text:#2D3748;--gray:#718096;--light:#F7FAFC;
+  --border:#E2E8F0;--white:#fff;
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md:0 4px 16px rgba(0,0,0,0.1);
+  --shadow-lg:0 8px 32px rgba(0,0,0,0.12);
+}
+html{-webkit-text-size-adjust:100%;}
+body{font-family:'Inter',sans-serif;background:#F0F4F8;color:var(--text);min-height:100vh;}
+button{cursor:pointer;border:none;outline:none;font-family:'Inter',sans-serif;}
+input,select,textarea{outline:none;font-family:'Inter',sans-serif;font-size:16px;}
+
+/* ── TOP NAV ── */
+.topnav{background:#fff;box-shadow:var(--shadow-sm);position:sticky;top:0;z-index:100;padding:0 16px;height:56px;display:flex;align-items:center;justify-content:space-between;}
+.topnav-left{display:flex;align-items:center;gap:10px;}
+.back-btn{width:36px;height:36px;border-radius:10px;background:var(--light);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1rem;cursor:pointer;}
+.topnav-title{font-size:1rem;font-weight:800;color:var(--dark);}
+.logo-link{font-size:1.1rem;font-weight:900;color:var(--primary);}
+.logo-link span{color:var(--orange);}
+
+/* ── LAYOUT ── */
+.page-wrap{max-width:1100px;margin:0 auto;padding:16px 16px 100px;}
+@media(min-width:768px){.page-wrap{padding:24px 24px 40px;}}
+
+/* ── HERO CARD ── */
+.hero-card{background:linear-gradient(135deg,#064E3B 0%,#1BA672 60%,#047857 100%);border-radius:20px;padding:24px;margin-bottom:16px;position:relative;overflow:hidden;}
+.hero-card::before{content:'';position:absolute;right:-40px;top:-40px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,0.06);}
+.hero-card::after{content:'';position:absolute;right:30px;bottom:-60px;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,0.04);}
+.hero-top{display:flex;align-items:center;gap:14px;margin-bottom:20px;position:relative;z-index:1;}
+.avatar-wrap{position:relative;}
+.avatar{width:68px;height:68px;border-radius:50%;background:rgba(255,255,255,0.2);border:3px solid rgba(255,255,255,0.4);display:flex;align-items:center;justify-content:center;font-size:2rem;overflow:hidden;flex-shrink:0;}
+.avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.avatar-edit{position:absolute;bottom:0;right:0;width:22px;height:22px;background:#FFB800;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.6rem;cursor:pointer;border:2px solid #fff;}
+.hero-info{flex:1;min-width:0;}
+.hero-greeting{font-size:0.72rem;color:rgba(255,255,255,0.7);font-weight:600;letter-spacing:0.5px;text-transform:uppercase;}
+.hero-name{font-size:1.3rem;font-weight:900;color:#fff;margin:2px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.hero-email{font-size:0.75rem;color:rgba(255,255,255,0.75);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.loyalty-badge{background:rgba(255,184,0,0.25);border:1.5px solid rgba(255,184,0,0.5);border-radius:50px;padding:5px 14px;display:inline-flex;align-items:center;gap:6px;margin-top:8px;}
+.loyalty-badge span{font-size:0.72rem;font-weight:800;color:#FFB800;}
+.hero-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;position:relative;z-index:1;}
+.hstat{background:rgba(255,255,255,0.12);border-radius:12px;padding:10px;text-align:center;backdrop-filter:blur(4px);}
+.hstat-val{font-size:1.1rem;font-weight:900;color:#fff;}
+.hstat-label{font-size:0.62rem;color:rgba(255,255,255,0.7);margin-top:2px;font-weight:600;}
+
+/* ── STAT CARDS GRID ── */
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+@media(min-width:600px){.stats-grid{grid-template-columns:repeat(6,1fr);}}
+.stat-card{background:#fff;border-radius:14px;padding:14px 10px;text-align:center;box-shadow:var(--shadow-sm);border:1.5px solid var(--border);cursor:pointer;transition:all 0.2s;}
+.stat-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px);}
+.stat-icon{font-size:1.4rem;margin-bottom:6px;}
+.stat-val{font-size:1.1rem;font-weight:900;color:var(--dark);}
+.stat-label{font-size:0.6rem;font-weight:600;color:var(--gray);margin-top:2px;}
+
+/* ── SECTION CARD ── */
+.sec-card{background:#fff;border-radius:16px;margin-bottom:14px;overflow:hidden;box-shadow:var(--shadow-sm);}
+.sec-head{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 12px;}
+.sec-title{display:flex;align-items:center;gap:8px;font-size:0.92rem;font-weight:800;color:var(--dark);}
+.sec-action{font-size:0.75rem;font-weight:700;color:var(--primary);background:var(--primary-light);padding:5px 12px;border-radius:50px;border:none;cursor:pointer;}
+.sec-divider{height:1px;background:var(--border);margin:0 16px;}
+
+/* ── ORDER CARDS ── */
+.order-card{padding:14px 16px;border-bottom:1px solid #F7FAFC;display:flex;gap:12px;align-items:flex-start;}
+.order-card:last-child{border-bottom:none;}
+.order-emoji{width:44px;height:44px;background:var(--light);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;}
+.order-info{flex:1;min-width:0;}
+.order-num{font-size:0.82rem;font-weight:800;color:var(--dark);}
+.order-items-txt{font-size:0.72rem;color:var(--gray);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.order-date{font-size:0.68rem;color:#A0AEC0;margin-top:2px;}
+.order-right{text-align:right;flex-shrink:0;}
+.order-amt{font-size:0.9rem;font-weight:800;color:var(--dark);}
+.status-badge{display:inline-block;padding:3px 10px;border-radius:50px;font-size:0.62rem;font-weight:800;margin-top:4px;}
+.status-pending{background:#FFF8E1;color:#F59E0B;}
+.status-confirmed{background:#E3F2FD;color:#1976D2;}
+.status-out_for_delivery{background:#F3E5F5;color:#7B1FA2;}
+.status-delivered{background:#E8F8F1;color:var(--primary-dark);}
+.status-cancelled{background:#FEF2F2;color:var(--red);}
+.reorder-btn{margin-top:6px;background:var(--primary-light);color:var(--primary);border:none;border-radius:8px;padding:5px 12px;font-size:0.68rem;font-weight:700;cursor:pointer;}
+
+/* ── ORDER DETAIL MODAL ── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:400;backdrop-filter:blur(3px);display:flex;align-items:flex-end;justify-content:center;}
+@media(min-width:768px){.modal-bg{align-items:center;}}
+.modal{background:#fff;border-radius:24px 24px 0 0;width:min(560px,100vw);max-height:85vh;overflow-y:auto;animation:slideUp 0.3s ease;}
+@media(min-width:768px){.modal{border-radius:20px;}}
+@keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+.modal-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;}
+.modal-title{font-size:1rem;font-weight:800;}
+.modal-close{width:32px;height:32px;border-radius:50%;background:var(--light);border:none;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.modal-body{padding:16px 20px 24px;}
+.timeline{margin:16px 0;}
+.tl-item{display:flex;gap:12px;margin-bottom:12px;}
+.tl-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.85rem;flex-shrink:0;}
+.tl-dot.done{background:var(--primary-light);color:var(--primary);}
+.tl-dot.active{background:var(--primary);color:#fff;}
+.tl-dot.pending{background:var(--light);color:#A0AEC0;}
+.tl-info{flex:1;padding-top:4px;}
+.tl-title{font-size:0.8rem;font-weight:700;}
+.tl-sub{font-size:0.7rem;color:var(--gray);margin-top:1px;}
+
+/* ── ADDRESS CARDS ── */
+.addr-card{padding:14px 16px;border-bottom:1px solid #F7FAFC;display:flex;gap:12px;align-items:flex-start;}
+.addr-card:last-child{border-bottom:none;}
+.addr-icon{width:40px;height:40px;background:var(--primary-light);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;}
+.addr-info{flex:1;min-width:0;}
+.addr-label{font-size:0.82rem;font-weight:800;color:var(--dark);display:flex;align-items:center;gap:6px;}
+.default-tag{background:var(--primary);color:#fff;font-size:0.55rem;padding:2px 6px;border-radius:50px;font-weight:800;}
+.addr-text{font-size:0.72rem;color:var(--gray);margin-top:3px;line-height:1.5;}
+.addr-actions{display:flex;gap:6px;margin-top:8px;}
+.addr-btn{font-size:0.68rem;font-weight:700;padding:4px 10px;border-radius:6px;border:none;cursor:pointer;}
+.addr-btn-edit{background:#EBF8FF;color:#2B6CB0;}
+.addr-btn-delete{background:#FEF2F2;color:var(--red);}
+.addr-btn-default{background:var(--primary-light);color:var(--primary);}
+
+/* ── ADD ADDRESS FORM ── */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.inp{width:100%;background:var(--light);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;font-size:15px;color:var(--dark);transition:border 0.2s;margin-bottom:10px;}
+.inp:focus{border-color:var(--primary);background:#fff;}
+.inp-label{font-size:0.72rem;font-weight:700;color:var(--gray);margin-bottom:4px;display:block;}
+.save-btn{width:100%;padding:13px;background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;border-radius:12px;font-weight:800;font-size:0.9rem;border:none;cursor:pointer;box-shadow:0 4px 12px rgba(27,166,114,0.3);}
+.cancel-btn{width:100%;padding:12px;background:var(--light);color:var(--gray);border-radius:12px;font-weight:700;font-size:0.9rem;border:1.5px solid var(--border);cursor:pointer;margin-bottom:10px;}
+
+/* ── PROFILE EDIT ── */
+.profile-form{padding:0 16px 16px;}
+.avatar-upload{display:flex;align-items:center;gap:14px;padding:16px;background:var(--light);border-radius:14px;margin-bottom:16px;cursor:pointer;}
+.avatar-big{width:64px;height:64px;border-radius:50%;background:var(--primary-light);border:3px solid var(--primary);display:flex;align-items:center;justify-content:center;font-size:2rem;overflow:hidden;flex-shrink:0;}
+.avatar-big img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.avatar-upload-info{flex:1;}
+.avatar-upload-title{font-size:0.82rem;font-weight:700;color:var(--dark);}
+.avatar-upload-sub{font-size:0.7rem;color:var(--gray);margin-top:2px;}
+
+/* ── WISHLIST ── */
+.wish-card{padding:12px 16px;border-bottom:1px solid #F7FAFC;display:flex;gap:12px;align-items:center;}
+.wish-card:last-child{border-bottom:none;}
+.wish-emoji{width:48px;height:48px;background:var(--light);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0;}
+.wish-info{flex:1;min-width:0;}
+.wish-name{font-size:0.82rem;font-weight:700;color:var(--dark);}
+.wish-unit{font-size:0.68rem;color:var(--gray);}
+.wish-price{font-size:0.88rem;font-weight:800;color:var(--primary);}
+.wish-actions{display:flex;flex-direction:column;gap:5px;align-items:flex-end;}
+.wish-add-btn{background:var(--primary);color:#fff;border-radius:8px;padding:6px 12px;font-size:0.7rem;font-weight:700;border:none;cursor:pointer;}
+.wish-del-btn{background:#FEF2F2;color:var(--red);border-radius:8px;padding:5px 10px;font-size:0.65rem;font-weight:700;border:none;cursor:pointer;}
+
+/* ── NOTIFICATIONS ── */
+.notif-card{padding:12px 16px;border-bottom:1px solid #F7FAFC;display:flex;gap:12px;align-items:flex-start;}
+.notif-card:last-child{border-bottom:none;}
+.notif-card.unread{background:#F0FDF9;}
+.notif-dot{width:8px;height:8px;background:var(--primary);border-radius:50%;margin-top:5px;flex-shrink:0;}
+.notif-dot.read{background:transparent;}
+.notif-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;}
+.notif-body{flex:1;min-width:0;}
+.notif-title{font-size:0.8rem;font-weight:700;color:var(--dark);}
+.notif-msg{font-size:0.72rem;color:var(--gray);margin-top:2px;line-height:1.4;}
+.notif-time{font-size:0.65rem;color:#A0AEC0;margin-top:4px;}
+
+/* ── REWARDS ── */
+.rewards-card{background:linear-gradient(135deg,#1E1B4B,#4F46E5);border-radius:16px;padding:20px;margin:0 16px 16px;position:relative;overflow:hidden;}
+.rewards-card::before{content:'⭐';position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:80px;opacity:0.1;}
+.reward-pts{font-size:2rem;font-weight:900;color:#fff;}
+.reward-label{font-size:0.72rem;color:rgba(255,255,255,0.7);margin-top:2px;}
+.reward-bar-wrap{background:rgba(255,255,255,0.15);border-radius:50px;height:6px;margin-top:14px;}
+.reward-bar{background:linear-gradient(90deg,#FFB800,#FF6B35);height:6px;border-radius:50px;transition:width 1s ease;}
+.reward-progress-txt{display:flex;justify-content:space-between;font-size:0.65rem;color:rgba(255,255,255,0.7);margin-top:6px;}
+.reward-chips{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
+.reward-chip{background:rgba(255,255,255,0.12);border-radius:8px;padding:8px 12px;flex:1;min-width:80px;}
+.reward-chip-val{font-size:0.88rem;font-weight:800;color:#fff;}
+.reward-chip-label{font-size:0.62rem;color:rgba(255,255,255,0.7);margin-top:1px;}
+
+/* ── REFERRAL ── */
+.referral-box{background:linear-gradient(135deg,#FFF3E0,#FFE0B2);border-radius:14px;padding:16px;margin:0 16px 14px;border:1.5px solid #FFB74D;}
+.ref-code-wrap{background:#fff;border-radius:10px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;margin:12px 0;border:1.5px dashed #FFB74D;}
+.ref-code{font-size:1.1rem;font-weight:900;color:var(--dark);letter-spacing:2px;}
+.ref-copy-btn{background:#FF6B35;color:#fff;border-radius:8px;padding:6px 14px;font-size:0.72rem;font-weight:700;border:none;cursor:pointer;}
+.ref-share-btn{width:100%;background:linear-gradient(135deg,#FF6B35,#E63946);color:#fff;border-radius:10px;padding:12px;font-weight:800;font-size:0.85rem;border:none;cursor:pointer;}
+
+/* ── SETTINGS ── */
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #F7FAFC;cursor:pointer;}
+.settings-row:last-child{border-bottom:none;}
+.settings-left{display:flex;align-items:center;gap:12px;}
+.settings-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1rem;}
+.settings-label{font-size:0.85rem;font-weight:600;color:var(--dark);}
+.settings-sub{font-size:0.7rem;color:var(--gray);margin-top:1px;}
+.settings-arrow{color:#A0AEC0;font-size:0.85rem;}
+
+/* ── SAVED PAYMENTS ── */
+.payment-row{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid #F7FAFC;}
+.payment-row:last-child{border-bottom:none;}
+.payment-icon-box{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;}
+.payment-info{flex:1;}
+.payment-name{font-size:0.82rem;font-weight:700;}
+.payment-sub{font-size:0.7rem;color:var(--gray);margin-top:2px;}
+.payment-badge{background:var(--primary-light);color:var(--primary);font-size:0.62rem;font-weight:800;padding:3px 8px;border-radius:50px;}
+
+/* ── BOTTOM NAV ── */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--border);display:flex;z-index:200;box-shadow:0 -4px 16px rgba(0,0,0,0.08);padding-bottom:env(safe-area-inset-bottom,0px);}
+.bn-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 0;cursor:pointer;color:var(--gray);text-decoration:none;min-height:44px;justify-content:center;}
+.bn-item.on{color:var(--primary);}
+.bn-icon{font-size:1.2rem;}
+.bn-label{font-size:0.6rem;font-weight:600;}
+@media(min-width:768px){.bottom-nav{display:none;}}
+
+/* ── TOGGLE ── */
+.toggle{width:44px;height:24px;background:#E2E8F0;border-radius:12px;position:relative;cursor:pointer;transition:background 0.3s;}
+.toggle.on{background:var(--primary);}
+.toggle-dot{width:18px;height:18px;background:#fff;border-radius:50%;position:absolute;top:3px;left:3px;transition:left 0.3s;box-shadow:0 1px 4px rgba(0,0,0,0.2);}
+.toggle.on .toggle-dot{left:23px;}
+
+/* ── EMPTY STATE ── */
+.empty-state{text-align:center;padding:32px 20px;}
+.empty-icon{font-size:3rem;margin-bottom:10px;}
+.empty-title{font-size:0.88rem;font-weight:700;color:var(--dark);}
+.empty-sub{font-size:0.75rem;color:var(--gray);margin-top:4px;}
+
+/* ── LOADING ── */
+.skeleton{background:linear-gradient(90deg,#F0F4F8 25%,#E2E8F0 50%,#F0F4F8 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px;}
+@keyframes shimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:calc(90px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--dark);color:#fff;padding:10px 22px;border-radius:50px;font-size:0.82rem;font-weight:600;z-index:999;animation:toastUp 0.3s ease;white-space:nowrap;max-width:90%;}
+@keyframes toastUp{from{opacity:0;transform:translateX(-50%) translateY(20px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
+@media(min-width:768px){.toast{bottom:24px;}}
+
+/* ── DESKTOP LAYOUT ── */
+@media(min-width:768px){
+  .topnav{padding:0 32px;height:64px;}
+  .page-wrap{display:grid;grid-template-columns:300px 1fr;gap:20px;max-width:1100px;}
+  .col-left{grid-column:1;}
+  .col-right{grid-column:2;}
+  .full-width{grid-column:1/-1;}
+}
+
+/* ── COUNTER ANIMATION ── */
+@keyframes countUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.count-anim{animation:countUp 0.5s ease forwards;}
+
+/* ── ACTIVE NAV TAB ── */
+.dash-tabs{display:flex;overflow-x:auto;scrollbar-width:none;gap:6px;padding:0 16px 12px;background:#fff;border-bottom:1px solid var(--border);}
+.dash-tabs::-webkit-scrollbar{display:none;}
+.dash-tab{flex-shrink:0;padding:7px 14px;border-radius:50px;font-size:0.75rem;font-weight:700;background:var(--light);color:var(--gray);border:1.5px solid var(--border);cursor:pointer;transition:all 0.2s;white-space:nowrap;}
+.dash-tab.on{background:var(--primary-light);color:var(--primary);border-color:var(--primary);}
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<div class="topnav">
+  <div class="topnav-left">
+    <button class="back-btn" onclick="window.location.href='index.html'">←</button>
+    <span class="topnav-title">My Account</span>
+  </div>
+  <a href="index.html" class="logo-link">rinku<span>.</span></a>
+</div>
+
+<!-- MAIN CONTENT -->
+<div id="app" style="display:none;">
+
+  <!-- DASH TABS -->
+  <div class="dash-tabs" id="dashTabs">
+    <div class="dash-tab on" data-tab="overview">🏠 Overview</div>
+    <div class="dash-tab" data-tab="orders">📦 Orders</div>
+    <div class="dash-tab" data-tab="addresses">📍 Addresses</div>
+    <div class="dash-tab" data-tab="profile">👤 Profile</div>
+    <div class="dash-tab" data-tab="wishlist">❤️ Wishlist</div>
+    <div class="dash-tab" data-tab="notifications">🔔 Alerts</div>
+    <div class="dash-tab" data-tab="rewards">⭐ Rewards</div>
+    <div class="dash-tab" data-tab="settings">⚙️ Settings</div>
+  </div>
+
+  <div class="page-wrap" id="pageWrap">
+    <!-- Dynamic content renders here -->
+  </div>
+
+</div>
+
+<!-- LOADING STATE -->
+<div id="loadingState" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;gap:12px;">
+  <div style="font-size:2.5rem;animation:spin 1s linear infinite;">🌿</div>
+  <div style="font-size:0.88rem;font-weight:600;color:var(--gray);">Loading your account...</div>
+</div>
+<style>@keyframes spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}</style>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <a href="index.html" class="bn-item"><span class="bn-icon">🏠</span><span class="bn-label">Home</span></a>
+  <a href="index.html#shop" class="bn-item"><span class="bn-icon">🛍️</span><span class="bn-label">Shop</span></a>
+  <a href="index.html#cart" class="bn-item"><span class="bn-icon">🛒</span><span class="bn-label">Cart</span></a>
+  <a href="account.html" class="bn-item on"><span class="bn-icon">👤</span><span class="bn-label">Account</span></a>
+</nav>
+
+<!-- TOAST -->
+<div id="toast" class="toast" style="display:none;"></div>
+
+<!-- MODAL CONTAINER -->
+<div id="modalContainer"></div>
+
+<script src="/js/cart.js"></script>
+<script src="/js/profile.js"></script>
+<script src="/js/orders.js"></script>
+
+<script>
+const SUPABASE_URL='https://pffaflasgwhydkmxwkky.supabase.co';
+const SUPABASE_ANON_KEY='sb_publishable__tFDYhkM3blZ0pIVT0YxLA_YvkKq79L';
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+
+// ── State ────────────────────────────────────────────────────
+let STATE={
+  user:null, profile:null, orders:[], addresses:[],
+  wishlist:[], notifications:[], activeTab:'overview',
+  cartCount:0,
+};
+
+// ── Helpers ──────────────────────────────────────────────────
+const $=id=>document.getElementById(id);
+function showToast(msg,dur=2500){
+  const t=$('toast');
+  t.textContent=msg;t.style.display='block';
+  clearTimeout(t._timer);
+  t._timer=setTimeout(()=>t.style.display='none',dur);
+}
+function fmt(n){return'₹'+Number(n).toLocaleString('en-IN');}
+function fmtDate(d){return new Date(d).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});}
+function fmtTime(d){return new Date(d).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});}
+function memberSince(d){
+  const m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const dt=new Date(d);return m[dt.getMonth()]+' '+dt.getFullYear();
+}
+function loyaltyLevel(orders){
+  if(orders>=50)return{label:'🥇 Gold Member',pts:orders*10};
+  if(orders>=20)return{label:'🥈 Silver Member',pts:orders*10};
+  if(orders>=5)return{label:'🥉 Bronze Member',pts:orders*10};
+  return{label:'🌱 New Member',pts:orders*10};
+}
+function statusLabel(s){
+  const map={pending:'Pending',confirmed:'Confirmed',out_for_delivery:'Out for Delivery',delivered:'Delivered',cancelled:'Cancelled'};
+  return map[s]||s;
+}
+function animCount(el,target,dur=800){
+  let start=0,step=target/60;
+  const tick=()=>{start+=step;if(start>=target){el.textContent=Math.round(target);return;}el.textContent=Math.round(start);requestAnimationFrame(tick);};
+  tick();
+}
+
+// ── Data Loaders ─────────────────────────────────────────────
+async function loadAll(){
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session?.user){window.location.href='login.html';return;}
+  STATE.user=session.user;
+
+  // Parallel fetch
+  const [profile,orders,addresses,wishlist,notifs]=await Promise.all([
+    loadProfile(),loadOrders(),loadAddresses(),loadWishlist(),loadNotifications()
+  ]);
+  STATE.profile=profile;
+  STATE.orders=orders;
+  STATE.addresses=addresses;
+  STATE.wishlist=wishlist;
+  STATE.notifications=notifs;
+  STATE.cartCount=window.RKCart?window.RKCart.getCount():0;
+
+  $('loadingState').style.display='none';
+  $('app').style.display='block';
+  renderTab(STATE.activeTab);
+  setupTabs();
+}
+
+async function loadProfile(){
+  const u=STATE.user;
+  const meta=u.user_metadata||{};
+  // Try Supabase profiles table
+  const {data}=await sb.from('profiles').select('*').eq('id',u.id).single();
+  if(data)return data;
+  // Fallback to auth metadata
+  return{id:u.id,name:meta.name||u.email.split('@')[0],email:u.email,phone:meta.phone||'',avatar_url:null,created_at:u.created_at};
+}
+async function loadOrders(){
+  const {data}=await sb.from('orders').select('*').eq('user_id',STATE.user.id).order('created_at',{ascending:false}).limit(20);
+  return data||[];
+}
+async function loadAddresses(){
+  const {data}=await sb.from('addresses').select('*').eq('user_id',STATE.user.id).order('is_default',{ascending:false});
+  return data||[];
+}
+async function loadWishlist(){
+  const {data}=await sb.from('wishlist').select('*').eq('user_id',STATE.user.id).order('created_at',{ascending:false});
+  return data||[];
+}
+async function loadNotifications(){
+  const {data}=await sb.from('notifications').select('*').eq('user_id',STATE.user.id).order('created_at',{ascending:false}).limit(20);
+  return data||[];
+}
+
+// ── Tab Setup ────────────────────────────────────────────────
+function setupTabs(){
+  document.querySelectorAll('.dash-tab').forEach(t=>{
+    t.addEventListener('click',()=>{
+      document.querySelectorAll('.dash-tab').forEach(x=>x.classList.remove('on'));
+      t.classList.add('on');
+      STATE.activeTab=t.dataset.tab;
+      renderTab(STATE.activeTab);
+    });
+  });
+}
+
+function renderTab(tab){
+  const wrap=$('pageWrap');
+  wrap.innerHTML='';
+  const fns={overview:renderOverview,orders:renderOrders,addresses:renderAddresses,profile:renderProfile,wishlist:renderWishlist,notifications:renderNotifications,rewards:renderRewards,settings:renderSettings};
+  if(fns[tab])fns[tab](wrap);
+}
+
+// ════════════════════════════════════════════════════════════
+// OVERVIEW TAB
+// ════════════════════════════════════════════════════════════
+function renderOverview(wrap){
+  const p=STATE.profile;
+  const totalOrders=STATE.orders.length;
+  const totalSpend=STATE.orders.filter(o=>o.status==='delivered').reduce((s,o)=>s+(o.final_amount||0),0);
+  const savings=STATE.orders.reduce((s,o)=>s+(o.discount||0),0);
+  const loyalty=loyaltyLevel(totalOrders);
+  const unreadNotifs=STATE.notifications.filter(n=>!n.is_read).length;
+
+  wrap.innerHTML=`
+  <div class="full-width">
+    <!-- HERO -->
+    <div class="hero-card">
+      <div class="hero-top">
+        <div class="avatar-wrap">
+          <div class="avatar" id="heroAvatar">
+            ${p?.avatar_url?`<img src="${p.avatar_url}" alt="avatar"/>`:(p?.name?p.name[0].toUpperCase():'👤')}
+          </div>
+          <div class="avatar-edit" onclick="switchTab('profile')" title="Edit Photo">✏️</div>
+        </div>
+        <div class="hero-info">
+          <div class="hero-greeting">👋 Namaste,</div>
+          <div class="hero-name" id="heroName">${p?.name||'User'}</div>
+          <div class="hero-email">${p?.email||''}</div>
+          <div class="loyalty-badge"><span>${loyalty.label}</span></div>
+        </div>
+      </div>
+      <div class="hero-stats">
+        <div class="hstat"><div class="hstat-val" id="hOrders">0</div><div class="hstat-label">Orders</div></div>
+        <div class="hstat"><div class="hstat-val" id="hSavings">₹0</div><div class="hstat-label">Saved</div></div>
+        <div class="hstat"><div class="hstat-val">${memberSince(p?.created_at||STATE.user.created_at)}</div><div class="hstat-label">Member Since</div></div>
+      </div>
+    </div>
+
+    <!-- STAT CHIPS -->
+    <div class="stats-grid">
+      <div class="stat-card" onclick="switchTab('orders')"><div class="stat-icon">📦</div><div class="stat-val" id="sc0">0</div><div class="stat-label">Total Orders</div></div>
+      <div class="stat-card" onclick="switchTab('rewards')"><div class="stat-icon">💰</div><div class="stat-val" id="sc1">₹0</div><div class="stat-label">Savings</div></div>
+      <div class="stat-card" onclick="switchTab('wishlist')"><div class="stat-icon">❤️</div><div class="stat-val" id="sc2">0</div><div class="stat-label">Wishlist</div></div>
+      <div class="stat-card" onclick="switchTab('addresses')"><div class="stat-icon">📍</div><div class="stat-val" id="sc3">0</div><div class="stat-label">Addresses</div></div>
+      <div class="stat-card" onclick="window.location.href='index.html'"><div class="stat-icon">🛒</div><div class="stat-val" id="sc4">0</div><div class="stat-label">Cart Items</div></div>
+      <div class="stat-card" onclick="switchTab('notifications')"><div class="stat-icon">🔔</div><div class="stat-val" id="sc5">0</div><div class="stat-label">Alerts</div></div>
+    </div>
+
+    <!-- RECENT ORDERS PREVIEW -->
+    ${STATE.orders.length?`
+    <div class="sec-card">
+      <div class="sec-head">
+        <div class="sec-title">📦 Recent Orders</div>
+        <button class="sec-action" onclick="switchTab('orders')">View All</button>
+      </div>
+      <div class="sec-divider"></div>
+      ${STATE.orders.slice(0,3).map(o=>orderCardHTML(o)).join('')}
+    </div>`:`
+    <div class="sec-card">
+      <div class="empty-state"><div class="empty-icon">🛒</div><div class="empty-title">Koi order nahi abhi tak</div><div class="empty-sub">Pehla order place karo!</div></div>
+    </div>`}
+
+    <!-- QUICK ACTIONS -->
+    <div class="sec-card">
+      <div class="sec-head"><div class="sec-title">⚡ Quick Actions</div></div>
+      <div class="sec-divider"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 16px;">
+        ${[
+          {i:'🛍️',t:'Shop Now',s:'Browse products',fn:"window.location.href='index.html'"},
+          {i:'📍',t:'Add Address',s:'Save delivery spot',fn:"switchTab('addresses')"},
+          {i:'❤️',t:'My Wishlist',s:'Saved products',fn:"switchTab('wishlist')"},
+          {i:'🎁',t:'Refer & Earn',s:'Get ₹30 cashback',fn:"switchTab('rewards')"},
+        ].map(a=>`
+        <div onclick="${a.fn}" style="background:var(--light);border-radius:12px;padding:14px;cursor:pointer;border:1.5px solid var(--border);">
+          <div style="font-size:1.5rem;margin-bottom:6px;">${a.i}</div>
+          <div style="font-size:0.78rem;font-weight:800;color:var(--dark);">${a.t}</div>
+          <div style="font-size:0.65rem;color:var(--gray);margin-top:2px;">${a.s}</div>
+        </div>`).join('')}
+      </div>
+    </div>
+  </div>
+  `;
+
+  // Animate counters
+  setTimeout(()=>{
+    animCount($('hOrders'),totalOrders);
+    $('hSavings').textContent=fmt(savings);
+    animCount($('sc0'),totalOrders);
+    $('sc1').textContent=fmt(savings);
+    animCount($('sc2'),STATE.wishlist.length);
+    animCount($('sc3'),STATE.addresses.length);
+    animCount($('sc4'),STATE.cartCount);
+    animCount($('sc5'),unreadNotifs);
+  },100);
+}
+
+// ════════════════════════════════════════════════════════════
+// ORDERS TAB
+// ════════════════════════════════════════════════════════════
+function orderCardHTML(o){
+  return`
+  <div class="order-card">
+    <div class="order-emoji">🛒</div>
+    <div class="order-info">
+      <div class="order-num">${o.order_number}</div>
+      <div class="order-items-txt">${o.delivery_name} • ${o.delivery_city||'Prayagraj'}</div>
+      <div class="order-date">${fmtTime(o.created_at)}</div>
+      <button class="reorder-btn" onclick="viewOrder('${o.id}')">View Details →</button>
+    </div>
+    <div class="order-right">
+      <div class="order-amt">${fmt(o.final_amount)}</div>
+      <div class="status-badge status-${o.status}">${statusLabel(o.status)}</div>
+      ${o.status==='delivered'?`<br><button class="reorder-btn" onclick="reorderNow('${o.id}')">🔁 Reorder</button>`:''}
+    </div>
+  </div>`;
+}
+
+function renderOrders(wrap){
+  wrap.innerHTML=`
+  <div class="full-width">
+    <div class="sec-card">
+      <div class="sec-head"><div class="sec-title">📦 My Orders (${STATE.orders.length})</div></div>
+      <div class="sec-divider"></div>
+      ${STATE.orders.length
+        ?STATE.orders.map(o=>orderCardHTML(o)).join('')
+        :`<div class="empty-state"><div class="empty-icon">📦</div><div class="empty-title">Koi order nahi mila</div><div class="empty-sub"><a href="index.html" style="color:var(--primary);font-weight:700;">Abhi shop karo →</a></div></div>`
+      }
+    </div>
+  </div>`;
+}
+
+async function viewOrder(orderId){
+  const order=STATE.orders.find(o=>o.id===orderId);
+  if(!order)return;
+  // Load items
+  const {data:items}=await sb.from('order_items').select('*').eq('order_id',orderId);
+  const statuses=['pending','confirmed','out_for_delivery','delivered'];
+  const curIdx=statuses.indexOf(order.status);
+
+  const tlItems=[
+    {icon:'✅',label:'Order Placed',sub:fmtTime(order.created_at)},
+    {icon:'🏪',label:'Confirmed',sub:'Store ne accept kiya'},
+    {icon:'🚴',label:'Out for Delivery',sub:'Delivery boy on the way'},
+    {icon:'🎉',label:'Delivered',sub:'Order deliver ho gaya'},
+  ];
+
+  showModal(`
+    <div class="modal-head">
+      <div class="modal-title">Order ${order.order_number}</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div>
+          <div style="font-size:0.78rem;color:var(--gray);">Amount</div>
+          <div style="font-size:1.2rem;font-weight:900;color:var(--primary);">${fmt(order.final_amount)}</div>
+        </div>
+        <div class="status-badge status-${order.status}" style="font-size:0.75rem;padding:5px 14px;">${statusLabel(order.status)}</div>
+      </div>
+      
+      <div class="timeline">
+        ${tlItems.map((tl,i)=>{
+          let cls=i<curIdx?'done':i===curIdx?'active':'pending';
+          if(order.status==='cancelled')cls='pending';
+          return`<div class="tl-item">
+            <div class="tl-dot ${cls}">${tl.icon}</div>
+            <div class="tl-info"><div class="tl-title" style="${cls==='pending'?'color:#A0AEC0;':''}">${tl.label}</div><div class="tl-sub">${cls!=='pending'?tl.sub:'Awaited'}</div></div>
+          </div>`;
+        }).join('')}
+      </div>
+
+      <div class="sec-divider" style="margin:0 0 14px;"></div>
+
+      <div style="font-size:0.78rem;font-weight:700;color:var(--gray);margin-bottom:8px;">ORDER ITEMS</div>
+      ${(items||[]).map(it=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #F7FAFC;">
+          <div style="display:flex;gap:10px;align-items:center;">
+            <span style="font-size:1.4rem;">${it.emoji||'🛒'}</span>
+            <div>
+              <div style="font-size:0.8rem;font-weight:700;">${it.name}</div>
+              <div style="font-size:0.68rem;color:var(--gray);">${it.unit} × ${it.qty}</div>
+            </div>
+          </div>
+          <div style="font-size:0.85rem;font-weight:800;">${fmt(it.line_total)}</div>
+        </div>`).join('')}
+
+      <div class="sec-divider" style="margin:12px 0;"></div>
+      <div style="font-size:0.78rem;font-weight:700;color:var(--gray);margin-bottom:8px;">DELIVERY TO</div>
+      <div style="font-size:0.82rem;line-height:1.6;color:var(--dark);">
+        <b>${order.delivery_name}</b><br/>
+        📞 ${order.delivery_phone}<br/>
+        📍 ${order.delivery_line1}${order.delivery_line2?', '+order.delivery_line2:''}, ${order.delivery_city}
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;">
+        ${order.status==='delivered'?`<button class="save-btn" onclick="reorderNow('${order.id}');closeModal()">🔁 Reorder</button>`:'<div></div>'}
+        <button class="cancel-btn" onclick="closeModal()">Close</button>
+      </div>
+    </div>
+  `);
+}
+
+async function reorderNow(orderId){
+  if(window.RKOrders){
+    await window.RKOrders.reorder(orderId);
+    showToast('Items cart mein add ho gaye! 🛒');
+    setTimeout(()=>window.location.href='index.html',1500);
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// ADDRESSES TAB
+// ════════════════════════════════════════════════════════════
+function addrIcon(label){
+  if(!label)return'📍';
+  const l=label.toLowerCase();
+  if(l.includes('home'))return'🏠';
+  if(l.includes('office')||l.includes('work'))return'🏢';
+  return'📍';
+}
+
+function renderAddresses(wrap){
+  wrap.innerHTML=`
+  <div class="full-width">
+    <div class="sec-card">
+      <div class="sec-head">
+        <div class="sec-title">📍 Saved Addresses (${STATE.addresses.length})</div>
+        <button class="sec-action" onclick="showAddAddrForm()">+ Add</button>
+      </div>
+      <div class="sec-divider"></div>
+      <div id="addrList">
+      ${STATE.addresses.length
+        ?STATE.addresses.map(a=>`
+          <div class="addr-card" id="addr-${a.id}">
+            <div class="addr-icon">${addrIcon(a.label)}</div>
+            <div class="addr-info">
+              <div class="addr-label">${a.label}${a.is_default?'<span class="default-tag">DEFAULT</span>':''}</div>
+              <div class="addr-text">${a.line1}${a.line2?', '+a.line2:''}<br/>${a.city}${a.pincode?' - '+a.pincode:''}</div>
+              <div class="addr-actions">
+                <button class="addr-btn addr-btn-edit" onclick="editAddr('${a.id}')">✏️ Edit</button>
+                <button class="addr-btn addr-btn-delete" onclick="deleteAddr('${a.id}')">🗑️ Delete</button>
+                ${!a.is_default?`<button class="addr-btn addr-btn-default" onclick="setDefaultAddr('${a.id}')">✓ Set Default</button>`:''}
+              </div>
+            </div>
+          </div>`).join('')
+        :`<div class="empty-state"><div class="empty-icon">📍</div><div class="empty-title">Koi address nahi</div><div class="empty-sub">Delivery ke liye address add karo</div></div>`
+      }
+      </div>
+    </div>
+    <div id="addrFormWrap"></div>
+  </div>`;
+}
+
+function addrFormHTML(addr=null){
+  return`
+  <div class="sec-card" style="margin-top:0;">
+    <div class="sec-head"><div class="sec-title">${addr?'✏️ Edit Address':'➕ New Address'}</div></div>
+    <div class="sec-divider"></div>
+    <div style="padding:14px 16px;">
+      <label class="inp-label">Label (Home / Office / Other)</label>
+      <input class="inp" id="af_label" placeholder="e.g. Home" value="${addr?.label||''}"/>
+      <label class="inp-label">Address Line 1 *</label>
+      <input class="inp" id="af_line1" placeholder="House no., Street name" value="${addr?.line1||''}"/>
+      <label class="inp-label">Address Line 2</label>
+      <input class="inp" id="af_line2" placeholder="Mohalla, Landmark (optional)" value="${addr?.line2||''}"/>
+      <div class="form-row">
+        <div>
+          <label class="inp-label">City *</label>
+          <input class="inp" id="af_city" placeholder="City" value="${addr?.city||'Prayagraj'}"/>
+        </div>
+        <div>
+          <label class="inp-label">Pincode</label>
+          <input class="inp" id="af_pin" placeholder="211001" value="${addr?.pincode||''}" type="tel"/>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <div class="toggle ${addr?.is_default?'on':''}" id="af_default" onclick="this.classList.toggle('on')"><div class="toggle-dot"></div></div>
+        <span style="font-size:0.8rem;font-weight:600;">Set as default address</span>
+      </div>
+      <button class="save-btn" onclick="saveAddress(${addr?`'${addr.id}'`:'null'})">💾 Save Address</button>
+      <div style="height:10px;"></div>
+      <button class="cancel-btn" onclick="renderAddresses($('pageWrap'))">Cancel</button>
+    </div>
+  </div>`;
+}
+
+function showAddAddrForm(){
+  $('addrFormWrap').innerHTML=addrFormHTML();
+  $('addrFormWrap').scrollIntoView({behavior:'smooth'});
+}
+
+function editAddr(id){
+  const a=STATE.addresses.find(x=>x.id===id);
+  if(!a)return;
+  $('addrFormWrap').innerHTML=addrFormHTML(a);
+  $('addrFormWrap').scrollIntoView({behavior:'smooth'});
+}
+
+async function saveAddress(id){
+  const line1=$('af_line1').value.trim();
+  const city=$('af_city').value.trim();
+  if(!line1||!city){showToast('Address aur city zaroori hai!');return;}
+  const isDefault=$('af_default').classList.contains('on');
+  const payload={label:$('af_label').value||'Home',line1,line2:$('af_line2').value,city,pincode:$('af_pin').value,is_default:isDefault,id:id||undefined};
+  if(window.RKProfile){
+    const saved=await window.RKProfile.saveAddress(STATE.user.id,payload);
+    if(saved){showToast('Address save ho gaya! 📍');STATE.addresses=await loadAddresses();renderAddresses($('pageWrap'));}
+    else showToast('Error! Dobara try karo.');
+  }
+}
+
+async function deleteAddr(id){
+  if(!confirm('Yeh address delete karein?'))return;
+  if(window.RKProfile){
+    await window.RKProfile.deleteAddress(STATE.user.id,id);
+    STATE.addresses=await loadAddresses();
+    renderAddresses($('pageWrap'));
+    showToast('Address delete ho gaya!');
+  }
+}
+
+async function setDefaultAddr(id){
+  if(window.RKProfile){
+    await window.RKProfile.setDefaultAddress(STATE.user.id,id);
+    STATE.addresses=await loadAddresses();
+    renderAddresses($('pageWrap'));
+    showToast('Default address set ho gaya! ✅');
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// PROFILE TAB
+// ════════════════════════════════════════════════════════════
+function renderProfile(wrap){
+  const p=STATE.profile||{};
+  wrap.innerHTML=`
+  <div class="full-width">
+    <div class="sec-card">
+      <div class="sec-head"><div class="sec-title">👤 Edit Profile</div></div>
+      <div class="sec-divider"></div>
+      <div class="profile-form">
+        <div style="height:14px;"></div>
+        <label class="inp-label">Profile Photo</label>
+        <div class="avatar-upload" onclick="$('avatarInput').click()">
+          <div class="avatar-big" id="profileAvatarPreview">
+            ${p.avatar_url?`<img src="${p.avatar_url}" alt=""/>`:(p.name?p.name[0].toUpperCase():'👤')}
+          </div>
+          <div class="avatar-upload-info">
+            <div class="avatar-upload-title">📷 Photo Change Karo</div>
+            <div class="avatar-upload-sub">JPG, PNG • Max 2MB</div>
+          </div>
+        </div>
+        <input type="file" id="avatarInput" accept="image/*" style="display:none;" onchange="previewAvatar(this)"/>
+
+        <label class="inp-label">Full Name *</label>
+        <input class="inp" id="pf_name" value="${p.name||''}" placeholder="Aapka naam"/>
+        <label class="inp-label">Email</label>
+        <input class="inp" id="pf_email" value="${p.email||''}" placeholder="Email" style="background:#F0F0F0;color:var(--gray);" readonly/>
+        <label class="inp-label">Phone Number</label>
+        <input class="inp" id="pf_phone" value="${p.phone||''}" placeholder="10-digit mobile number" type="tel" maxlength="10"/>
+        <div style="background:var(--light);border-radius:10px;padding:12px;margin-bottom:14px;font-size:0.75rem;color:var(--gray);">
+          📅 Member since: <b style="color:var(--dark);">${memberSince(p.created_at||STATE.user.created_at)}</b>
+        </div>
+        <button class="save-btn" onclick="saveProfile()">💾 Profile Save Karo</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function previewAvatar(input){
+  const file=input.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const prev=$('profileAvatarPreview');
+    prev.innerHTML=`<img src="${e.target.result}" alt=""/>`;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function saveProfile(){
+  const name=$('pf_name').value.trim();
+  const phone=$('pf_phone').value.trim();
+  if(!name){showToast('Naam zaroori hai!');return;}
+
+  let avatar_url=STATE.profile?.avatar_url||null;
+  const avatarFile=$('avatarInput').files[0];
+  if(avatarFile){
+    const ext=avatarFile.name.split('.').pop();
+    const path=`avatars/${STATE.user.id}.${ext}`;
+    const {error:upErr}=await sb.storage.from('avatars').upload(path,avatarFile,{upsert:true});
+    if(!upErr){
+      const {data:urlData}=sb.storage.from('avatars').getPublicUrl(path);
+      avatar_url=urlData.publicUrl;
+    }
+  }
+
+  if(window.RKProfile){
+    const updated=await window.RKProfile.updateProfile(STATE.user.id,{name,phone,avatar_url});
+    if(updated){
+      STATE.profile=updated;
+      showToast('Profile update ho gaya! ✅');
+    } else {
+      // Upsert if update failed
+      const {error}=await sb.from('profiles').upsert({id:STATE.user.id,name,phone,avatar_url,email:STATE.user.email,updated_at:new Date().toISOString()});
+      if(!error){STATE.profile={...STATE.profile,name,phone,avatar_url};showToast('Profile save ho gaya! ✅');}
+      else showToast('Error! Dobara try karo.');
+    }
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// WISHLIST TAB
+// ════════════════════════════════════════════════════════════
+function renderWishlist(wrap){
+  wrap.innerHTML=`
+  <div class="full-width">
+    <div class="sec-card">
+      <div class="sec-head"><div class="sec-title">❤️ My Wishlist (${STATE.wishlist.length})</div></div>
+      <div class="sec-divider"></div>
+      ${STATE.wishlist.length
+        ?STATE.wishlist.map(w=>`
+          <div class="wish-card" id="wish-${w.id}">
+            <div class="wish-emoji">${w.emoji||'🛒'}</div>
+            <div class="wish-info">
+              <div class="wish-name">${w.name}</div>
+              <div class="wish-unit">${w.unit||''}</div>
+              <div class="wish-price">₹${w.price}</div>
+            </div>
+            <div class="wish-actions">
+              <button class="wish-add-btn" onclick="addWishToCart('${w.id}')">🛒 Add</button>
+              <button class="wish-del-btn" onclick="removeWish('${w.id}')">🗑️</button>
+            </div>
+          </div>`).join('')
+        :`<div class="empty-state"><div class="empty-icon">❤️</div><div class="empty-title">Wishlist khali hai</div><div class="empty-sub">Products par ❤️ tap karo wishlist mein add karne ke liye</div></div>`
+      }
+    </div>
+  </div>`;
+}
+
+async function addWishToCart(wishId){
+  const w=STATE.wishlist.find(x=>x.id===wishId);
+  if(!w||!window.RKCart)return;
+  await window.RKCart.addToCart({id:w.product_id,name:w.name,unit:w.unit,price:w.price,e:w.emoji,cat:w.category});
+  showToast(`${w.name} cart mein add! 🛒`);
+}
+
+async function removeWish(wishId){
+  const {error}=await sb.from('wishlist').delete().eq('id',wishId).eq('user_id',STATE.user.id);
+  if(!error){STATE.wishlist=STATE.wishlist.filter(w=>w.id!==wishId);renderWishlist($('pageWrap'));showToast('Wishlist se hata diya');}
+}
+
+// ════════════════════════════════════════════════════════════
+// NOTIFICATIONS TAB
+// ════════════════════════════════════════════════════════════
+function notifIcon(type){
+  const map={offer:'🎁',order:'📦',delivery:'🚴',stock:'📢',system:'ℹ️'};
+  return map[type]||'🔔';
+}
+function notifColor(type){
+  const map={offer:'#FFF3E0',order:'#E3F2FD',delivery:'#F3E5F5',stock:'#E8F8F1',system:'#F7FAFC'};
+  return map[type]||'#F7FAFC';
+}
+
+function renderNotifications(wrap){
+  const unread=STATE.notifications.filter(n=>!n.is_read);
+  wrap.innerHTML=`
+  <div class="full-width">
+    <div class="sec-card">
+      <div class="sec-head">
+        <div class="sec-title">🔔 Notifications ${unread.length?`<span style="background:var(--red);color:#fff;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:0.65rem;">${unread.length}</span>`:''}</div>
+        ${unread.length?`<button class="sec-action" onclick="markAllRead()">Mark All Read</button>`:''}
+      </div>
+      <div class="sec-divider"></div>
+      ${STATE.notifications.length
+        ?STATE.notifications.map(n=>`
+          <div class="notif-card ${!n.is_read?'unread':''}" onclick="markRead('${n.id}')">
+            <div class="notif-icon" style="background:${notifColor(n.type)}">${notifIcon(n.type)}</div>
+            <div class="notif-body">
+              <div class="notif-title">${n.title||'Notification'}</div>
+              <div class="notif-msg">${n.message||''}</div>
+              <div class="notif-time">${fmtTime(n.created_at)}</div>
+            </div>
+            ${!n.is_read?`<div class="notif-dot"></div>`:`<div class="notif-dot read"></div>`}
+          </div>`).join('')
+        :`<div class="empty-state"><div class="empty-icon">🔔</div><div class="empty-title">Koi notification nahi</div><div class="empty-sub">Offers aur order updates yahan aayenge</div></div>`
+      }
+    </div>
+  </div>`;
+}
+
+async function markRead(id){
+  await sb.from('notifications').update({is_read:true}).eq('id',id);
+  const n=STATE.notifications.find(x=>x.id===id);
+  if(n)n.is_read=true;
+  renderNotifications($('pageWrap'));
+}
+
+async function markAllRead(){
+  await sb.from('notifications').update({is_read:true}).eq('user_id',STATE.user.id).eq('is_read',false);
+  STATE.notifications.forEach(n=>n.is_read=true);
+  renderNotifications($('pageWrap'));
+  showToast('Sab notifications read mark ho gaye ✅');
+}
+
+// ════════════════════════════════════════════════════════════
+// REWARDS TAB
+// ════════════════════════════════════════════════════════════
+function renderRewards(wrap){
+  const totalOrders=STATE.orders.length;
+  const deliveredOrders=STATE.orders.filter(o=>o.status==='delivered').length;
+  const pts=deliveredOrders*10;
+  const savings=STATE.orders.reduce((s,o)=>s+(o.discount||0),0);
+  const refCode='RINKU'+STATE.user.id.slice(0,6).toUpperCase();
+  const nextTarget=totalOrders<5?5:totalOrders<20?20:50;
+  const progress=Math.min((totalOrders/nextTarget)*100,100);
+  const loyalty=loyaltyLevel(totalOrders);
+
+  wrap.innerHTML=`
+  <div class="full-width">
+    <!-- REWARDS CARD -->
+    <div class="sec-card">
+      <div class="sec-head"><div class="sec-title">⭐ Reward Points</div></div>
+      <div class="sec-divider"></div>
+      <div class="rewards-card" style="margin:14px 16px;">
+        <div class="reward-pts" id="rwPts">0</div>
+        <div class="reward-label">Total Points Earned</div>
+        <div class="reward-bar-wrap"><div class="reward-bar" id="rwBar" style="width:0%"></div></div>
+        <div class="reward-progress-txt">
+          <span>${loyalty.label}</span>
+          <span>${totalOrders}/${nextTarget} orders</span>
+        </div>
+        <div class="reward-chips">
+          <div class="reward-chip"><div class="reward-chip-val">${deliveredOrders}</div><div class="reward-chip-label">Orders Done</div></div>
+          <div class="reward-chip"><div class="reward-chip-val">${fmt(savings)}</div><div class="reward-chip-label">Total Saved</div></div>
+          <div class="reward-chip"><div class="reward-chip-val">${pts}</div><div class="reward-chip-label">Points</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REFER & EARN -->
+    <div class="sec-card">
+      <div class="sec-head"><div class="sec-title">🎁 Refer & Earn</div></div>
+      <div class="sec-divider"></div>
+      <div class="referral-box" style="margin:14px 16px;">
+        <div style="font-size:0.82rem;font-weight:700;color:#E65100;">Dost ko refer karo, dono ko ₹30 cashback!</div>
+        <div class="ref-code-wrap">
+          <span class="ref-code">${refCode}</span>
+          <button class="ref-copy-btn" onclick="copyRef('${refCode}')">📋 Copy</button>
+        </div>
+        <div style="font-size:0.72rem;color:#F57C00;margin-bottom:10px;">Apna referral code share karo • Min order ₹199</div>
+        <button class="ref-share-btn" onclick="shareRef('${refCode}')">📤 WhatsApp Par Share Karo</button>
+      </div>
+    </div>
+
+    <!-- HOW IT WORKS -->
+    <div class="sec-card">
+      <div class="sec-head"><div class="sec-title">ℹ️ Points Kaise Milenge?</div></div>
+      <div class="sec-divider"></div>
+      <div style="padding:14px 16px;">
+        ${[
+          {i:'🛒',t:'Order Karo',s:'Har delivered order = 10 points'},
+          {i:'👥',t:'Refer Karo',s:'Dost ka pehla order = 50 bonus points'},
+          {i:'⭐',t:'Redeem Karo',s:'100 points = ₹10 discount (coming soon)'},
+        ].map(r=>`
+          <div style="display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid #F7FAFC;">
+            <div style="width:40px;height:40px;background:var(--primary-light);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;">${r.i}</div>
+            <div><div style="font-size:0.82rem;font-weight:700;">${r.t}</div><div style="font-size:0.7rem;color:var(--gray);margin-top:2px;">${r.s}</div></div>
+          </div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+
+  setTimeout(()=>{
+    animCount($('rwPts'),pts);
+    const bar=$('rwBar');
+    if(bar)setTimeout(()=>bar.style.width=progress+'%',200);
+  },100);
+}
+
+function copyRef(code){
+  navigator.clipboard.writeText(code).then(()=>showToast('Code copy ho gaya! 📋'));
+}
+function shareRef(code){
+  const txt=`Rinku Kirana par order karo! Mera referral code use karo: ${code}\nDono ko ₹30 cashback milega 🎉\nhttps://rinkukirana.com`;
+  if(navigator.share){navigator.share({title:'Rinku Kirana',text:txt});}
+  else{window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`);}
+}
+
+// ════════════════════════════════════════════════════════════
+// SETTINGS TAB
+// ════════════════════════════════════════════════════════════
+function renderSettings(wrap){
+  const rows=[
+    {icon:'🔒',bg:'#EBF8FF',label:'Change Password',sub:'Password update karo',action:"window.location.href='forgot-password.html'"},
+    {icon:'🔔',bg:'#FFF3E0',label:'Notifications',sub:'Offers aur updates manage karo',action:'toggleNotifSettings()'},
+    {icon:'👤',bg:'#F0FDF4',label:'Edit Profile',sub:'Name, phone update karo',action:"switchTab('profile')"},
+    {icon:'📍',bg:'#F3E5F5',label:'Manage Addresses',sub:'Delivery addresses',action:"switchTab('addresses')"},
+    {icon:'🛍️',bg:'#E3F2FD',label:'Order History',sub:'Purane orders dekhein',action:"switchTab('orders')"},
+    {icon:'⭐',bg:'#FFFDE7',label:'Rewards & Referral',sub:'Points aur cashback',action:"switchTab('rewards')"},
+    {icon:'📱',bg:'#F0FDF4',label:'App Version',sub:'v1.0.0 • Rinku Kirana',action:''},
+  ];
+  wrap.innerHTML=`
+  <div class="full-width">
+    <div class="sec-card">
+      <div class="sec-head"><div class="sec-title">⚙️ Settings</div></div>
+      <div class="sec-divider"></div>
+      ${rows.map(r=>`
+        <div class="settings-row" onclick="${r.action}">
+          <div class="settings-left">
+            <div class="settings-icon" style="background:${r.bg}">${r.icon}</div>
+            <div><div class="settings-label">${r.label}</div><div class="settings-sub">${r.sub}</div></div>
+          </div>
+          <div class="settings-arrow">›</div>
+        </div>`).join('')}
+    </div>
+
+    <!-- SAVED PAYMENTS -->
+    <div class="sec-card">
+      <div class="sec-head"><div class="sec-title">💳 Payment Methods</div></div>
+      <div class="sec-divider"></div>
+      <div class="payment-row">
+        <div class="payment-icon-box" style="background:#E8F5E9">💵</div>
+        <div class="payment-info"><div class="payment-name">Cash on Delivery</div><div class="payment-sub">Ghar pe cash dena</div></div>
+        <div class="payment-badge">Active</div>
+      </div>
+      <div class="payment-row">
+        <div class="payment-icon-box" style="background:#E3F2FD">📱</div>
+        <div class="payment-info"><div class="payment-name">UPI / QR Code</div><div class="payment-sub">rinkukirana@upi</div></div>
+        <div class="payment-badge">Active</div>
+      </div>
+    </div>
+
+    <!-- LOGOUT -->
+    <div class="sec-card">
+      <div style="padding:16px;">
+        <button onclick="handleLogout()" style="width:100%;background:#FEF2F2;color:var(--red);padding:14px;border-radius:12px;font-weight:800;font-size:0.9rem;border:1.5px solid #FECACA;cursor:pointer;">🚪 Logout</button>
+      </div>
+    </div>
+
+    <div style="text-align:center;font-size:0.7rem;color:#A0AEC0;padding:8px 0 20px;">
+      🛒 Rinku Kirana Store • Prayagraj<br/>📞 6393196765 • v1.0.0
+    </div>
+  </div>`;
+}
+
+async function handleLogout(){
+  if(!confirm('Logout karna chahte hain?'))return;
+  await sb.auth.signOut();
+  window.location.href='index.html';
+}
+
+// ════════════════════════════════════════════════════════════
+// MODAL
+// ════════════════════════════════════════════════════════════
+function showModal(html){
+  $('modalContainer').innerHTML=`<div class="modal-bg" onclick="closeModal()"><div class="modal" onclick="event.stopPropagation()">${html}</div></div>`;
+}
+function closeModal(){$('modalContainer').innerHTML='';}
+
+// ── Utility ──────────────────────────────────────────────────
+function switchTab(tab){
+  STATE.activeTab=tab;
+  document.querySelectorAll('.dash-tab').forEach(t=>{
+    t.classList.toggle('on',t.dataset.tab===tab);
+  });
+  renderTab(tab);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ── BOOT ─────────────────────────────────────────────────────
+if(window.RKCart)window.RKCart.init();
+loadAll();
+</script>
+<script src="/pwa.js?v=1"></script>
+</body>
+</html>
