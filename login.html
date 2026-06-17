@@ -26,7 +26,7 @@
 
     <!-- Brand Bar -->
     <div class="brand-bar">
-      <a href="../index.html" class="brand-logo">
+      <a href="index.html" class="brand-logo">
         <div class="brand-icon">🛒</div>
         <div>
           <div class="brand-name">rinku<span>.</span></div>
@@ -147,7 +147,7 @@
   </div>
 </div>
 
-<script src="auth.js"></script>
+<script src="auth.js?v=2"></script>
 <script>
 const { showMsg, hideMsg, setLoading, redirectIfLoggedIn, doLogin, friendlyError } = window.RKAuth;
 
@@ -198,7 +198,7 @@ async function handleLogin() {
     showMsg(sucEl, 'success', `Welcome back, <b>${data.user?.user_metadata?.name || email.split('@')[0]}</b>! 🎉 Redirect ho rahe hain…`);
     setLoading(btn, false, '✅ Login Ho Gaya!');
     setTimeout(() => {
-      window.location.href = '../index.html';
+      window.location.href = 'index.html';
     }, 1200);
   }
 }
