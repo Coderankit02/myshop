@@ -7,7 +7,12 @@
 const SUPABASE_URL     = 'https://pffaflasgwhydkmxwkky.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable__tFDYhkM3blZ0pIVT0YxLA_YvkKq79L';
 const { createClient } = window.supabase;
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+window.rkSupabase =
+  window.rkSupabase ||
+  createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const supabase = window.rkSupabase;
 
 // ── SESSION HELPERS ───────────────────────────
 async function getSession() {
