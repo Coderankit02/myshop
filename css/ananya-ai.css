@@ -444,34 +444,6 @@
 .ananya-typing-dot:nth-child(2) { animation-delay: 0.2s; }
 .ananya-typing-dot:nth-child(3) { animation-delay: 0.4s; }
 
-/* ── Quick Replies ── */
-.ananya-quick-replies {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-  padding: 0 14px 12px;
-}
-
-.ananya-qr-btn {
-  padding: 7px 13px;
-  border-radius: 20px;
-  border: 1.5px solid var(--ananya-primary);
-  background: transparent;
-  color: var(--ananya-primary);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: var(--ananya-transition);
-  white-space: nowrap;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.ananya-qr-btn:hover {
-  background: var(--ananya-primary);
-  color: white;
-  transform: translateY(-1px);
-}
-
 /* ── Input Area ── */
 .ananya-input-area {
   padding: 12px 14px 14px;
@@ -794,18 +766,21 @@
   }
 
   .ananya-input-area {
-    padding-bottom: calc(14px + env(safe-area-inset-bottom));
+    padding-bottom: max(20px, calc(14px + env(safe-area-inset-bottom)));
   }
 
+  /* Lifted above the store's own bottom nav bar (Home/Shop/Cart/Account)
+     so the chat bubble never sits on top of it. Adjust this value if your
+     bottom nav bar height is different. */
   #ananya-trigger {
-    bottom: calc(16px + env(safe-area-inset-bottom));
+    bottom: calc(88px + env(safe-area-inset-bottom));
     right: 16px;
     width: 58px;
     height: 58px;
   }
 
   .ananya-trigger-label {
-    bottom: calc(82px + env(safe-area-inset-bottom));
+    bottom: calc(154px + env(safe-area-inset-bottom));
     right: 20px;
   }
 }
