@@ -1,21 +1,20 @@
 /*!
  * ANANYA AI - Smart Shopping Assistant
  * Rinku Kirana Store
- * Version: 2.0 FREE — Zero paid APIs
- * Auto-initializes on any page.
+ * Version: 3.0 PREMIUM — WhatsApp-style Chat
+ * UI redesigned. Business logic untouched.
  */
 (function () {
   'use strict';
 
   /* ══════════════════════════════════════════════════════
-     CONFIG — Sirf in values ko apne store ke hisaab se
-     change karein. Koi API key nahi chahiye!
+     CONFIG — unchanged
   ══════════════════════════════════════════════════════ */
   const CONFIG = {
     storeName:      'Rinku Kirana Store',
     whatsappNumber: '916393196765',
-    supabaseUrl:    'YOUR_SUPABASE_URL',      // ← Supabase project URL (free)
-    supabaseKey:    'YOUR_SUPABASE_ANON_KEY', // ← Supabase anon key (free)
+    supabaseUrl:    'YOUR_SUPABASE_URL',
+    supabaseKey:    'YOUR_SUPABASE_ANON_KEY',
 
     storeInfo: {
       timings:   'Monday–Saturday: 8 AM – 9 PM | Sunday: 9 AM – 7 PM',
@@ -60,7 +59,6 @@
       { icon: '🎁', title: 'Current Offer',   body: 'WELCOME10 — 10% OFF\non your first order!' },
     ],
 
-    /* ─── Keyword → Response Map ─── */
     intents: [
       {
         keys: ['timing','time','open','close','band','kab khula','kab band','schedule','hours','khula'],
@@ -156,7 +154,7 @@
   };
 
   /* ══════════════════════════════════════════
-     STATE
+     STATE — unchanged
   ══════════════════════════════════════════ */
   const state = {
     isOpen:        false,
@@ -172,19 +170,17 @@
   };
 
   /* ══════════════════════════════════════════
-     THEME — auto light/dark based on device,
-     no manual switcher shown to the user.
+     THEME — unchanged
   ══════════════════════════════════════════ */
   function applyTheme() {
     const isDark = window.matchMedia('(prefers-color-scheme:dark)').matches;
     const el = document.getElementById('ananya-widget');
     if (el) el.setAttribute('data-ananya-theme', isDark ? 'dark' : 'light');
   }
-
   window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change', applyTheme);
 
   /* ══════════════════════════════════════════
-     SUPABASE — Free tier only
+     SUPABASE — unchanged
   ══════════════════════════════════════════ */
   async function initSupabase() {
     try {
@@ -222,7 +218,6 @@
       content: text,
       created_at: new Date().toISOString(),
     }).catch(() => {});
-    // update last_message on session
     await state.supabase.from('ananya_chat_sessions').update({
       last_message: text.slice(0, 100),
       updated_at: new Date().toISOString(),
@@ -242,29 +237,23 @@
   }
 
   /* ══════════════════════════════════════════
-     SMART FREE AI — Keyword Intent Matching
+     SMART FREE AI — unchanged
   ══════════════════════════════════════════ */
   function getSmartReply(userMsg) {
     const msg = userMsg.toLowerCase().trim();
-
-    // Check all intents
     for (const intent of CONFIG.intents) {
       if (intent.keys.some(k => msg.includes(k))) {
         return intent.reply(CONFIG);
       }
     }
-
-    // Partial word matching (for Hinglish)
     if (/ky[ao]|kaise|kab|kahan|kitna|kaun/.test(msg)) {
       return `Hmm, mujhe exactly samajh nahi aaya 🤔\n\nKya aap in topics mein se kuch pooch rahe hain?\n\n🕐 Timings  🚚 Delivery  💳 Payment\n↩️ Returns  📞 Contact  🎁 Offers\n\nYa seedha WhatsApp karein — hum help karenge! 😊`;
     }
-
-    // Default fallback
     return `Mujhe is sawaal ka exact jawab abhi nahi pata 😊\n\nMain in topics mein help kar sakti hoon:\n🕐 Store Timings\n🚚 Delivery Info\n💳 Payment Methods\n↩️ Return Policy\n🎁 Offers & Discounts\n📞 Contact Us\n\nYa seedha hamare WhatsApp par poochein:\n📲 +91 63931 96765`;
   }
 
   /* ══════════════════════════════════════════
-     RENDER HELPERS
+     RENDER HELPERS — REDESIGNED (WhatsApp style)
   ══════════════════════════════════════════ */
   function timeStr() {
     return new Date().toLocaleTimeString('en-IN', {
@@ -279,35 +268,43 @@
     const msgDiv = document.createElement('div');
     msgDiv.className = `ananya-msg ${role}`;
 
-    const avatarDiv = document.createElement('div');
-    avatarDiv.className = 'ananya-msg-avatar';
-    avatarDiv.textContent = role === 'bot' ? '🌸' : '👤';
+    // Sender name for bot (WhatsApp group style)
+    if (role === 'bot') {
+      const nameEl = document.createElement('div');
+      nameEl.className = 'ananya-sender-name';
+      nameEl.textContent = '🌸 Ananya';
+      msgDiv.appendChild(nameEl);
+    }
 
-    const contentDiv = document.createElement('div');
-    contentDiv.className = 'ananya-msg-content';
-
+    // Bubble
     const bubble = document.createElement('div');
     bubble.className = 'ananya-bubble';
     bubble.style.whiteSpace = 'pre-wrap';
     bubble.textContent = text;
+    msgDiv.appendChild(bubble);
 
-    const timeEl = document.createElement('div');
+    // Meta row: time + ticks
+    const meta = document.createElement('div');
+    meta.className = 'ananya-msg-meta';
+
+    const timeEl = document.createElement('span');
     timeEl.className = 'ananya-msg-time';
     timeEl.textContent = timeStr();
-
-    contentDiv.appendChild(bubble);
-    contentDiv.appendChild(timeEl);
+    meta.appendChild(timeEl);
 
     if (role === 'user') {
-      const seen = document.createElement('div');
-      seen.className = 'ananya-seen delivered';
-      seen.textContent = '✓ Sent';
-      contentDiv.appendChild(seen);
-      setTimeout(() => { seen.className = 'ananya-seen seen'; seen.textContent = '✓✓ Seen'; }, 1200);
+      const ticks = document.createElement('span');
+      ticks.className = 'ananya-ticks';
+      ticks.textContent = '✓';
+      meta.appendChild(ticks);
+      // Simulate "seen" after 1.2s
+      setTimeout(() => {
+        ticks.textContent = '✓✓';
+        ticks.classList.add('seen');
+      }, 1200);
     }
 
-    msgDiv.appendChild(avatarDiv);
-    msgDiv.appendChild(contentDiv);
+    msgDiv.appendChild(meta);
     container.appendChild(msgDiv);
     container.scrollTop = container.scrollHeight;
 
@@ -327,7 +324,7 @@
     el.id = 'ananya-typing-indicator';
     el.className = 'ananya-typing';
     el.innerHTML = `
-      <div class="ananya-msg-avatar" style="font-size:18px">🌸</div>
+      <div class="ananya-msg-avatar">🌸</div>
       <div class="ananya-typing-bubble">
         <div class="ananya-typing-dot"></div>
         <div class="ananya-typing-dot"></div>
@@ -353,7 +350,7 @@
   }
 
   /* ══════════════════════════════════════════
-     SEND MESSAGE
+     SEND MESSAGE — unchanged
   ══════════════════════════════════════════ */
   async function sendMessage(text) {
     text = (text || '').trim();
@@ -368,18 +365,15 @@
     state.isTyping = true;
     showTyping();
 
-    // Realistic delay: 700ms–1.4s
     await new Promise(r => setTimeout(r, 700 + Math.random() * 700));
 
     const reply = getSmartReply(text);
-
     removeTyping();
     state.isTyping = false;
 
     appendMessage('bot', reply);
     saveMessage('assistant', reply);
 
-    // Show WhatsApp banner after 5 messages
     if (state.messages.filter(m => m.role === 'user').length >= 3
         && !document.querySelector('.ananya-whatsapp-banner-inline')) {
       showWhatsappBanner();
@@ -406,7 +400,7 @@
   }
 
   /* ══════════════════════════════════════════
-     BUILD HTML WIDGET
+     BUILD HTML WIDGET — redesigned markup only
   ══════════════════════════════════════════ */
   function buildWidget() {
     /* Trigger Button */
@@ -428,7 +422,7 @@
     const faqHTML = CONFIG.faqs.map((f, i) => `
       <div class="ananya-faq-item" data-idx="${i}">
         <div class="ananya-faq-q">${f.q}<span class="faq-icon">+</span></div>
-        <div class="ananya-faq-a">${f.a.replace(/\n/g,'<br>')}</div>
+        <div class="ananya-faq-a">${f.a.replace(/\n/g, '<br>')}</div>
       </div>`).join('');
 
     /* Info cards */
@@ -451,8 +445,8 @@
       <div class="ananya-header">
         <div class="ananya-header-avatar">🌸</div>
         <div class="ananya-header-info">
-          <div class="ananya-header-name">🌸 Ananya AI</div>
-          <div class="ananya-header-status">Online · Smart Shopping Assistant</div>
+          <div class="ananya-header-name">Ananya AI</div>
+          <div class="ananya-header-status">Online · Shopping Assistant</div>
         </div>
         <div class="ananya-header-actions">
           <button class="ananya-header-btn" id="ananya-close-btn" title="Close" aria-label="Close">✕</button>
@@ -480,11 +474,16 @@
             <textarea
               id="ananya-input"
               class="ananya-input"
-              placeholder="Kuch poochein... jaise 'delivery kab hogi?'"
+              placeholder="Message..."
               rows="1"
               aria-label="Message input"
             ></textarea>
-            <button class="ananya-send-btn" id="ananya-send-btn" aria-label="Send">➤</button>
+            <button class="ananya-send-btn" id="ananya-send-btn" aria-label="Send">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
           </div>
         </div>
       </div>
@@ -500,11 +499,11 @@
         <a class="ananya-whatsapp-banner"
            href="https://wa.me/${CONFIG.whatsappNumber}?text=Namaste! Rinku Kirana Store se help chahiye."
            target="_blank" rel="noopener noreferrer"
-           style="margin:0 14px 14px; display:flex;">
+           style="margin:0 12px 12px; display:flex;">
           <span class="ananya-whatsapp-icon">💬</span>
           <div class="ananya-whatsapp-text">
             <strong>WhatsApp Support</strong>
-            <span>Seedha humse baat karein — +91 63931 96765</span>
+            <span>+91 63931 96765 par connect karein</span>
           </div>
           <span class="ananya-whatsapp-arrow">→</span>
         </a>
@@ -516,13 +515,12 @@
   }
 
   /* ══════════════════════════════════════════
-     EVENTS
+     EVENTS — unchanged
   ══════════════════════════════════════════ */
   function bindEvents() {
     document.getElementById('ananya-trigger').addEventListener('click', toggleWidget);
     document.getElementById('ananya-close-btn').addEventListener('click', closeWidget);
 
-    // Click outside to close
     document.addEventListener('click', e => {
       const w = document.getElementById('ananya-widget');
       const t = document.getElementById('ananya-trigger');
@@ -531,17 +529,14 @@
       }
     });
 
-    // Tabs
     document.querySelectorAll('.ananya-tab').forEach(tab => {
       tab.addEventListener('click', () => switchTab(tab.dataset.tab));
     });
 
-    // Send
     document.getElementById('ananya-send-btn').addEventListener('click', () => {
       sendMessage(document.getElementById('ananya-input').value);
     });
 
-    // Enter key
     document.getElementById('ananya-input').addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -549,13 +544,11 @@
       }
     });
 
-    // Auto-resize textarea
     document.getElementById('ananya-input').addEventListener('input', function () {
       this.style.height = 'auto';
       this.style.height = Math.min(this.scrollHeight, 100) + 'px';
     });
 
-    // FAQ accordion
     document.querySelectorAll('.ananya-faq-item').forEach(item => {
       item.querySelector('.ananya-faq-q').addEventListener('click', () => {
         const isOpen = item.classList.contains('open');
@@ -564,14 +557,13 @@
       });
     });
 
-    // Escape key
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape' && state.isOpen) closeWidget();
     });
   }
 
   /* ══════════════════════════════════════════
-     OPEN / CLOSE / TABS
+     OPEN / CLOSE / TABS — unchanged
   ══════════════════════════════════════════ */
   function openWidget() {
     state.isOpen = true;
@@ -608,8 +600,7 @@
   }
 
   /* ══════════════════════════════════════════
-     INITIAL CONVERSATION (loaded on first open,
-     not on page load — feels like a real reply)
+     INITIAL CONVERSATION — unchanged
   ══════════════════════════════════════════ */
   async function loadInitialConversation() {
     const history = await loadHistory();
@@ -633,7 +624,7 @@
   }
 
   /* ══════════════════════════════════════════
-     INIT
+     INIT — unchanged
   ══════════════════════════════════════════ */
   async function init() {
     if (state.initialized) return;
@@ -646,7 +637,6 @@
     await initSupabase();
     await getOrCreateSession();
 
-    // Show label hint after 3s
     setTimeout(() => {
       if (!state.isOpen) {
         const lbl = document.querySelector('.ananya-trigger-label');
@@ -657,21 +647,18 @@
       }
     }, 3000);
 
-    // Auto-open on very first visit (after 6s)
     if (!localStorage.getItem('ananya-visited')) {
       localStorage.setItem('ananya-visited', '1');
       setTimeout(() => { if (!state.isOpen) openWidget(); }, 6000);
     }
   }
 
-  /* Run on DOM ready */
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
     init();
   }
 
-  /* Public API */
   window.AnanyaAI = {
     open: openWidget,
     close: closeWidget,
