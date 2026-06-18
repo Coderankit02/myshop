@@ -18,9 +18,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
 <style>
-/* ═══════════════════════════════════════════
-   RESET & ROOT
-═══════════════════════════════════════════ */
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 :root{
   --g1:#1BA672;--g2:#0D9488;--g3:#059669;
@@ -40,10 +37,6 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0F4F8;color:var(--tex
 button{cursor:pointer;border:none;outline:none;font-family:inherit;}
 input,select,textarea{outline:none;font-family:inherit;font-size:16px;}
 a{text-decoration:none;color:inherit;}
-
-/* ═══════════════════════════════════════════
-   TOP NAV
-═══════════════════════════════════════════ */
 .topnav{
   background:rgba(255,255,255,0.95);
   backdrop-filter:blur(12px);
@@ -64,10 +57,6 @@ a{text-decoration:none;color:inherit;}
 .topnav-title{font-size:.95rem;font-weight:800;color:var(--dark);letter-spacing:-.3px;}
 .logo-link{font-size:1.15rem;font-weight:900;color:var(--primary);}
 .logo-link span{color:var(--orange);}
-
-/* ═══════════════════════════════════════════
-   TABS BAR
-═══════════════════════════════════════════ */
 .tabs-bar{
   background:#fff;
   border-bottom:1px solid var(--border);
@@ -87,10 +76,6 @@ a{text-decoration:none;color:inherit;}
 .tab-btn:hover{color:var(--gray);}
 .tab-btn.on{color:var(--primary);border-bottom-color:var(--primary);}
 .tab-btn .tb-icon{font-size:.95rem;}
-
-/* ═══════════════════════════════════════════
-   PAGE LAYOUT
-═══════════════════════════════════════════ */
 .page{max-width:960px;margin:0 auto;padding:16px 16px 100px;}
 @media(min-width:768px){
   .page{padding:24px 28px 60px;}
@@ -99,10 +84,6 @@ a{text-decoration:none;color:inherit;}
   .page{display:grid;grid-template-columns:280px 1fr;gap:20px;align-items:start;}
   .col-sticky{position:sticky;top:110px;}
 }
-
-/* ═══════════════════════════════════════════
-   CARDS
-═══════════════════════════════════════════ */
 .card{background:#fff;border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);border:1px solid rgba(226,232,240,.6);overflow:hidden;margin-bottom:14px;}
 .card-head{
   display:flex;align-items:center;justify-content:space-between;
@@ -118,10 +99,6 @@ a{text-decoration:none;color:inherit;}
 }
 .card-action-btn:hover{background:var(--primary);color:#fff;}
 .card-body{padding:16px 18px;}
-
-/* ═══════════════════════════════════════════
-   HERO PROFILE CARD
-═══════════════════════════════════════════ */
 .hero-card{
   background:linear-gradient(135deg,#064E3B 0%,#065F46 35%,#1BA672 80%,#34D399 100%);
   border-radius:var(--radius-xl);padding:22px;margin-bottom:14px;
@@ -176,7 +153,6 @@ a{text-decoration:none;color:inherit;}
   border-radius:50px;padding:4px 12px;margin-top:8px;
 }
 .loyalty-pill span{font-size:.7rem;font-weight:800;color:#FFD700;}
-
 .hero-stats{
   display:grid;grid-template-columns:repeat(3,1fr);
   gap:8px;position:relative;z-index:1;
@@ -189,10 +165,6 @@ a{text-decoration:none;color:inherit;}
 }
 .hstat-val{font-size:1.05rem;font-weight:900;color:#fff;letter-spacing:-.5px;}
 .hstat-lbl{font-size:.6rem;color:rgba(255,255,255,0.65);font-weight:600;margin-top:2px;letter-spacing:.3px;}
-
-/* ═══════════════════════════════════════════
-   QUICK STATS GRID
-═══════════════════════════════════════════ */
 .stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:14px;}
 @media(min-width:480px){.stats-grid{grid-template-columns:repeat(6,1fr);}}
 .stat-tile{
@@ -206,10 +178,6 @@ a{text-decoration:none;color:inherit;}
 .stat-tile-icon{font-size:1.35rem;margin-bottom:5px;}
 .stat-tile-val{font-size:1rem;font-weight:900;color:var(--dark);letter-spacing:-.5px;}
 .stat-tile-lbl{font-size:.58rem;font-weight:700;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.4px;}
-
-/* ═══════════════════════════════════════════
-   ORDER ROWS
-═══════════════════════════════════════════ */
 .order-row{
   display:flex;gap:12px;align-items:flex-start;
   padding:14px 18px;border-bottom:1px solid #F8FAFC;
@@ -229,14 +197,12 @@ a{text-decoration:none;color:inherit;}
 .order-date{font-size:.66rem;color:var(--muted);margin-top:3px;}
 .order-right{text-align:right;flex-shrink:0;}
 .order-amt{font-size:.92rem;font-weight:800;color:var(--dark);}
-
 .badge{display:inline-block;padding:3px 10px;border-radius:50px;font-size:.6rem;font-weight:800;margin-top:4px;letter-spacing:.3px;}
 .badge-pending{background:#FEF9C3;color:#854D0E;}
 .badge-confirmed{background:#DBEAFE;color:#1D4ED8;}
 .badge-out_for_delivery{background:#F3E8FF;color:#7C3AED;}
 .badge-delivered{background:#DCFCE7;color:#166534;}
 .badge-cancelled{background:#FEE2E2;color:#DC2626;}
-
 .reorder-btn{
   margin-top:6px;background:var(--primary-light);color:var(--primary);
   border-radius:var(--radius-sm);padding:5px 11px;
@@ -244,10 +210,6 @@ a{text-decoration:none;color:inherit;}
   transition:all .2s;
 }
 .reorder-btn:hover{background:var(--primary);color:#fff;}
-
-/* ═══════════════════════════════════════════
-   ADDRESS CARDS
-═══════════════════════════════════════════ */
 .addr-row{
   display:flex;gap:12px;align-items:flex-start;
   padding:14px 18px;border-bottom:1px solid #F8FAFC;
@@ -275,10 +237,6 @@ a{text-decoration:none;color:inherit;}
 .addr-btn-del:hover{background:#FEE2E2;}
 .addr-btn-default{background:var(--primary-light);color:var(--primary);}
 .addr-btn-default:hover{background:var(--primary);color:#fff;}
-
-/* ═══════════════════════════════════════════
-   FORM ELEMENTS
-═══════════════════════════════════════════ */
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .field-group{margin-bottom:12px;}
 .field-label{font-size:.7rem;font-weight:700;color:var(--gray);margin-bottom:5px;display:block;letter-spacing:.3px;text-transform:uppercase;}
@@ -291,7 +249,6 @@ a{text-decoration:none;color:inherit;}
 .inp:focus{border-color:var(--primary);background:#fff;box-shadow:0 0 0 3px rgba(27,166,114,0.08);}
 .inp:read-only{background:#F1F5F9;color:var(--gray);cursor:not-allowed;}
 textarea.inp{resize:none;}
-
 .btn-primary{
   width:100%;padding:13px;
   background:linear-gradient(135deg,var(--primary),var(--primary-dark));
@@ -316,20 +273,12 @@ textarea.inp{resize:none;}
   font-size:.88rem;border:1.5px solid #FECACA;cursor:pointer;transition:all .2s;
 }
 .btn-danger:hover{background:#FEE2E2;}
-
-/* ═══════════════════════════════════════════
-   TOGGLE
-═══════════════════════════════════════════ */
 .toggle-wrap{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
 .toggle{width:46px;height:26px;background:#CBD5E1;border-radius:13px;position:relative;cursor:pointer;transition:background .3s;flex-shrink:0;}
 .toggle.on{background:var(--primary);}
 .toggle-dot{width:20px;height:20px;background:#fff;border-radius:50%;position:absolute;top:3px;left:3px;transition:left .3s;box-shadow:0 1px 4px rgba(0,0,0,0.2);}
 .toggle.on .toggle-dot{left:23px;}
 .toggle-label{font-size:.82rem;font-weight:600;color:var(--text);}
-
-/* ═══════════════════════════════════════════
-   WISHLIST
-═══════════════════════════════════════════ */
 .wish-row{
   display:flex;gap:12px;align-items:center;
   padding:13px 18px;border-bottom:1px solid #F8FAFC;
@@ -350,10 +299,6 @@ textarea.inp{resize:none;}
 .wish-add-btn{background:var(--primary);color:#fff;border-radius:var(--radius-sm);padding:6px 13px;font-size:.7rem;font-weight:700;border:none;cursor:pointer;transition:all .2s;}
 .wish-add-btn:hover{background:var(--primary-dark);}
 .wish-del-btn{background:#FEF2F2;color:var(--red);border-radius:var(--radius-sm);padding:5px 11px;font-size:.65rem;font-weight:700;border:none;cursor:pointer;}
-
-/* ═══════════════════════════════════════════
-   NOTIFICATIONS
-═══════════════════════════════════════════ */
 .notif-row{
   display:flex;gap:12px;align-items:flex-start;
   padding:13px 18px;border-bottom:1px solid #F8FAFC;
@@ -373,10 +318,6 @@ textarea.inp{resize:none;}
 .notif-time{font-size:.63rem;color:var(--muted);margin-top:4px;}
 .unread-dot{width:8px;height:8px;background:var(--primary);border-radius:50%;margin-top:6px;flex-shrink:0;}
 .read-dot{width:8px;height:8px;border-radius:50%;margin-top:6px;flex-shrink:0;}
-
-/* ═══════════════════════════════════════════
-   REWARDS
-═══════════════════════════════════════════ */
 .rewards-hero{
   background:linear-gradient(135deg,#1E1B4B,#312E81,#4F46E5);
   border-radius:var(--radius-lg);padding:20px;
@@ -393,8 +334,6 @@ textarea.inp{resize:none;}
 .rw-chip{background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.15);border-radius:var(--radius);padding:10px 14px;flex:1;min-width:72px;}
 .rw-chip-val{font-size:.92rem;font-weight:900;color:#fff;}
 .rw-chip-lbl{font-size:.6rem;color:rgba(255,255,255,0.65);margin-top:2px;}
-
-/* Referral */
 .referral-box{
   background:linear-gradient(135deg,#FFF7ED,#FED7AA);
   border-radius:var(--radius-lg);padding:16px 18px;
@@ -421,8 +360,6 @@ textarea.inp{resize:none;}
   transition:all .2s;
 }
 .ref-share-btn:hover{opacity:.9;}
-
-/* How it works rows */
 .how-row{
   display:flex;gap:12px;align-items:center;
   padding:11px 0;border-bottom:1px solid #F8FAFC;
@@ -431,10 +368,6 @@ textarea.inp{resize:none;}
 .how-icon{width:42px;height:42px;border-radius:var(--radius);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;}
 .how-title{font-size:.8rem;font-weight:700;color:var(--dark);}
 .how-sub{font-size:.68rem;color:var(--muted);margin-top:2px;}
-
-/* ═══════════════════════════════════════════
-   PROFILE FORM
-═══════════════════════════════════════════ */
 .avatar-upload-row{
   display:flex;align-items:center;gap:14px;
   background:var(--light);border-radius:var(--radius-lg);
@@ -451,10 +384,6 @@ textarea.inp{resize:none;}
 .avatar-big img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
 .avatar-upload-info-title{font-size:.82rem;font-weight:700;color:var(--dark);}
 .avatar-upload-info-sub{font-size:.7rem;color:var(--muted);margin-top:2px;}
-
-/* ═══════════════════════════════════════════
-   SETTINGS ROWS
-═══════════════════════════════════════════ */
 .settings-row{
   display:flex;align-items:center;justify-content:space-between;
   padding:14px 18px;border-bottom:1px solid #F8FAFC;
@@ -467,8 +396,6 @@ textarea.inp{resize:none;}
 .settings-label{font-size:.84rem;font-weight:700;color:var(--dark);}
 .settings-sub{font-size:.68rem;color:var(--muted);margin-top:1px;}
 .settings-arrow{color:var(--muted);font-size:.9rem;}
-
-/* Payment row */
 .payment-row{
   display:flex;align-items:center;gap:12px;
   padding:13px 18px;border-bottom:1px solid #F8FAFC;
@@ -479,10 +406,6 @@ textarea.inp{resize:none;}
 .payment-name{font-size:.82rem;font-weight:700;color:var(--dark);}
 .payment-sub{font-size:.68rem;color:var(--muted);margin-top:1px;}
 .active-badge{background:var(--primary-light);color:var(--primary);font-size:.6rem;font-weight:800;padding:3px 9px;border-radius:50px;}
-
-/* ═══════════════════════════════════════════
-   QUICK ACTIONS (Overview)
-═══════════════════════════════════════════ */
 .qa-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px 18px;}
 .qa-tile{
   background:var(--light);border-radius:var(--radius-lg);
@@ -493,10 +416,6 @@ textarea.inp{resize:none;}
 .qa-icon{font-size:1.6rem;margin-bottom:7px;}
 .qa-title{font-size:.78rem;font-weight:800;color:var(--dark);}
 .qa-sub{font-size:.64rem;color:var(--muted);margin-top:2px;}
-
-/* ═══════════════════════════════════════════
-   MODAL
-═══════════════════════════════════════════ */
 .modal-overlay{
   position:fixed;inset:0;background:rgba(15,23,42,0.55);
   z-index:500;backdrop-filter:blur(4px);
@@ -524,8 +443,6 @@ textarea.inp{resize:none;}
 }
 .modal-close:hover{background:#F1F5F9;color:var(--dark);}
 .modal-body{padding:20px;}
-
-/* Timeline */
 .tl{margin:0 0 20px;}
 .tl-item{display:flex;gap:12px;margin-bottom:10px;}
 .tl-dot{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0;}
@@ -536,8 +453,6 @@ textarea.inp{resize:none;}
 .tl-label{font-size:.8rem;font-weight:700;}
 .tl-label.waiting{color:var(--muted);}
 .tl-sub{font-size:.68rem;color:var(--muted);margin-top:1px;}
-
-/* Order item row in modal */
 .oi-row{
   display:flex;align-items:center;justify-content:space-between;
   padding:9px 0;border-bottom:1px solid #F8FAFC;
@@ -547,10 +462,6 @@ textarea.inp{resize:none;}
 .oi-name{font-size:.8rem;font-weight:700;}
 .oi-unit{font-size:.67rem;color:var(--muted);}
 .oi-total{font-size:.85rem;font-weight:800;color:var(--dark);}
-
-/* ═══════════════════════════════════════════
-   EMPTY STATE
-═══════════════════════════════════════════ */
 .empty-state{text-align:center;padding:36px 20px;}
 .empty-icon{font-size:3rem;margin-bottom:10px;}
 .empty-title{font-size:.88rem;font-weight:700;color:var(--dark);}
@@ -563,10 +474,6 @@ textarea.inp{resize:none;}
   cursor:pointer;border:none;transition:all .2s;
 }
 .empty-cta:hover{background:var(--primary-dark);}
-
-/* ═══════════════════════════════════════════
-   SKELETON LOADER
-═══════════════════════════════════════════ */
 .skeleton{
   background:linear-gradient(90deg,#F1F5F9 25%,#E2E8F0 50%,#F1F5F9 75%);
   background-size:200% 100%;
@@ -574,10 +481,6 @@ textarea.inp{resize:none;}
   border-radius:var(--radius-sm);
 }
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-
-/* ═══════════════════════════════════════════
-   TOAST
-═══════════════════════════════════════════ */
 .toast{
   position:fixed;bottom:calc(88px + env(safe-area-inset-bottom,0px));
   left:50%;transform:translateX(-50%);
@@ -591,10 +494,6 @@ textarea.inp{resize:none;}
 }
 @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(16px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 @media(min-width:768px){.toast{bottom:24px;}}
-
-/* ═══════════════════════════════════════════
-   BOTTOM NAV
-═══════════════════════════════════════════ */
 .bottom-nav{
   position:fixed;bottom:0;left:0;right:0;
   background:#fff;border-top:1px solid var(--border);
@@ -612,10 +511,6 @@ textarea.inp{resize:none;}
 .bn-icon{font-size:1.2rem;}
 .bn-label{font-size:.58rem;font-weight:700;letter-spacing:.3px;}
 @media(min-width:768px){.bottom-nav{display:none;}}
-
-/* ═══════════════════════════════════════════
-   LOADING PAGE
-═══════════════════════════════════════════ */
 #loadingPage{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   min-height:calc(100vh - 58px);gap:14px;
@@ -627,10 +522,6 @@ textarea.inp{resize:none;}
   animation:spin .8s linear infinite;
 }
 @keyframes spin{to{transform:rotate(360deg)}}
-
-/* ═══════════════════════════════════════════
-   MISC
-═══════════════════════════════════════════ */
 .divider{height:1px;background:var(--border);margin:0;}
 .section-label{font-size:.68rem;font-weight:700;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;margin-bottom:10px;}
 .info-box{background:#F0FDF9;border:1.5px solid #A7F3D0;border-radius:var(--radius);padding:12px 14px;font-size:.74rem;color:#065F46;line-height:1.6;}
@@ -697,6 +588,7 @@ textarea.inp{resize:none;}
 const SUPABASE_URL  = 'https://pffaflasgwhydkmxwkky.supabase.co';
 const SUPABASE_ANON = 'sb_publishable__tFDYhkM3blZ0pIVT0YxLA_YvkKq79L';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+window.sb = sb; // expose the real client so cart.js / profile.js / orders.js can use it via getDB()
 
 const STATE = {
   user: null, profile: null,
@@ -760,49 +652,84 @@ function animCount(el, target, dur = 900) {
    DATA LOADERS
 ═══════════════════════════════════════════ */
 async function boot() {
-  const { data: { session } } = await sb.auth.getSession();
-  if (!session?.user) { window.location.href = 'login.html'; return; }
-  STATE.user = session.user;
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session?.user) { window.location.href = 'login.html'; return; }
+    STATE.user = session.user;
 
-  const [profile, orders, addresses, wishlist, notifs] = await Promise.all([
-    loadProfile(), loadOrders(), loadAddresses(), loadWishlist(), loadNotifs()
-  ]);
-  STATE.profile      = profile;
-  STATE.orders       = orders;
-  STATE.addresses    = addresses;
-  STATE.wishlist     = wishlist;
-  STATE.notifications = notifs;
-  STATE.cartCount    = window.RKCart ? window.RKCart.getCount() : 0;
+    const results = await Promise.allSettled([
+      loadProfile(), loadOrders(), loadAddresses(), loadWishlist(), loadNotifs()
+    ]);
 
-  $('loadingPage').style.display = 'none';
-  $('app').style.display = 'block';
-  setupTabs();
-  renderTab('overview');
+    const [profileR, ordersR, addrR, wishR, notifR] = results;
+    STATE.profile       = profileR.status === 'fulfilled' ? profileR.value : fallbackProfile();
+    STATE.orders        = ordersR.status === 'fulfilled' ? ordersR.value : [];
+    STATE.addresses     = addrR.status === 'fulfilled' ? addrR.value : [];
+    STATE.wishlist      = wishR.status === 'fulfilled' ? wishR.value : [];
+    STATE.notifications = notifR.status === 'fulfilled' ? notifR.value : [];
+    STATE.cartCount     = window.RKCart ? window.RKCart.getCount() : 0;
+
+    results.forEach((r, i) => {
+      if (r.status === 'rejected') console.error('[Account] loader', i, 'failed:', r.reason);
+    });
+  } catch (err) {
+    console.error('[Account] boot failed:', err);
+    showToast('Kuch data load nahi ho paya, retry karo.');
+  } finally {
+    $('loadingPage').style.display = 'none';
+    $('app').style.display = 'block';
+    renderTab(STATE.activeTab);
+  }
+}
+
+function fallbackProfile() {
+  const meta = STATE.user?.user_metadata || {};
+  return {
+    id: STATE.user?.id, name: meta.name || STATE.user?.email?.split('@')[0] || 'User',
+    email: STATE.user?.email, phone: meta.phone || '', avatar_url: null,
+    created_at: STATE.user?.created_at,
+  };
 }
 
 async function loadProfile() {
-  if (window.RKProfile) return await window.RKProfile.loadProfile(STATE.user.id);
-  const { data } = await sb.from('profiles').select('*').eq('id', STATE.user.id).single();
-  if (data) return data;
-  const meta = STATE.user.user_metadata || {};
-  return { id: STATE.user.id, name: meta.name || STATE.user.email.split('@')[0], email: STATE.user.email, phone: meta.phone || '', avatar_url: null, created_at: STATE.user.created_at };
+  try {
+    if (window.RKProfile?.loadProfile) {
+      const p = await window.RKProfile.loadProfile(STATE.user.id);
+      if (p) return p;
+    }
+  } catch (err) { console.error('[Account] RKProfile.loadProfile failed:', err); }
+  try {
+    const { data } = await sb.from('profiles').select('*').eq('id', STATE.user.id).single();
+    if (data) return data;
+  } catch (err) { console.error('[Account] direct profile fetch failed:', err); }
+  return fallbackProfile();
 }
 async function loadOrders() {
-  const { data } = await sb.from('orders').select('*').eq('user_id', STATE.user.id).order('created_at', { ascending: false }).limit(25);
-  return data || [];
+  try {
+    const { data } = await sb.from('orders').select('*').eq('user_id', STATE.user.id).order('created_at', { ascending: false }).limit(25);
+    return data || [];
+  } catch (err) { console.error('[Account] loadOrders failed:', err); return []; }
 }
 async function loadAddresses() {
-  if (window.RKProfile) return await window.RKProfile.loadAddresses(STATE.user.id);
-  const { data } = await sb.from('addresses').select('*').eq('user_id', STATE.user.id).order('is_default', { ascending: false });
-  return data || [];
+  try {
+    if (window.RKProfile?.loadAddresses) return await window.RKProfile.loadAddresses(STATE.user.id);
+  } catch (err) { console.error('[Account] RKProfile.loadAddresses failed:', err); }
+  try {
+    const { data } = await sb.from('addresses').select('*').eq('user_id', STATE.user.id).order('is_default', { ascending: false });
+    return data || [];
+  } catch (err) { console.error('[Account] direct addresses fetch failed:', err); return []; }
 }
 async function loadWishlist() {
-  const { data } = await sb.from('wishlist').select('*').eq('user_id', STATE.user.id).order('created_at', { ascending: false });
-  return data || [];
+  try {
+    const { data } = await sb.from('wishlist').select('*').eq('user_id', STATE.user.id).order('created_at', { ascending: false });
+    return data || [];
+  } catch (err) { console.error('[Account] loadWishlist failed:', err); return []; }
 }
 async function loadNotifs() {
-  const { data } = await sb.from('notifications').select('*').eq('user_id', STATE.user.id).order('created_at', { ascending: false }).limit(30);
-  return data || [];
+  try {
+    const { data } = await sb.from('notifications').select('*').eq('user_id', STATE.user.id).order('created_at', { ascending: false }).limit(30);
+    return data || [];
+  } catch (err) { console.error('[Account] loadNotifs failed:', err); return []; }
 }
 
 /* ═══════════════════════════════════════════
@@ -910,7 +837,6 @@ function renderOverview(wrap) {
     </div>
   </div>`;
 
-  // Animate counters
   setTimeout(() => {
     animCount($('hOrd'), totalOrders);
     $('hSav').textContent = fmt(savings);
@@ -1478,7 +1404,10 @@ function closeModal() { $('modalWrap').innerHTML = ''; }
 /* ═══════════════════════════════════════════
    BOOT
 ═══════════════════════════════════════════ */
-if (window.RKCart) window.RKCart.init();
+setupTabs();
+if (window.RKCart && typeof window.RKCart.init === 'function') {
+  window.RKCart.init().catch(err => console.error('[Account] RKCart.init failed:', err));
+}
 boot();
 </script>
 <script src="/pwa.js?v=1"></script>
