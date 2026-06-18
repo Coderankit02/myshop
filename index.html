@@ -232,6 +232,17 @@ input,select,textarea{outline:none;border:none;font-family:'Inter',sans-serif;fo
   .cart-icon-btn{padding:7px 10px;font-size:0.76rem;}
   .user-pill-btn{padding:7px 8px;max-width:64px;}
 }
+.addr-card{border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:all 0.15s;}
+.addr-card.sel{border-color:var(--primary);background:var(--primary-light);}
+.addr-card-label-row{display:flex;align-items:center;gap:8px;margin-bottom:3px;}
+.addr-card-label{font-weight:800;font-size:0.85rem;color:var(--dark);}
+.addr-default-tag{font-size:0.58rem;background:var(--primary);color:#fff;padding:2px 7px;border-radius:50px;font-weight:800;}
+.addr-card-text{font-size:0.76rem;color:var(--gray);line-height:1.5;}
+.addr-add-btn{width:100%;padding:11px;background:var(--primary-light);color:var(--primary);border-radius:10px;font-weight:700;font-size:0.82rem;margin-top:4px;border:none;}
+.addr-add-btn:disabled{opacity:0.6;cursor:not-allowed;}
+.addr-manage-link{font-size:0.72rem;color:var(--primary);font-weight:700;display:inline-block;margin-top:8px;}
+.addr-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.phone-error{font-size:0.7rem;color:var(--red);margin:-6px 0 10px;font-weight:600;}
 </style>
 </head>
 <body>
@@ -767,19 +778,93 @@ function App(){
 
 function CheckoutForm({cart,total,showToast,onSuccess,user}){
   const [pay,setPay]=useState('');
-  const [f,setF]=useState({name:user?.name||'',phone:'',address:''});
+  const [f,setF]=useState({name:user?.name||'',phone:''});
+  const [addresses,setAddresses]=useState([]);
+  const [loadingAddrs,setLoadingAddrs]=useState(true);
+  const [selectedAddrId,setSelectedAddrId]=useState(null);
+  const [showNewForm,setShowNewForm]=useState(false);
+  const [newAddr,setNewAddr]=useState({label:'Home',line1:'',line2:'',city:'Prayagraj',pincode:'',is_default:false});
+  const [savingAddr,setSavingAddr]=useState(false);
+  const [phoneTouched,setPhoneTouched]=useState(false);
   const fallbackId='RK'+Math.floor(1000+Math.random()*9000);
 
-  /* ── CHANGE E: Place order via RKOrders ── */
+  /* ── Load saved addresses + profile (name/phone) so user doesn't retype every time ── */
+  useEffect(()=>{
+    let active=true;
+    (async()=>{
+      if(!user || !window.RKProfile){ setShowNewForm(true); setLoadingAddrs(false); return; }
+      try{
+        const [addrs,profile]=await Promise.all([
+          window.RKProfile.loadAddresses(user.uid),
+          window.RKProfile.loadProfile(user.uid),
+        ]);
+        if(!active) return;
+        setAddresses(addrs||[]);
+        const def=(addrs||[]).find(a=>a.is_default)||(addrs||[])[0];
+        if(def) setSelectedAddrId(def.id);
+        else setShowNewForm(true);
+        setF(prev=>({name:prev.name||profile?.name||'',phone:prev.phone||profile?.phone||''}));
+      } catch(err){
+        console.error('[Checkout] address/profile load failed:',err);
+        if(active) setShowNewForm(true);
+      } finally {
+        if(active) setLoadingAddrs(false);
+      }
+    })();
+    return()=>{active=false;};
+  },[user]);
+
+  const isPhoneValid=/^[6-9]\d{9}$/.test(f.phone.trim());
+  const selectedAddr=addresses.find(a=>a.id===selectedAddrId)||null;
+
+  const saveNewAddress=async()=>{
+    if(!newAddr.line1.trim()||!newAddr.city.trim()){showToast('Address aur city zaroori hai!');return;}
+    if(!window.RKProfile||!user){showToast('Login zaroori hai!');return;}
+    setSavingAddr(true);
+    try{
+      const saved=await window.RKProfile.saveAddress(user.uid,newAddr);
+      if(saved){
+        setAddresses(prev=>{
+          const next=newAddr.is_default?prev.map(a=>({...a,is_default:false})):prev;
+          return [...next,saved];
+        });
+        setSelectedAddrId(saved.id);
+        setShowNewForm(false);
+        setNewAddr({label:'Home',line1:'',line2:'',city:'Prayagraj',pincode:'',is_default:false});
+        showToast('Address save ho gaya! 📍');
+      } else {
+        showToast('Address save nahi hua, dobara try karo.');
+      }
+    } catch(err){
+      console.error('[Checkout] saveAddress failed:',err);
+      showToast('Error! Dobara try karo.');
+    } finally {
+      setSavingAddr(false);
+    }
+  };
+
+  /* ── CHANGE E: Place order via RKOrders (with structured saved address) ── */
   const handlePlaceOrder=async()=>{
-    if(!f.name||!f.phone||!f.address){showToast('Sab fields bharein!');return;}
+    setPhoneTouched(true);
+    if(!f.name.trim()){showToast('Naam zaroori hai!');return;}
+    if(!isPhoneValid){showToast('Sahi 10-digit mobile number daalein!');return;}
     if(!pay){showToast('Payment method chunein!');return;}
+    if(!selectedAddr){showToast('Delivery address chunein ya add karein!');return;}
+
+    const addressPayload={
+      name:f.name.trim(),
+      phone:f.phone.trim(),
+      line1:selectedAddr.line1,
+      line2:selectedAddr.line2||'',
+      city:selectedAddr.city||'Prayagraj',
+      pincode:selectedAddr.pincode||'',
+    };
 
     if(window.RKOrders && user){
       const result=await window.RKOrders.createOrder(user.uid,{
         cart,
         total,
-        address:{name:f.name,phone:f.phone,line1:f.address,city:'Prayagraj',pincode:''},
+        address:addressPayload,
         paymentMethod:pay,
       });
       if(result){onSuccess(result.orderNumber,pay);return;}
@@ -796,12 +881,53 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
         {cart.length>4&&<div style={{fontSize:'0.72rem',color:'var(--gray)'}}>+{cart.length-4} more items</div>}
         <div style={{borderTop:'1px solid var(--border)',marginTop:8,paddingTop:8,display:'flex',justifyContent:'space-between',fontWeight:800,fontSize:'0.9rem'}}><span>Total</span><span style={{color:'var(--primary)'}}>₹{total}</span></div>
       </div>
+
       <div className="co-card">
-        <div className="co-card-title">🏠 Delivery Details</div>
+        <div className="co-card-title">🙋 Contact Details</div>
         <input className="inp" placeholder="Aapka naam *" value={f.name} onChange={e=>setF({...f,name:e.target.value})}/>
-        <input className="inp" type="tel" placeholder="Phone number *" value={f.phone} onChange={e=>setF({...f,phone:e.target.value})}/>
-        <textarea className="inp" rows="2" placeholder="Ghar ka pata *" value={f.address} onChange={e=>setF({...f,address:e.target.value})} style={{resize:'none'}}/>
+        <input className="inp" type="tel" inputMode="numeric" maxLength="10" placeholder="10-digit mobile number *" value={f.phone}
+          onChange={e=>setF({...f,phone:e.target.value.replace(/\D/g,'').slice(0,10)})}
+          onBlur={()=>setPhoneTouched(true)}/>
+        {phoneTouched && !isPhoneValid && <div className="phone-error">⚠️ Sahi 10-digit mobile number daalein (jaise 9876543210)</div>}
       </div>
+
+      <div className="co-card">
+        <div className="co-card-title">📍 Delivery Address</div>
+        {loadingAddrs
+          ? <div style={{fontSize:'0.8rem',color:'var(--gray)',padding:'8px 0'}}>Addresses load ho rahe hain…</div>
+          : <>
+              {addresses.map(a=>(
+                <div key={a.id} className={`addr-card ${selectedAddrId===a.id?'sel':''}`} onClick={()=>{setSelectedAddrId(a.id);setShowNewForm(false);}}>
+                  <div className="addr-card-label-row">
+                    <span className="addr-card-label">{a.label}</span>
+                    {a.is_default&&<span className="addr-default-tag">DEFAULT</span>}
+                  </div>
+                  <div className="addr-card-text">{a.line1}{a.line2?', '+a.line2:''}<br/>{a.city}{a.pincode?' - '+a.pincode:''}</div>
+                </div>
+              ))}
+              {!showNewForm && <button className="addr-add-btn" onClick={()=>setShowNewForm(true)}>+ Naya Address Add Karo</button>}
+            </>
+        }
+
+        {showNewForm && (
+          <div style={{border:'1.5px dashed var(--border)',borderRadius:12,padding:12,marginTop:6}}>
+            <input className="inp" placeholder="Label (Home/Office)" value={newAddr.label} onChange={e=>setNewAddr({...newAddr,label:e.target.value})}/>
+            <input className="inp" placeholder="Ghar ka pura pata, gali, makaan no. *" value={newAddr.line1} onChange={e=>setNewAddr({...newAddr,line1:e.target.value})}/>
+            <input className="inp" placeholder="Mohalla / Landmark (optional)" value={newAddr.line2} onChange={e=>setNewAddr({...newAddr,line2:e.target.value})}/>
+            <div className="addr-form-grid">
+              <input className="inp" placeholder="City *" value={newAddr.city} onChange={e=>setNewAddr({...newAddr,city:e.target.value})}/>
+              <input className="inp" placeholder="Pincode" value={newAddr.pincode} onChange={e=>setNewAddr({...newAddr,pincode:e.target.value.replace(/\D/g,'').slice(0,6)})}/>
+            </div>
+            <button className="addr-add-btn" disabled={savingAddr} onClick={saveNewAddress} style={{background:'var(--primary)',color:'#fff'}}>
+              {savingAddr?'Saving…':'💾 Address Save Karke Use Karo'}
+            </button>
+            {addresses.length>0 && <button className="addr-add-btn" style={{marginTop:6}} onClick={()=>setShowNewForm(false)}>Cancel</button>}
+          </div>
+        )}
+
+        <a href="account.html?tab=addresses" target="_blank" rel="noopener" className="addr-manage-link">✏️ Saare Addresses Manage Karo →</a>
+      </div>
+
       <div className="co-card">
         <div className="co-card-title">💳 Payment Method</div>
         <div className="pay-grid">
@@ -810,6 +936,7 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
         </div>
         {pay==='upi'&&<div className="qr-area"><div className="qr-box">📲</div><div className="upi-label">📍 rinkukirana@upi</div><div style={{fontSize:'0.72rem',color:'var(--gray)',marginTop:3}}>Kisi bhi UPI app se scan karo</div><div className="upi-amt">₹{total} bhejo</div></div>}
       </div>
+
       <button className="place-order-btn" onClick={handlePlaceOrder}>
         {pay==='upi'?'✅ Maine Pay Kar Diya':'🚚 Order Place Karo'} →
       </button>
