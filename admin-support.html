@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Ananya AI — Admin Support Panel | Rinku Kirana Store</title>
+<!-- FIX: Supabase library now loads here in <head>, BEFORE the inline logic script below.
+     Previously this was placed at the very end of <body>, after the inline script that
+     calls checkExistingSession() -> enterAdminPanel() -> getSupabaseClient() immediately
+     on page load. That meant window.supabase was still undefined when an already-logged-in
+     admin's session was restored, so getSupabaseClient() silently returned null (no error
+     was logged) and the app fell back to renderMockData() / demo data. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -457,6 +464,9 @@ function getSupabaseClient() {
       console.error('Supabase init failed', e);
       sb = null;
     }
+  } else {
+    // FIX: log *why* the client wasn't created instead of silently returning null.
+    console.warn('[AdminSupport] getSupabaseClient: window.supabase not ready yet, or supabaseUrl not configured.');
   }
   return sb;
 }
@@ -513,6 +523,7 @@ function adminLogout() {
 }
 
 async function loadSessions() {
+  if (!sb) sb = getSupabaseClient(); // FIX: retry once in case the client wasn't ready yet
   if (!sb) { renderMockData(); return; }
   try {
     const { data, error } = await sb
@@ -847,11 +858,13 @@ document.addEventListener('keydown', e => {
     }
   }
 
+  // FIX: Supabase script tag now lives in <head> and loads before this inline script runs,
+  // so window.supabase is reliably available here — no more silent fallback to demo data
+  // on session-restore. The small delay is kept only as a safety margin on slow networks.
   setTimeout(pingSupabase, 400);
   checkExistingSession();
 })();
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </body>
 </html>
