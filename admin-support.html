@@ -224,8 +224,10 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); min-
 .conv-messages::-webkit-scrollbar { width: 4px; }
 .conv-messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
-.conv-msg { display: flex; gap: 10px; align-items: flex-end; }
-.conv-msg.admin { flex-direction: row-reverse; }
+.conv-msg { display: flex; gap: 10px; align-items: flex-end; max-width: 100%; }
+.conv-msg.admin { flex-direction: row-reverse; align-self: flex-end; }
+.conv-msg-content { display: flex; flex-direction: column; max-width: 75%; min-width: 0; }
+.conv-msg.admin .conv-msg-content { align-items: flex-end; }
 
 .conv-msg-av {
   width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center;
@@ -236,8 +238,8 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); min-
 .conv-msg.admin .conv-msg-av { background: rgba(34,197,94,0.2); }
 
 .conv-bubble {
-  max-width: 70%; padding: 10px 14px; border-radius: 16px; font-size: 13.5px;
-  line-height: 1.55; white-space: pre-wrap; word-break: break-word;
+  max-width: 100%; padding: 10px 14px; border-radius: 16px; font-size: 13.5px;
+  line-height: 1.55; white-space: pre-wrap; word-break: break-word; width: fit-content;
 }
 .conv-msg.user .conv-bubble { background: rgba(255,255,255,0.07); border-bottom-left-radius: 4px; }
 .conv-msg.bot .conv-bubble { background: rgba(124,58,237,0.15); border-bottom-left-radius: 4px; color: var(--primary-light); }
@@ -444,15 +446,23 @@ let sortMode = 'newest';
 let realtimeChannel = null;
 let messagesChannel = null;
 
-function initSB() {
+function getSupabaseClient() {
+  if (sb) return sb;
   if (window.supabase && ADMIN_CONFIG.supabaseUrl !== 'YOUR_SUPABASE_URL') {
     try {
-      sb = window.supabase.createClient(ADMIN_CONFIG.supabaseUrl, ADMIN_CONFIG.supabaseKey);
+      sb = window.supabase.createClient(ADMIN_CONFIG.supabaseUrl, ADMIN_CONFIG.supabaseKey, {
+        auth: { storageKey: 'ananya-admin-auth', persistSession: false }
+      });
     } catch (e) {
       console.error('Supabase init failed', e);
       sb = null;
     }
   }
+  return sb;
+}
+
+function initSB() {
+  getSupabaseClient();
 }
 
 function checkExistingSession() {
@@ -495,6 +505,7 @@ function adminLogout() {
   if (messagesChannel) { try { sb.removeChannel(messagesChannel); } catch(e){} messagesChannel = null; }
   sessions = [];
   currentSession = null;
+  sb = null;
   document.getElementById('adminLayout').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('adminEmail').value = '';
@@ -664,7 +675,7 @@ function renderMsg(m) {
   const av  = cls === 'user' ? '👤' : cls === 'admin' ? '🛡️' : '🌸';
   return `<div class="conv-msg ${cls}">
     <div class="conv-msg-av">${av}</div>
-    <div>
+    <div class="conv-msg-content">
       <div class="conv-bubble">${escHtml(m.content)}</div>
       <div class="conv-msg-time">${new Date(m.created_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true})}</div>
     </div>
@@ -825,7 +836,8 @@ document.addEventListener('keydown', e => {
   function pingSupabase() {
     if (!window.supabase) { setStatus(false, 'Database library not loaded'); return; }
     try {
-      const client = window.supabase.createClient(ADMIN_CONFIG.supabaseUrl, ADMIN_CONFIG.supabaseKey);
+      const client = getSupabaseClient();
+      if (!client) { setStatus(false, 'Database connection failed'); return; }
       client.from('ananya_chat_sessions').select('id', { count: 'exact', head: true }).then(({ error }) => {
         if (error) setStatus(false, 'Database connection issue: ' + error.message);
         else setStatus(true, 'Connected to database');
