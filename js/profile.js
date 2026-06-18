@@ -14,7 +14,7 @@
 (function () {
   'use strict';
 
-  const getDB = () => window.supabase;
+  const getDB = () => window.sb;
 
   /* ══════════════════════════════════════════════════════════
      PROFILE
