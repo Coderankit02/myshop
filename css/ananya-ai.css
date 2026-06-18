@@ -773,14 +773,14 @@
      so the chat bubble never sits on top of it. Adjust this value if your
      bottom nav bar height is different. */
   #ananya-trigger {
-    bottom: calc(88px + env(safe-area-inset-bottom));
-    right: 16px;
+    bottom: calc(120px + env(safe-area-inset-bottom));
+    right: 10px;
     width: 58px;
     height: 58px;
   }
 
   .ananya-trigger-label {
-    bottom: calc(154px + env(safe-area-inset-bottom));
-    right: 20px;
+    bottom: calc(186px + env(safe-area-inset-bottom));
+    right: 14px;
   }
 }
