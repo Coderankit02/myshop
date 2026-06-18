@@ -1,16 +1,12 @@
 /*!
  * ANANYA AI - Smart Shopping Assistant
  * Rinku Kirana Store
- * Version: 3.0 PREMIUM — WhatsApp-style Chat
- * UI redesigned. Business logic untouched.
- * FIX: Supabase v2 .catch() → try/catch (all DB calls)
+ * Version: 3.1 PREMIUM — WhatsApp-style Chat + Realtime Admin Replies
+ * UI redesigned. Business logic untouched except realtime fix.
  */
 (function () {
   'use strict';
 
-  /* ══════════════════════════════════════════════════════
-     CONFIG — unchanged
-  ══════════════════════════════════════════════════════ */
   const CONFIG = {
     storeName:      'Rinku Kirana Store',
     whatsappNumber: '916393196765',
@@ -155,7 +151,7 @@
   };
 
   /* ══════════════════════════════════════════
-     STATE — unchanged
+     STATE
   ══════════════════════════════════════════ */
   const state = {
     isOpen:        false,
@@ -168,10 +164,11 @@
     supabase:      null,
     initialized:   false,
     historyLoaded: false,
+    realtimeChannel: null,
   };
 
   /* ══════════════════════════════════════════
-     THEME — unchanged
+     THEME
   ══════════════════════════════════════════ */
   function applyTheme() {
     const isDark = window.matchMedia('(prefers-color-scheme:dark)').matches;
@@ -181,13 +178,19 @@
   window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change', applyTheme);
 
   /* ══════════════════════════════════════════
-     SUPABASE — FIXED: .catch() → try/catch
+     SUPABASE
   ══════════════════════════════════════════ */
   async function initSupabase() {
     try {
       const SB = window.supabase || window.supabaseJs;
       if (SB && CONFIG.supabaseUrl !== 'YOUR_SUPABASE_URL') {
-        state.supabase = SB.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey);
+        // Distinct storageKey so this client never collides with the admin
+        // panel's client (or any other Supabase client) running in the
+        // same browser context — that collision was the source of the
+        // "Multiple GoTrueClient instances" console warning.
+        state.supabase = SB.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey, {
+          auth: { storageKey: 'ananya-widget-auth' }
+        });
         let session = null;
         try {
           const res = await state.supabase.auth.getSession();
@@ -242,7 +245,7 @@
         .select('*')
         .eq('session_id', state.sessionId)
         .order('created_at', { ascending: true })
-        .limit(20);
+        .limit(50);
       return data || [];
     } catch (e) {
       return [];
@@ -250,7 +253,38 @@
   }
 
   /* ══════════════════════════════════════════
-     SMART FREE AI — unchanged
+     REALTIME — pick up admin replies live
+     This is what makes an admin's reply (typed
+     in the admin panel) show up here without a
+     page refresh.
+  ══════════════════════════════════════════ */
+  function subscribeToAdminReplies() {
+    if (!state.supabase || !state.sessionId) return;
+    if (state.realtimeChannel) {
+      try { state.supabase.removeChannel(state.realtimeChannel); } catch (e) {}
+      state.realtimeChannel = null;
+    }
+    state.realtimeChannel = state.supabase
+      .channel('ananya-widget-' + state.sessionId)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'ananya_chat_messages',
+        filter: `session_id=eq.${state.sessionId}`,
+      }, payload => {
+        const m = payload.new;
+        // Only render messages that came from outside this tab (the admin).
+        // Our own user/bot messages are already appended locally the
+        // moment they're sent, so re-rendering them here would duplicate.
+        if (m.role === 'admin') {
+          appendMessage('bot', m.content, { senderLabel: '🛡️ Support Agent' });
+        }
+      })
+      .subscribe();
+  }
+
+  /* ══════════════════════════════════════════
+     SMART FREE AI
   ══════════════════════════════════════════ */
   function getSmartReply(userMsg) {
     const msg = userMsg.toLowerCase().trim();
@@ -266,7 +300,7 @@
   }
 
   /* ══════════════════════════════════════════
-     RENDER HELPERS — REDESIGNED (WhatsApp style)
+     RENDER HELPERS
   ══════════════════════════════════════════ */
   function timeStr() {
     return new Date().toLocaleTimeString('en-IN', {
@@ -274,29 +308,27 @@
     });
   }
 
-  function appendMessage(role, text) {
+  function appendMessage(role, text, opts) {
+    opts = opts || {};
     const container = document.getElementById('ananya-msgs');
     if (!container) return;
 
     const msgDiv = document.createElement('div');
     msgDiv.className = `ananya-msg ${role}`;
 
-    // Sender name for bot (WhatsApp group style)
     if (role === 'bot') {
       const nameEl = document.createElement('div');
       nameEl.className = 'ananya-sender-name';
-      nameEl.textContent = '🌸 Ananya';
+      nameEl.textContent = opts.senderLabel || '🌸 Ananya';
       msgDiv.appendChild(nameEl);
     }
 
-    // Bubble
     const bubble = document.createElement('div');
     bubble.className = 'ananya-bubble';
     bubble.style.whiteSpace = 'pre-wrap';
     bubble.textContent = text;
     msgDiv.appendChild(bubble);
 
-    // Meta row: time + ticks
     const meta = document.createElement('div');
     meta.className = 'ananya-msg-meta';
 
@@ -310,7 +342,6 @@
       ticks.className = 'ananya-ticks';
       ticks.textContent = '✓';
       meta.appendChild(ticks);
-      // Simulate "seen" after 1.2s
       setTimeout(() => {
         ticks.textContent = '✓✓';
         ticks.classList.add('seen');
@@ -363,7 +394,7 @@
   }
 
   /* ══════════════════════════════════════════
-     SEND MESSAGE — unchanged
+     SEND MESSAGE
   ══════════════════════════════════════════ */
   async function sendMessage(text) {
     text = (text || '').trim();
@@ -413,10 +444,9 @@
   }
 
   /* ══════════════════════════════════════════
-     BUILD HTML WIDGET — redesigned markup only
+     BUILD HTML WIDGET
   ══════════════════════════════════════════ */
   function buildWidget() {
-    /* Trigger Button */
     const trigger = document.createElement('button');
     trigger.id = 'ananya-trigger';
     trigger.setAttribute('aria-label', 'Open Ananya AI');
@@ -426,19 +456,16 @@
       <span class="ananya-avatar-emoji">🌸</span>
       <span id="ananya-badge" class="ananya-badge hidden">0</span>`;
 
-    /* Hover label */
     const label = document.createElement('div');
     label.className = 'ananya-trigger-label';
     label.textContent = '🌸 Ananya AI';
 
-    /* FAQ HTML */
     const faqHTML = CONFIG.faqs.map((f, i) => `
       <div class="ananya-faq-item" data-idx="${i}">
         <div class="ananya-faq-q">${f.q}<span class="faq-icon">+</span></div>
         <div class="ananya-faq-a">${f.a.replace(/\n/g, '<br>')}</div>
       </div>`).join('');
 
-    /* Info cards */
     const infoHTML = CONFIG.infoCards.map(c => `
       <div class="ananya-info-card">
         <div class="ananya-info-card-icon">${c.icon}</div>
@@ -448,13 +475,11 @@
         </div>
       </div>`).join('');
 
-    /* Main Widget */
     const widget = document.createElement('div');
     widget.id = 'ananya-widget';
     widget.setAttribute('role', 'dialog');
     widget.setAttribute('aria-label', 'Ananya AI Chat');
     widget.innerHTML = `
-      <!-- HEADER -->
       <div class="ananya-header">
         <div class="ananya-header-avatar">🌸</div>
         <div class="ananya-header-info">
@@ -466,7 +491,6 @@
         </div>
       </div>
 
-      <!-- TABS -->
       <div class="ananya-tabs" role="tablist">
         <button class="ananya-tab active" data-tab="chat" role="tab">
           <span class="tab-icon">💬</span>Chat
@@ -479,7 +503,6 @@
         </button>
       </div>
 
-      <!-- CHAT PANEL -->
       <div class="ananya-panel active" data-panel="chat" role="tabpanel">
         <div class="ananya-messages" id="ananya-msgs"></div>
         <div class="ananya-input-area">
@@ -501,12 +524,10 @@
         </div>
       </div>
 
-      <!-- FAQ PANEL -->
       <div class="ananya-panel" data-panel="faq" role="tabpanel">
         <div class="ananya-faq-list">${faqHTML}</div>
       </div>
 
-      <!-- INFO PANEL -->
       <div class="ananya-panel" data-panel="info" role="tabpanel">
         <div class="ananya-info-panel">${infoHTML}</div>
         <a class="ananya-whatsapp-banner"
@@ -528,7 +549,7 @@
   }
 
   /* ══════════════════════════════════════════
-     EVENTS — unchanged
+     EVENTS
   ══════════════════════════════════════════ */
   function bindEvents() {
     document.getElementById('ananya-trigger').addEventListener('click', toggleWidget);
@@ -576,7 +597,7 @@
   }
 
   /* ══════════════════════════════════════════
-     OPEN / CLOSE / TABS — unchanged
+     OPEN / CLOSE / TABS
   ══════════════════════════════════════════ */
   function openWidget() {
     state.isOpen = true;
@@ -613,7 +634,7 @@
   }
 
   /* ══════════════════════════════════════════
-     INITIAL CONVERSATION — unchanged
+     INITIAL CONVERSATION
   ══════════════════════════════════════════ */
   async function loadInitialConversation() {
     const history = await loadHistory();
@@ -621,7 +642,8 @@
     if (history.length > 0) {
       history.forEach(m => appendMessage(
         m.role === 'assistant' ? 'bot' : m.role === 'admin' ? 'bot' : 'user',
-        m.content
+        m.content,
+        m.role === 'admin' ? { senderLabel: '🛡️ Support Agent' } : {}
       ));
       return;
     }
@@ -636,8 +658,26 @@
     saveMessage('assistant', welcome);
   }
 
+  function loadSupabaseLib() {
+    return new Promise(resolve => {
+      if (window.supabase) { resolve(); return; }
+      const existing = document.querySelector('script[data-ananya-supabase]');
+      if (existing) {
+        existing.addEventListener('load', resolve);
+        existing.addEventListener('error', resolve);
+        return;
+      }
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+      s.setAttribute('data-ananya-supabase', '1');
+      s.onload = resolve;
+      s.onerror = resolve;
+      document.head.appendChild(s);
+    });
+  }
+
   /* ══════════════════════════════════════════
-     INIT — unchanged
+     INIT
   ══════════════════════════════════════════ */
   async function init() {
     if (state.initialized) return;
@@ -647,8 +687,10 @@
     bindEvents();
     applyTheme();
 
+    await loadSupabaseLib();
     await initSupabase();
     await getOrCreateSession();
+    subscribeToAdminReplies();
 
     setTimeout(() => {
       if (!state.isOpen) {
