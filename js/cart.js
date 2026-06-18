@@ -18,8 +18,9 @@
 
   const LS_KEY = 'rk_cart_v1';
 
-  /* ── Supabase client (already loaded in index.html) ─────── */
-  const getDB = () => window.supabase;
+  /* ── Supabase client (the actual client created in account.html/index.html,
+        NOT the raw SDK namespace — that's why it must be window.sb) ───── */
+  const getDB = () => window.sb;
 
   /* ── Subscribers ────────────────────────────────────────── */
   const listeners = [];
