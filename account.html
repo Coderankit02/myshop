@@ -590,10 +590,13 @@ const SUPABASE_ANON = 'sb_publishable__tFDYhkM3blZ0pIVT0YxLA_YvkKq79L';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 window.sb = sb; // expose the real client so cart.js / profile.js / orders.js can use it via getDB()
 
+const VALID_TABS = ['overview','orders','addresses','profile','wishlist','notifications','rewards','settings'];
+const urlTab = new URLSearchParams(window.location.search).get('tab');
+
 const STATE = {
   user: null, profile: null,
   orders: [], addresses: [], wishlist: [], notifications: [],
-  activeTab: 'overview', cartCount: 0,
+  activeTab: VALID_TABS.includes(urlTab) ? urlTab : 'overview', cartCount: 0,
 };
 
 /* ═══════════════════════════════════════════
@@ -678,6 +681,7 @@ async function boot() {
   } finally {
     $('loadingPage').style.display = 'none';
     $('app').style.display = 'block';
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('on', b.dataset.tab === STATE.activeTab));
     renderTab(STATE.activeTab);
   }
 }
@@ -1123,7 +1127,7 @@ function renderProfile(wrap) {
         📅 Member since: <b>${memberSince(p.created_at || STATE.user.created_at)}</b>
         &nbsp;&nbsp;•&nbsp;&nbsp; 🆔 ID: <span style="font-size:.65rem;opacity:.6;">${STATE.user.id.slice(0,8)}…</span>
       </div>
-      <button class="btn-primary" onclick="saveProfile()">💾 Profile Save Karo</button>
+      <button class="btn-primary" id="profileSaveBtn" onclick="saveProfile()">💾 Profile Save Karo</button>
     </div>
   </div>`;
 }
@@ -1140,26 +1144,50 @@ async function saveProfile() {
   const phone = $('pf_phone').value.trim();
   if (!name) { showToast('Naam zaroori hai!'); return; }
 
+  const saveBtn = document.getElementById('profileSaveBtn');
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '⏳ Saving...'; }
+
   let avatar_url = STATE.profile?.avatar_url || null;
   const avatarFile = $('avatarInput').files[0];
+
   if (avatarFile) {
-    const ext  = avatarFile.name.split('.').pop();
-    const path = `avatars/${STATE.user.id}.${ext}`;
-    const { error: upErr } = await sb.storage.from('avatars').upload(path, avatarFile, { upsert: true });
-    if (!upErr) {
-      const { data: urlData } = sb.storage.from('avatars').getPublicUrl(path);
-      avatar_url = urlData.publicUrl;
+    try {
+      const ext  = avatarFile.name.split('.').pop();
+      const path = `avatars/${STATE.user.id}.${ext}`;
+      const { error: upErr } = await sb.storage.from('avatars').upload(path, avatarFile, { upsert: true });
+      if (upErr) {
+        console.error('[Account] avatar upload failed:', upErr);
+        showToast('⚠️ Photo upload fail: ' + upErr.message);
+      } else {
+        const { data: urlData } = sb.storage.from('avatars').getPublicUrl(path);
+        avatar_url = urlData.publicUrl + '?t=' + Date.now(); // cache-bust so the new photo shows right away
+      }
+    } catch (err) {
+      console.error('[Account] avatar upload exception:', err);
+      showToast('⚠️ Photo upload error: ' + (err.message || err));
     }
   }
 
   let updated = null;
-  if (window.RKProfile) updated = await window.RKProfile.updateProfile(STATE.user.id, { name, phone, avatar_url });
-  if (!updated) {
-    const { data, error } = await sb.from('profiles').upsert({ id: STATE.user.id, name, phone, avatar_url, email: STATE.user.email, updated_at: new Date().toISOString() }).select().single();
-    if (!error) updated = data;
+  try {
+    if (window.RKProfile) updated = await window.RKProfile.updateProfile(STATE.user.id, { name, phone, avatar_url });
+    if (!updated) {
+      const { data, error } = await sb.from('profiles').upsert({ id: STATE.user.id, name, phone, avatar_url, email: STATE.user.email, updated_at: new Date().toISOString() }).select().single();
+      if (error) { console.error('[Account] profile save failed:', error); showToast('⚠️ Profile save error: ' + error.message); }
+      else updated = data;
+    }
+  } catch (err) {
+    console.error('[Account] saveProfile exception:', err);
+    showToast('⚠️ Error: ' + (err.message || err));
   }
-  if (updated) { STATE.profile = updated; showToast('Profile update ho gaya! ✅'); }
-  else showToast('Error! Dobara try karo.');
+
+  if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '💾 Profile Save Karo'; }
+
+  if (updated) {
+    STATE.profile = updated;
+    renderProfile($('pageWrap')); // re-render from what's actually saved, not just the local file preview
+    showToast('Profile update ho gaya! ✅');
+  }
 }
 
 /* ═══════════════════════════════════════════
