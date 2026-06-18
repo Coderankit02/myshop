@@ -1,7 +1,7 @@
-]/*!
+/*!
  * ANANYA AI - Smart Shopping Assistant
  * Rinku Kirana Store
- * Version: 2.1 FIXED — All layout & JS bugs resolved
+ * Version: 2.0 FREE — Zero paid APIs
  * Auto-initializes on any page.
  */
 (function () {
@@ -14,8 +14,8 @@
   const CONFIG = {
     storeName:      'Rinku Kirana Store',
     whatsappNumber: '916393196765',
-    supabaseUrl:    'YOUR_SUPABASE_URL',
-    supabaseKey:    'YOUR_SUPABASE_ANON_KEY',
+    supabaseUrl:    'YOUR_SUPABASE_URL',      // ← Supabase project URL (free)
+    supabaseKey:    'YOUR_SUPABASE_ANON_KEY', // ← Supabase anon key (free)
 
     storeInfo: {
       timings:   'Monday–Saturday: 8 AM – 9 PM | Sunday: 9 AM – 7 PM',
@@ -172,7 +172,8 @@
   };
 
   /* ══════════════════════════════════════════
-     THEME — auto light/dark based on device
+     THEME — auto light/dark based on device,
+     no manual switcher shown to the user.
   ══════════════════════════════════════════ */
   function applyTheme() {
     const isDark = window.matchMedia('(prefers-color-scheme:dark)').matches;
@@ -221,6 +222,7 @@
       content: text,
       created_at: new Date().toISOString(),
     }).catch(() => {});
+    // update last_message on session
     await state.supabase.from('ananya_chat_sessions').update({
       last_message: text.slice(0, 100),
       updated_at: new Date().toISOString(),
@@ -245,16 +247,19 @@
   function getSmartReply(userMsg) {
     const msg = userMsg.toLowerCase().trim();
 
+    // Check all intents
     for (const intent of CONFIG.intents) {
       if (intent.keys.some(k => msg.includes(k))) {
         return intent.reply(CONFIG);
       }
     }
 
+    // Partial word matching (for Hinglish)
     if (/ky[ao]|kaise|kab|kahan|kitna|kaun/.test(msg)) {
       return `Hmm, mujhe exactly samajh nahi aaya 🤔\n\nKya aap in topics mein se kuch pooch rahe hain?\n\n🕐 Timings  🚚 Delivery  💳 Payment\n↩️ Returns  📞 Contact  🎁 Offers\n\nYa seedha WhatsApp karein — hum help karenge! 😊`;
     }
 
+    // Default fallback
     return `Mujhe is sawaal ka exact jawab abhi nahi pata 😊\n\nMain in topics mein help kar sakti hoon:\n🕐 Store Timings\n🚚 Delivery Info\n💳 Payment Methods\n↩️ Return Policy\n🎁 Offers & Discounts\n📞 Contact Us\n\nYa seedha hamare WhatsApp par poochein:\n📲 +91 63931 96765`;
   }
 
@@ -348,18 +353,14 @@
   }
 
   /* ══════════════════════════════════════════
-     SEND MESSAGE — FIXED
+     SEND MESSAGE
   ══════════════════════════════════════════ */
   async function sendMessage(text) {
     text = (text || '').trim();
     if (!text || state.isTyping) return;
 
-    const input   = document.getElementById('ananya-input');
-    // FIX: disable send button during typing to prevent double-send
-    const sendBtn = document.getElementById('ananya-send-btn');
-
+    const input = document.getElementById('ananya-input');
     if (input) { input.value = ''; input.style.height = 'auto'; }
-    if (sendBtn) sendBtn.disabled = true;
 
     appendMessage('user', text);
     saveMessage('user', text);
@@ -367,18 +368,18 @@
     state.isTyping = true;
     showTyping();
 
+    // Realistic delay: 700ms–1.4s
     await new Promise(r => setTimeout(r, 700 + Math.random() * 700));
 
     const reply = getSmartReply(text);
 
     removeTyping();
     state.isTyping = false;
-    // FIX: re-enable button after response
-    if (sendBtn) sendBtn.disabled = false;
 
     appendMessage('bot', reply);
     saveMessage('assistant', reply);
 
+    // Show WhatsApp banner after 5 messages
     if (state.messages.filter(m => m.role === 'user').length >= 3
         && !document.querySelector('.ananya-whatsapp-banner-inline')) {
       showWhatsappBanner();
@@ -393,7 +394,6 @@
     banner.href = `https://wa.me/${CONFIG.whatsappNumber}?text=Namaste! Rinku Kirana Store se help chahiye.`;
     banner.target = '_blank';
     banner.rel = 'noopener noreferrer';
-    // FIX: no inline margin — CSS class handles spacing
     banner.innerHTML = `
       <span class="ananya-whatsapp-icon">💬</span>
       <div class="ananya-whatsapp-text">
@@ -496,19 +496,18 @@
 
       <!-- INFO PANEL -->
       <div class="ananya-panel" data-panel="info" role="tabpanel">
-        <div class="ananya-info-panel">
-          ${infoHTML}
-          <a class="ananya-whatsapp-banner"
-             href="https://wa.me/${CONFIG.whatsappNumber}?text=Namaste! Rinku Kirana Store se help chahiye."
-             target="_blank" rel="noopener noreferrer">
-            <span class="ananya-whatsapp-icon">💬</span>
-            <div class="ananya-whatsapp-text">
-              <strong>WhatsApp Support</strong>
-              <span>Seedha humse baat karein — +91 63931 96765</span>
-            </div>
-            <span class="ananya-whatsapp-arrow">→</span>
-          </a>
-        </div>
+        <div class="ananya-info-panel">${infoHTML}</div>
+        <a class="ananya-whatsapp-banner"
+           href="https://wa.me/${CONFIG.whatsappNumber}?text=Namaste! Rinku Kirana Store se help chahiye."
+           target="_blank" rel="noopener noreferrer"
+           style="margin:0 14px 14px; display:flex;">
+          <span class="ananya-whatsapp-icon">💬</span>
+          <div class="ananya-whatsapp-text">
+            <strong>WhatsApp Support</strong>
+            <span>Seedha humse baat karein — +91 63931 96765</span>
+          </div>
+          <span class="ananya-whatsapp-arrow">→</span>
+        </a>
       </div>`;
 
     document.body.appendChild(trigger);
@@ -517,28 +516,14 @@
   }
 
   /* ══════════════════════════════════════════
-     EVENTS — FIXED
+     EVENTS
   ══════════════════════════════════════════ */
   function bindEvents() {
     document.getElementById('ananya-trigger').addEventListener('click', toggleWidget);
     document.getElementById('ananya-close-btn').addEventListener('click', closeWidget);
 
-    // FIX: track scroll state to prevent click-outside firing during momentum scroll on Android
-    let _isScrolling = false;
-    let _scrollTimer = null;
-
-    const msgsEl = document.getElementById('ananya-msgs');
-    if (msgsEl) {
-      msgsEl.addEventListener('scroll', () => {
-        _isScrolling = true;
-        clearTimeout(_scrollTimer);
-        _scrollTimer = setTimeout(() => { _isScrolling = false; }, 200);
-      }, { passive: true });
-    }
-
-    // FIX: use pointerdown instead of click; skip if scroll just fired
-    document.addEventListener('pointerdown', e => {
-      if (_isScrolling) return;
+    // Click outside to close
+    document.addEventListener('click', e => {
       const w = document.getElementById('ananya-widget');
       const t = document.getElementById('ananya-trigger');
       if (state.isOpen && w && t && !w.contains(e.target) && !t.contains(e.target)) {
@@ -551,12 +536,12 @@
       tab.addEventListener('click', () => switchTab(tab.dataset.tab));
     });
 
-    // Send button
+    // Send
     document.getElementById('ananya-send-btn').addEventListener('click', () => {
       sendMessage(document.getElementById('ananya-input').value);
     });
 
-    // Enter key (Shift+Enter = new line)
+    // Enter key
     document.getElementById('ananya-input').addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -564,12 +549,11 @@
       }
     });
 
-    // FIX: auto-resize textarea — floor at 44px to prevent collapse when scrollHeight=0
+    // Auto-resize textarea
     document.getElementById('ananya-input').addEventListener('input', function () {
       this.style.height = 'auto';
-      const sh = this.scrollHeight;
-      this.style.height = (sh > 0 ? Math.min(sh, 100) : 44) + 'px';
-    }, { passive: true });
+      this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+    });
 
     // FAQ accordion
     document.querySelectorAll('.ananya-faq-item').forEach(item => {
@@ -624,7 +608,8 @@
   }
 
   /* ══════════════════════════════════════════
-     INITIAL CONVERSATION
+     INITIAL CONVERSATION (loaded on first open,
+     not on page load — feels like a real reply)
   ══════════════════════════════════════════ */
   async function loadInitialConversation() {
     const history = await loadHistory();
