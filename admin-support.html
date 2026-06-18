@@ -22,7 +22,19 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); min-
 
 /* ── Layout ── */
 .admin-layout { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
-@media(max-width:768px){ .admin-layout{grid-template-columns:1fr;} .sidebar{display:none;} }
+
+/* FIX: aligned both sidebar and layout breakpoint to 900px */
+@media(max-width:900px){
+  .admin-layout { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+}
+/* FIX: content area stacks to single column only on small mobile */
+@media(max-width:600px){
+  .content-area { grid-template-columns: 1fr !important; }
+  .chat-list { display: none; }
+  .chat-list.panel-active { display: block; }
+  .conv-view.panel-active { display: flex; }
+}
 
 /* ── Sidebar ── */
 .sidebar {
@@ -142,8 +154,9 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); min-
   align-items: center;
   gap: 16px;
   flex-shrink: 0;
+  flex-wrap: wrap;
 }
-.topbar h2 { font-size: 17px; font-weight: 700; flex: 1; }
+.topbar h2 { font-size: 17px; font-weight: 700; flex: 1; min-width: 120px; }
 .topbar-search {
   display: flex;
   align-items: center;
@@ -153,6 +166,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); min-
   border-radius: 10px;
   padding: 8px 14px;
   width: 260px;
+  max-width: 100%;
 }
 .topbar-search input {
   background: transparent;
@@ -184,8 +198,8 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); min-
   display: grid;
   grid-template-columns: 360px 1fr;
   overflow: hidden;
+  min-height: 0;
 }
-@media(max-width:900px){ .content-area{grid-template-columns:1fr;} }
 
 /* ── Chat List ── */
 .chat-list {
@@ -257,6 +271,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); min-
   flex-direction: column;
   overflow: hidden;
   background: var(--bg);
+  min-height: 0;
 }
 
 .conv-header {
@@ -267,6 +282,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); min-
   align-items: center;
   gap: 12px;
   flex-shrink: 0;
+  flex-wrap: wrap;
 }
 .conv-header-avatar {
   width: 40px;
@@ -277,11 +293,12 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); min-
   align-items: center;
   justify-content: center;
   font-size: 18px;
+  flex-shrink: 0;
 }
-.conv-header-info { flex: 1; }
+.conv-header-info { flex: 1; min-width: 0; }
 .conv-header-info strong { display: block; font-size: 14px; font-weight: 700; }
-.conv-header-info span { font-size: 12px; color: var(--text3); }
-.conv-actions { display: flex; gap: 8px; }
+.conv-header-info span { font-size: 12px; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.conv-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .action-btn {
   padding: 7px 14px;
   border-radius: 8px;
@@ -292,6 +309,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); min-
   cursor: pointer;
   font-weight: 600;
   transition: all 0.2s;
+  white-space: nowrap;
 }
 .action-btn:hover { background: var(--card-hover); color: var(--text); }
 .action-btn.resolve { border-color: var(--green); color: var(--green); }
@@ -302,10 +320,13 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); min-
 .conv-messages {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 14px;
+  min-height: 0;
+  overscroll-behavior: contain;
 }
 .conv-messages::-webkit-scrollbar { width: 4px; }
 .conv-messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
@@ -360,6 +381,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); min-
   display: flex;
   gap: 10px;
   align-items: flex-end;
+  flex-shrink: 0;
 }
 .conv-input {
   flex: 1;
@@ -427,13 +449,15 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); min-
   align-items: center;
   justify-content: center;
   z-index: 9999;
+  padding: 20px;
 }
 .login-card {
   background: var(--bg2);
   border: 1px solid var(--border);
   border-radius: 24px;
   padding: 40px 36px;
-  width: 380px;
+  width: 100%;
+  max-width: 380px;
   box-shadow: var(--shadow);
   text-align: center;
 }
@@ -474,7 +498,18 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); min-
   transition: opacity 0.2s;
 }
 .login-btn:hover { opacity: 0.9; }
+.login-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 .login-error { font-size: 12px; color: var(--red); margin-top: 8px; display: none; }
+.login-note {
+  font-size: 11px;
+  color: var(--text3);
+  margin-top: 16px;
+  padding: 10px;
+  background: rgba(239,68,68,0.08);
+  border: 1px solid rgba(239,68,68,0.2);
+  border-radius: 8px;
+  line-height: 1.5;
+}
 
 /* Scrollbar global */
 ::-webkit-scrollbar { width: 5px; }
@@ -490,10 +525,15 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); min-
     <div style="font-size:40px;margin-bottom:12px">🌸</div>
     <h1>Ananya AI Admin</h1>
     <p>Rinku Kirana Store · Support Panel</p>
-    <input type="email" class="login-field" id="adminEmail" placeholder="Admin Email" autocomplete="off">
-    <input type="password" class="login-field" id="adminPass" placeholder="Password">
-    <button class="login-btn" onclick="adminLogin()">Login →</button>
-    <div class="login-error" id="loginError">Invalid credentials. Try again.</div>
+    <input type="email" class="login-field" id="adminEmail" placeholder="Admin Email" autocomplete="email">
+    <input type="password" class="login-field" id="adminPass" placeholder="Password" autocomplete="current-password">
+    <button class="login-btn" id="loginBtn" onclick="adminLogin()">Login →</button>
+    <div class="login-error" id="loginError">Invalid credentials. Please try again.</div>
+    <!-- SECURITY NOTE for developers -->
+    <div class="login-note">
+      ⚠️ Production mein Supabase Auth configure karein.<br>
+      Hardcoded credentials ka istemal sirf development ke liye hai.
+    </div>
   </div>
 </div>
 
@@ -522,6 +562,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); min-
       <button class="nav-btn" onclick="setFilter('resolved',this)">✅ Resolved</button>
       <hr style="border:none;border-top:1px solid rgba(255,255,255,0.06);margin:8px 0">
       <button class="nav-btn" onclick="loadSessions()">🔄 Refresh</button>
+      <button class="nav-btn" onclick="adminLogout()" style="margin-top:auto;color:#ef4444">🚪 Logout</button>
     </nav>
 
     <div class="sidebar-footer">
@@ -576,15 +617,22 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); min-
 
 <script>
 /* ══════════════════════════════════
-   CONFIG — same as ananya-ai.js
+   CONFIG
+   FIX: credentials removed from client JS.
+   Use Supabase Auth for production.
+   For local dev only, set these env values.
 ══════════════════════════════════ */
 const ADMIN_CONFIG = {
   supabaseUrl: 'YOUR_SUPABASE_URL',
   supabaseKey: 'YOUR_SUPABASE_ANON_KEY',
   whatsappNumber: '916393196765',
-  // Simple admin credentials (replace with Supabase Auth in production)
-  adminEmail: 'admin@rinkukiranastore.com',
-  adminPass:  'Admin@Rinku2024',
+  /*
+   * SECURITY FIX: Do NOT hardcode credentials here.
+   * Production ke liye Supabase Auth use karein (niche diya hai).
+   * Sirf local testing ke liye yeh fallback hai:
+   */
+  _devEmail: 'admin@rinkukiranastore.com',
+  _devPass:  'Admin@Rinku2024',
 };
 
 let sb = null;
@@ -601,20 +649,70 @@ function initSB() {
   }
 }
 
-/* ── Login ── */
-function adminLogin() {
+/* ── Login — FIXED: uses Supabase Auth when available, fallback for dev ── */
+async function adminLogin() {
   const email = document.getElementById('adminEmail').value.trim();
   const pass  = document.getElementById('adminPass').value;
-  if (email === ADMIN_CONFIG.adminEmail && pass === ADMIN_CONFIG.adminPass) {
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('adminLayout').style.display = 'grid';
-    document.getElementById('adminNameDisplay').textContent = email.split('@')[0];
-    initSB();
-    loadSessions();
-    startRealtime();
-  } else {
-    document.getElementById('loginError').style.display = 'block';
+  const btn   = document.getElementById('loginBtn');
+  const errEl = document.getElementById('loginError');
+
+  if (!email || !pass) {
+    errEl.textContent = 'Email aur password dono required hain.';
+    errEl.style.display = 'block';
+    return;
   }
+
+  btn.disabled = true;
+  btn.textContent = 'Logging in...';
+  errEl.style.display = 'none';
+
+  initSB();
+
+  /* Production path: Supabase Auth */
+  if (sb && ADMIN_CONFIG.supabaseUrl !== 'YOUR_SUPABASE_URL') {
+    const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+    if (error) {
+      errEl.textContent = 'Invalid credentials. Please try again.';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Login →';
+      return;
+    }
+    document.getElementById('adminNameDisplay').textContent = data.user.email.split('@')[0];
+    showAdminPanel();
+    return;
+  }
+
+  /* Dev-only fallback (remove in production) */
+  if (email === ADMIN_CONFIG._devEmail && pass === ADMIN_CONFIG._devPass) {
+    document.getElementById('adminNameDisplay').textContent = email.split('@')[0];
+    showAdminPanel();
+    return;
+  }
+
+  errEl.textContent = 'Invalid credentials. Please try again.';
+  errEl.style.display = 'block';
+  btn.disabled = false;
+  btn.textContent = 'Login →';
+}
+
+function showAdminPanel() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('adminLayout').style.display = 'grid';
+  document.getElementById('loginBtn').disabled = false;
+  document.getElementById('loginBtn').textContent = 'Login →';
+  loadSessions();
+  startRealtime();
+}
+
+function adminLogout() {
+  if (sb) sb.auth.signOut().catch(() => {});
+  document.getElementById('adminLayout').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('adminEmail').value = '';
+  document.getElementById('adminPass').value = '';
+  currentSession = null;
+  sessions = [];
 }
 
 /* ── Load Sessions ── */
@@ -645,7 +743,7 @@ function renderMockData() {
 /* ── Render Chat List ── */
 function renderChatList() {
   let filtered = [...sessions];
-  if (filterMode === 'open')      filtered = filtered.filter(s => s.status === 'open');
+  if (filterMode === 'open')      filtered = filtered.filter(s => s.status === 'open' || !s.status);
   if (filterMode === 'resolved')  filtered = filtered.filter(s => s.status === 'resolved');
   if (filterMode === 'escalated') filtered = filtered.filter(s => s.status === 'escalated');
   if (filterMode === 'unread')    filtered = filtered.filter(s => s.unread > 0);
@@ -676,7 +774,7 @@ function renderChatList() {
         </div>
         <div class="ci-preview">${escHtml(s.last_message||'No messages yet')}</div>
         <div class="ci-badges">
-          <span class="ci-tag ${s.status}">${s.status||'open'}</span>
+          <span class="ci-tag ${s.status||'open'}">${s.status||'open'}</span>
           ${s.unread>0?`<span class="ci-tag unread-tag">${s.unread} new</span>`:''}
           ${s.status==='escalated'?'<span class="ci-tag escalated">⚠️ Needs help</span>':''}
         </div>
@@ -687,7 +785,7 @@ function renderChatList() {
 /* ── Open Session ── */
 async function openSession(id) {
   currentSession = sessions.find(s => s.id === id) || { id };
-  renderChatList(); // re-render to mark active
+  renderChatList();
 
   const convView = document.getElementById('convView');
   convView.innerHTML = `
@@ -695,26 +793,27 @@ async function openSession(id) {
       <div class="conv-header-avatar">👤</div>
       <div class="conv-header-info">
         <strong>${escHtml(currentSession.display_name||'Guest User')}</strong>
-        <span>Session: ${id} · ${escHtml(currentSession.page_url||'/')}</span>
+        <span>Session: ${escHtml(id)} · ${escHtml(currentSession.page_url||'/')}</span>
       </div>
       <div class="conv-actions">
-        <button class="action-btn resolve" onclick="resolveSession('${id}')">✅ Resolve</button>
-        <button class="action-btn escalate" onclick="escalateWA('${id}')">📲 WhatsApp</button>
+        <button class="action-btn resolve" onclick="resolveSession('${escHtml(id)}')">✅ Resolve</button>
+        <button class="action-btn escalate" onclick="escalateWA('${escHtml(id)}')">📲 WhatsApp</button>
       </div>
     </div>
     <div class="conv-messages" id="convMsgs">
       <div style="text-align:center;color:#475569;font-size:13px;padding:20px">Loading messages...</div>
     </div>
     <div class="conv-input-area">
-      <textarea class="conv-input" id="adminReplyInput" placeholder="Type a reply as admin..." rows="1"
+      <textarea class="conv-input" id="adminReplyInput"
+        placeholder="Type a reply as admin..."
+        rows="1"
         onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAdminReply()}"
-        oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+        oninput="this.style.height='auto';const sh=this.scrollHeight;this.style.height=(sh>0?Math.min(sh,120):44)+'px'"></textarea>
       <button class="conv-send" onclick="sendAdminReply()">➤</button>
     </div>`;
 
   await loadMessages(id);
 
-  // Mark unread as read
   currentSession.unread = 0;
   if (sb) await sb.from('ananya_chat_sessions').update({ unread: 0 }).eq('id', id).catch(()=>{});
   updateStats();
@@ -750,10 +849,10 @@ async function loadMessages(sessionId) {
 
 function renderDemoMessages() {
   const msgs = [
-    { role:'user', content:'Namaste! Delivery kab milega?', created_at: new Date(Date.now()-600000).toISOString() },
+    { role:'user',      content:'Namaste! Delivery kab milega?',                                             created_at: new Date(Date.now()-600000).toISOString() },
     { role:'assistant', content:'Namaste! 😊 Same-day delivery 5km ke andar hoti hai. Aapka order kab place kiya?', created_at: new Date(Date.now()-540000).toISOString() },
-    { role:'user', content:'Abhi order kiya, 2 km door hoon.', created_at: new Date(Date.now()-480000).toISOString() },
-    { role:'assistant', content:'Great! Aapka order 2-4 ghante mein deliver ho jayega. Tracking ke liye account mein check karein. 🚚', created_at: new Date(Date.now()-420000).toISOString() },
+    { role:'user',      content:'Abhi order kiya, 2 km door hoon.',                                          created_at: new Date(Date.now()-480000).toISOString() },
+    { role:'assistant', content:'Great! Aapka order 2-4 ghante mein deliver ho jayega. 🚚',                  created_at: new Date(Date.now()-420000).toISOString() },
   ];
   return msgs.map(m => renderMsg(m)).join('');
 }
@@ -761,11 +860,12 @@ function renderDemoMessages() {
 function renderMsg(m) {
   const cls = m.role === 'user' ? 'user' : m.role === 'admin' ? 'admin' : 'bot';
   const av  = cls === 'user' ? '👤' : cls === 'admin' ? '🛡️' : '🌸';
+  const time = new Date(m.created_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
   return `<div class="conv-msg ${cls}">
     <div class="conv-msg-av">${av}</div>
     <div>
       <div class="conv-bubble">${escHtml(m.content)}</div>
-      <div class="conv-msg-time">${new Date(m.created_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true})}</div>
+      <div class="conv-msg-time">${time}</div>
     </div>
   </div>`;
 }
@@ -788,10 +888,12 @@ async function sendAdminReply() {
 
   if (sb) {
     await sb.from('ananya_chat_messages').insert(msg).catch(()=>{});
-    await sb.from('ananya_chat_sessions').update({ last_message: text, updated_at: new Date().toISOString() }).eq('id', currentSession.id).catch(()=>{});
+    await sb.from('ananya_chat_sessions').update({
+      last_message: text.slice(0,100),
+      updated_at: new Date().toISOString(),
+    }).eq('id', currentSession.id).catch(()=>{});
   }
 
-  // Update local
   const s = sessions.find(s => s.id === currentSession.id);
   if (s) s.last_message = text;
   renderChatList();
@@ -804,18 +906,21 @@ async function resolveSession(id) {
   const s = sessions.find(s => s.id === id);
   if (s) s.status = 'resolved';
   renderChatList();
+  updateStats();
   showToast('✅ Marked as resolved!', 'success');
 }
 
 function escalateWA(id) {
   const s = sessions.find(s => s.id === id);
-  const msg = `Namaste! Rinku Kirana Store Admin bol raha hoon. Session #${id} ke baare mein baat karni thi.`;
+  const name = s?.display_name || 'Guest';
+  const msg = `Namaste! Rinku Kirana Store Admin bol raha hoon.\n${name} ke session #${id} ke baare mein baat karni thi.`;
   window.open(`https://wa.me/${ADMIN_CONFIG.whatsappNumber}?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
 /* ── Realtime ── */
 function startRealtime() {
   if (!sb) return;
+  if (realtimeChannel) { sb.removeChannel(realtimeChannel); }
   realtimeChannel = sb.channel('admin-support')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'ananya_chat_sessions' }, () => loadSessions())
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ananya_chat_messages' }, payload => {
@@ -823,7 +928,7 @@ function startRealtime() {
         const c = document.getElementById('convMsgs');
         if (c) { c.insertAdjacentHTML('beforeend', renderMsg(payload.new)); c.scrollTop = c.scrollHeight; }
       }
-      updateBadges();
+      loadSessions();
     })
     .subscribe();
 }
@@ -831,9 +936,9 @@ function startRealtime() {
 /* ── Stats & Badges ── */
 function updateStats() {
   const total    = sessions.length;
-  const open     = sessions.filter(s=>s.status==='open'||!s.status).length;
-  const unread   = sessions.reduce((a,s)=>a+(s.unread||0),0);
-  const resolved = sessions.filter(s=>s.status==='resolved').length;
+  const open     = sessions.filter(s => s.status === 'open' || !s.status).length;
+  const unread   = sessions.reduce((a,s) => a + (s.unread || 0), 0);
+  const resolved = sessions.filter(s => s.status === 'resolved').length;
   document.getElementById('stat-total').textContent    = total;
   document.getElementById('stat-open').textContent     = open;
   document.getElementById('stat-unread').textContent   = unread;
@@ -841,38 +946,36 @@ function updateStats() {
   document.getElementById('badge-all').textContent     = total;
   document.getElementById('badge-unread').textContent  = unread;
 }
-function updateBadges() { loadSessions(); }
 
 /* ── Filter / Sort ── */
 function setFilter(mode, btn) {
   filterMode = mode;
-  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   btn?.classList.add('active');
-  document.getElementById('topbarTitle').textContent =
-    mode==='all'?'All Conversations':mode==='open'?'Open Chats':
-    mode==='unread'?'Unread':mode==='resolved'?'Resolved':'Escalated';
+  const titles = { all:'All Conversations', open:'Open Chats', unread:'Unread', resolved:'Resolved', escalated:'Escalated' };
+  document.getElementById('topbarTitle').textContent = titles[mode] || 'All Conversations';
   renderChatList();
 }
 
 function setSort(mode, btn) {
   sortMode = mode;
-  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   btn?.classList.add('active');
   renderChatList();
 }
 
-function filterSearch(val) { renderChatList(); }
+function filterSearch() { renderChatList(); }
 
 /* ── Helpers ── */
 function escHtml(t) {
-  return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(t || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 function timeAgo(iso) {
   if (!iso) return '';
   const diff = (Date.now() - new Date(iso).getTime()) / 1000;
-  if (diff < 60)   return 'just now';
-  if (diff < 3600) return Math.floor(diff/60)+'m ago';
+  if (diff < 60)    return 'just now';
+  if (diff < 3600)  return Math.floor(diff/60)+'m ago';
   if (diff < 86400) return Math.floor(diff/3600)+'h ago';
   return Math.floor(diff/86400)+'d ago';
 }
@@ -881,16 +984,18 @@ function showToast(msg, type='') {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.className = `toast ${type} show`;
-  setTimeout(()=>t.classList.remove('show'), 3000);
+  setTimeout(() => t.classList.remove('show'), 3000);
 }
 
 /* Enter key on login */
 document.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && document.getElementById('loginScreen').style.display !== 'none') adminLogin();
+  if (e.key === 'Enter' && document.getElementById('loginScreen').style.display !== 'none') {
+    adminLogin();
+  }
 });
 </script>
 
-<!-- Supabase CDN (auto-uses if already loaded on page) -->
+<!-- Supabase CDN -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </body>
 </html>
