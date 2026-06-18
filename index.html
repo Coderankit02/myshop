@@ -31,6 +31,7 @@
   --orange:#FF6B35;--yellow:#FFB800;--red:#E63946;
   --dark:#1A1A2E;--text:#2D3748;--gray:#718096;--light:#F7FAFC;
   --border:#E2E8F0;--white:#fff;
+  --page-bg:#F5F5F5;--card-bg:#fff;--footer-bg:#1A1A2E;
 }
 html{-webkit-text-size-adjust:100%;}
 body{font-family:'Inter',sans-serif;background:#F5F5F5;color:var(--text);margin:0;min-height:100vh;overflow-x:hidden;}
@@ -203,7 +204,7 @@ input,select,textarea{outline:none;border:none;font-family:'Inter',sans-serif;fo
 .success-page p{font-size:0.88rem;color:var(--gray);margin-bottom:4px;}
 .order-pill{background:var(--primary-light);color:var(--primary);font-weight:800;padding:6px 20px;border-radius:50px;font-size:0.9rem;margin:8px 0;}
 .home-btn{margin-top:20px;background:var(--primary);color:#fff;padding:13px 40px;border-radius:50px;font-weight:800;font-size:0.95rem;min-height:48px;cursor:pointer;}
-.toast{position:fixed;bottom:calc(90px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--dark);color:#fff;padding:10px 22px;border-radius:50px;font-size:0.82rem;font-weight:600;z-index:999;animation:toastUp 0.3s ease;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,0.25);max-width:90%;overflow:hidden;text-overflow:ellipsis;}
+.toast{position:fixed;bottom:calc(90px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:#1A1A2E;color:#fff;padding:10px 22px;border-radius:50px;font-size:0.82rem;font-weight:600;z-index:999;animation:toastUp 0.3s ease;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,0.25);max-width:90%;overflow:hidden;text-overflow:ellipsis;}
 @keyframes toastUp{from{opacity:0;transform:translateX(-50%) translateY(20px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
 .site-footer{background:#1A1A2E;color:rgba(255,255,255,0.6);padding:28px 24px;text-align:center;font-size:0.75rem;line-height:2;border-radius:16px;margin-bottom:16px;}
 .footer-logo{color:#fff;font-weight:900;font-size:1.1rem;margin-bottom:8px;}
@@ -243,6 +244,57 @@ input,select,textarea{outline:none;border:none;font-family:'Inter',sans-serif;fo
 .addr-manage-link{font-size:0.72rem;color:var(--primary);font-weight:700;display:inline-block;margin-top:8px;}
 .addr-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .phone-error{font-size:0.7rem;color:var(--red);margin:-6px 0 10px;font-weight:600;}
+
+/* ── THEME TOGGLE (Light/Dark mode) ── */
+.theme-toggle-btn{background:var(--primary-light);color:var(--primary-dark);border-radius:12px;width:38px;height:38px;min-width:38px;display:flex;align-items:center;justify-content:center;font-size:1.05rem;flex-shrink:0;transition:background 0.2s,color 0.2s;}
+.dh-theme-btn{background:var(--primary-light);color:var(--primary-dark);border-radius:10px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:1.05rem;flex-shrink:0;transition:background 0.2s,color 0.2s;}
+
+html,body,.header,.desktop-header,.prod-card,.co-card,.cart-drawer,.how-section,.bottom-nav,.desktop-sidebar,.desktop-cats-wrap,.inp,.qr-box,.qr-area{transition:background-color 0.25s ease,border-color 0.25s ease,color 0.25s ease;}
+
+html[data-theme="dark"]{
+  --primary:#2ECC82;--primary-dark:#16A34A;--primary-light:#163828;
+  --orange:#FF8A5C;--yellow:#FFCB47;--red:#FF6B6B;
+  --dark:#F1F5F9;--text:#CBD5E1;--gray:#94A3B8;--light:#1A2332;
+  --border:#2D3B4E;--white:#151B26;
+  --page-bg:#0F1521;--card-bg:#151B26;--footer-bg:#0A0E16;
+}
+html[data-theme="dark"] body{background:#0F1521;}
+html[data-theme="dark"] ::-webkit-scrollbar-track{background:#1A2332;}
+html[data-theme="dark"] ::-webkit-scrollbar-thumb{background:#3A4A5E;}
+html[data-theme="dark"] .desktop-header{background:#151B26;box-shadow:0 2px 12px rgba(0,0,0,0.45);}
+html[data-theme="dark"] .dh-location{background:#1A2332;}
+html[data-theme="dark"] .dh-search{background:#1A2332;}
+html[data-theme="dark"] .dh-search:focus-within{background:#1F2937;}
+html[data-theme="dark"] .dh-search input::placeholder{color:#64748B;}
+html[data-theme="dark"] .header{background:#151B26;box-shadow:0 1px 8px rgba(0,0,0,0.45);}
+html[data-theme="dark"] .search-bar{background:#1A2332;}
+html[data-theme="dark"] .search-bar input::placeholder{color:#64748B;}
+html[data-theme="dark"] .desktop-sidebar{background:#151B26;box-shadow:0 2px 10px rgba(0,0,0,0.4);}
+html[data-theme="dark"] .sidebar-cat:hover{background:#1A2332;}
+html[data-theme="dark"] .desktop-cats-wrap{background:#151B26;}
+html[data-theme="dark"] .desktop-cat-chip{background:#1A2332;}
+html[data-theme="dark"] .prod-card{background:#151B26;}
+html[data-theme="dark"] .add-btn{background:transparent;}
+html[data-theme="dark"] .how-section{background:#151B26;}
+html[data-theme="dark"] .bottom-nav{background:#151B26;box-shadow:0 -4px 16px rgba(0,0,0,0.45);}
+html[data-theme="dark"] .cart-drawer{background:#151B26;}
+html[data-theme="dark"] .drawer-handle{background:#2D3B4E;}
+html[data-theme="dark"] .ci{border-bottom:1px solid #1A2332;}
+html[data-theme="dark"] .co-card{background:#151B26;box-shadow:0 2px 8px rgba(0,0,0,0.4);}
+html[data-theme="dark"] .inp{background:#1A2332;color:#F1F5F9;}
+html[data-theme="dark"] .inp::placeholder{color:#64748B;}
+html[data-theme="dark"] .qr-area{background:#0F2A1C;}
+html[data-theme="dark"] .qr-box{background:#1A2332;}
+html[data-theme="dark"] .addr-card.sel{background:#163828;}
+html[data-theme="dark"] .pay-card.sel{background:#163828;}
+html[data-theme="dark"] .order-pill{background:#163828;}
+html[data-theme="dark"] .banner-btn-sm{background:#fff;color:#1A1A2E;}
+html[data-theme="dark"] .offer-banner-full{background:linear-gradient(135deg,#3A2A14,#4A3318);border-color:#6B4A1F;}
+html[data-theme="dark"] .offer-banner-full .ob-title{color:#FFB74D;}
+html[data-theme="dark"] .offer-banner-full .ob-sub{color:#FFCC80;}
+html[data-theme="dark"] .offer-banner-ref{background:linear-gradient(135deg,#142A3D,#1A3550);border-color:#2F5878;}
+html[data-theme="dark"] .offer-banner-ref .ob-title-b{color:#64B5F6;}
+html[data-theme="dark"] .offer-banner-ref .ob-sub-b{color:#90CAF9;}
 </style>
 </head>
 <body>
@@ -351,11 +403,29 @@ function App(){
   const [bannerIdx,setBannerIdx]=useState(0);
   const [success,setSuccess]=useState(null);
   const [user,setUser]=useState(null);
+  const [theme,setTheme]=useState(()=>{
+    try{
+      const saved=localStorage.getItem('rk_theme');
+      if(saved==='dark'||saved==='light') return saved;
+      if(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+    }catch(e){}
+    return 'light';
+  });
 
   useEffect(()=>{
     const t=setInterval(()=>setBannerIdx(i=>(i+1)%BANNERS.length),4000);
     return()=>clearInterval(t);
   },[]);
+
+  /* ── Light/Dark mode: apply to <html>, persist, sync mobile browser chrome color ── */
+  useEffect(()=>{
+    document.documentElement.setAttribute('data-theme',theme);
+    try{localStorage.setItem('rk_theme',theme);}catch(e){}
+    const metaTheme=document.querySelector('meta[name="theme-color"]');
+    if(metaTheme) metaTheme.setAttribute('content',theme==='dark'?'#0F1521':'#15803D');
+  },[theme]);
+
+  const toggleTheme=()=>setTheme(t=>t==='dark'?'light':'dark');
 
   /* ── CHANGE B: Init RKCart + wire auth to modules ── */
   useEffect(()=>{
@@ -489,7 +559,7 @@ function App(){
         const items=PRODUCTS.filter(p=>p.cat===sec.cat).slice(0,6);
         if(!items.length)return null;
         return(
-          <div key={sec.cat} style={{background:'#fff',borderRadius:16,padding:'18px 20px',marginBottom:14}}>
+          <div key={sec.cat} style={{background:'var(--card-bg)',borderRadius:16,padding:'18px 20px',marginBottom:14}}>
             <div className="dsec-hd">
               <div className="dsec-title">{sec.title}</div>
               <button className="see-all" onClick={()=>{setActiveCat(sec.cat);setPage('shop');}}>See All →</button>
@@ -528,7 +598,7 @@ function App(){
         ))}
       </div>
       <div className="desktop-content">
-        <div style={{background:'#fff',borderRadius:16,padding:'18px 20px'}}>
+        <div style={{background:'var(--card-bg)',borderRadius:16,padding:'18px 20px'}}>
           <div style={{fontWeight:800,fontSize:'0.95rem',marginBottom:4}}>{filtered.length} Products</div>
           <div style={{fontSize:'0.78rem',color:'var(--gray)',marginBottom:14}}>{CATS.find(c=>c.id===activeCat)?.name||'All Categories'}</div>
           {filtered.length===0
@@ -541,7 +611,7 @@ function App(){
   );
 
   return(
-    <div style={{background:'#F5F5F5',minHeight:'100vh'}}>
+    <div style={{background:'var(--page-bg)',minHeight:'100vh'}}>
       <div className="desktop-header">
         <div className="dh-inner">
           <div className="logo" onClick={()=>setPage('home')}>rinku<span>.</span></div>
@@ -554,6 +624,7 @@ function App(){
           <div className="dh-nav">
             <button className={`dh-nav-btn ${page==='home'?'on':''}`} onClick={()=>setPage('home')}>🏠 Home</button>
             <button className={`dh-nav-btn ${page==='shop'?'on':''}`} onClick={()=>setPage('shop')}>🛍️ Shop</button>
+            <button className="dh-theme-btn" onClick={toggleTheme} title={theme==='dark'?'Light mode on karein':'Dark mode on karein'}>{theme==='dark'?'☀️':'🌙'}</button>
             {user
               ?<button className="dh-user-btn" onClick={()=>window.location.href='account.html'}>👤 {user.name.split(' ')[0]}</button>
               :<button className="dh-user-btn" onClick={goLogin}>👤 Login</button>
@@ -571,6 +642,7 @@ function App(){
             <div className="delivery-addr">📍 Aapka Mohalla ▾</div>
           </div>
           <div className="header-right">
+            <button className="theme-toggle-btn" onClick={toggleTheme} title={theme==='dark'?'Light mode on karein':'Dark mode on karein'}>{theme==='dark'?'☀️':'🌙'}</button>
             {user
               ?<button className="user-pill-btn" onClick={()=>window.location.href='account.html'}>👤 <span className="upn">{user.name.split(' ')[0]}</span></button>
               :<button className="user-pill-btn" onClick={goLogin}>👤 <span className="upn">Login</span></button>
@@ -616,7 +688,7 @@ function App(){
                 <span className="ob-icon">🎁</span>
                 <div><div className="ob-title">Pehli order par ₹50 OFF!</div><div className="ob-sub">Code: RINKU50 • Min order ₹199</div></div>
               </div>
-              <div style={{background:'#fff',marginBottom:8,paddingBottom:4}}>
+              <div style={{background:'var(--card-bg)',marginBottom:8,paddingBottom:4}}>
                 <div style={{padding:'12px 16px 0',fontWeight:800,fontSize:'0.92rem'}}>Shop by Category</div>
                 <div className="cats-row">
                   {CATS.map(c=>(
@@ -631,7 +703,7 @@ function App(){
                 const items=PRODUCTS.filter(p=>p.cat===sec.cat).slice(0,8);
                 if(!items.length)return null;
                 return(
-                  <div key={sec.cat} style={{background:'#fff',marginBottom:8,padding:'14px 0 4px'}}>
+                  <div key={sec.cat} style={{background:'var(--card-bg)',marginBottom:8,padding:'14px 0 4px'}}>
                     <div className="section-hd">
                       <div className="section-hd-title">{sec.title}</div>
                       <button className="see-all" onClick={()=>{setActiveCat(sec.cat);setPage('shop');}}>See All →</button>
@@ -648,7 +720,7 @@ function App(){
                   ))}
                 </div>
               </div>
-              <div style={{background:'#1A1A2E',color:'rgba(255,255,255,0.6)',padding:'20px 16px',textAlign:'center',fontSize:'0.72rem',lineHeight:1.8}}>
+              <div style={{background:'var(--footer-bg)',color:'rgba(255,255,255,0.6)',padding:'20px 16px',textAlign:'center',fontSize:'0.72rem',lineHeight:1.8}}>
                 <div style={{color:'#fff',fontWeight:800,fontSize:'1rem',marginBottom:6}}>🛒 rinku<span style={{color:'#FFB800'}}>.</span> kirana</div>
                 <div>📍 Aapke mohalle ki dukaan</div>
                 <div>📞 Call/WhatsApp: 6393196765</div>
@@ -664,7 +736,7 @@ function App(){
           <>
             <div className="d-view"><DesktopShop/></div>
             <div className="m-view">
-              <div style={{background:'#fff',marginBottom:8}}>
+              <div style={{background:'var(--card-bg)',marginBottom:8}}>
                 <div className="cats-row">
                   {CATS.map(c=>(
                     <div key={c.id} className={`cat-chip ${activeCat===c.id?'on':''}`} onClick={()=>setActiveCat(c.id)}>
@@ -674,7 +746,7 @@ function App(){
                   ))}
                 </div>
               </div>
-              <div style={{background:'#fff',padding:'10px 0 4px'}}>
+              <div style={{background:'var(--card-bg)',padding:'10px 0 4px'}}>
                 <div style={{fontWeight:800,fontSize:'0.9rem',marginBottom:2,padding:'0 16px'}}>{filtered.length} products</div>
                 <div style={{fontSize:'0.72rem',color:'var(--gray)',marginBottom:10,padding:'0 16px'}}>{CATS.find(c=>c.id===activeCat)?.name||'All'}</div>
                 <div className="mobile-shop-grid">{filtered.map(p=><PCard key={p.id} p={p}/>)}</div>
