@@ -14,7 +14,7 @@
     storeName:      'Rinku Kirana Store',
     whatsappNumber: '916393196765',
     supabaseUrl:    'https://pffaflasgwhydkmxwkky.supabase.co',
-    supabaseKey:    'YOUR_SUPABASE_ANON_KEY',
+    supabaseKey:    'sb_publishable__tFDYhkM3blZ0pIVT0YxLA_YvkKq79L',
 
     storeInfo: {
       timings:   'Monday–Saturday: 8 AM – 9 PM | Sunday: 9 AM – 7 PM',
