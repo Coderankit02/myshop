@@ -32,17 +32,6 @@
       appOffer:  'App install karo aur weekly special offers paao!',
     },
 
-    quickReplies: [
-      '🕐 Store Timings',
-      '🚚 Delivery Info',
-      '💳 Payment Methods',
-      '↩️ Return Policy',
-      '📞 Contact Us',
-      '🛒 Order Status',
-      '🎁 Offers & Discounts',
-      '📍 Store Location',
-    ],
-
     faqs: [
       { q: 'Store timings kya hain?',
         a: '🕐 Hamare store ke timings:\nMonday–Saturday: 8 AM – 9 PM\nSunday: 9 AM – 7 PM\n\nOnline order 24/7 place kar sakte hain! 😊' },
@@ -373,9 +362,6 @@
     const input = document.getElementById('ananya-input');
     if (input) { input.value = ''; input.style.height = 'auto'; }
 
-    // Remove quick replies after first message
-    document.getElementById('ananya-quick-replies')?.remove();
-
     appendMessage('user', text);
     saveMessage('user', text);
 
@@ -455,11 +441,6 @@
         </div>
       </div>`).join('');
 
-    /* Quick replies */
-    const qrHTML = `<div id="ananya-quick-replies" class="ananya-quick-replies">
-      ${CONFIG.quickReplies.map(r => `<button class="ananya-qr-btn">${r}</button>`).join('')}
-    </div>`;
-
     /* Main Widget */
     const widget = document.createElement('div');
     widget.id = 'ananya-widget';
@@ -494,7 +475,6 @@
       <!-- CHAT PANEL -->
       <div class="ananya-panel active" data-panel="chat" role="tabpanel">
         <div class="ananya-messages" id="ananya-msgs"></div>
-        ${qrHTML}
         <div class="ananya-input-area">
           <div class="ananya-input-row">
             <textarea
@@ -573,14 +553,6 @@
     document.getElementById('ananya-input').addEventListener('input', function () {
       this.style.height = 'auto';
       this.style.height = Math.min(this.scrollHeight, 100) + 'px';
-    });
-
-    // Quick replies
-    document.getElementById('ananya-quick-replies')?.addEventListener('click', e => {
-      if (e.target.classList.contains('ananya-qr-btn')) {
-        const text = e.target.textContent.replace(/^[\s\S]{1,3}/, '').trim();
-        sendMessage(text);
-      }
     });
 
     // FAQ accordion
