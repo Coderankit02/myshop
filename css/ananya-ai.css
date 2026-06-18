@@ -462,7 +462,7 @@
   flex: 1;
   border: 1.5px solid var(--ananya-border-input);
   border-radius: 22px;
-  padding: 13px 25px;
+  padding: 13px 18px;
   font-size: 16px;
   line-height: 20px;
   background: var(--ananya-bg);
@@ -484,7 +484,7 @@
 
 .ananya-input::placeholder {
   color: var(--ananya-text-muted);
-   margin-left:50px;
+  
 }
 
 .ananya-send-btn {
