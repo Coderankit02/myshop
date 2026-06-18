@@ -484,6 +484,7 @@
 
 .ananya-input::placeholder {
   color: var(--ananya-text-muted);
+   margin-left:10px;
 }
 
 .ananya-send-btn {
