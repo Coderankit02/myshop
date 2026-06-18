@@ -3,6 +3,7 @@
  * Rinku Kirana Store
  * Version: 3.0 PREMIUM — WhatsApp-style Chat
  * UI redesigned. Business logic untouched.
+ * FIX: Supabase v2 .catch() → try/catch (all DB calls)
  */
 (function () {
   'use strict';
@@ -180,18 +181,21 @@
   window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change', applyTheme);
 
   /* ══════════════════════════════════════════
-     SUPABASE — unchanged
+     SUPABASE — FIXED: .catch() → try/catch
   ══════════════════════════════════════════ */
   async function initSupabase() {
     try {
       const SB = window.supabase || window.supabaseJs;
       if (SB && CONFIG.supabaseUrl !== 'YOUR_SUPABASE_URL') {
         state.supabase = SB.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey);
-        const { data: { session } } = await state.supabase.auth.getSession()
-          .catch(() => ({ data: { session: null } }));
+        let session = null;
+        try {
+          const res = await state.supabase.auth.getSession();
+          session = res?.data?.session || null;
+        } catch (e) { /* auth optional */ }
         if (session?.user) state.userId = session.user.id;
       }
-    } catch (e) { /* optional */ }
+    } catch (e) { /* supabase optional */ }
   }
 
   async function getOrCreateSession() {
@@ -201,39 +205,48 @@
       localStorage.setItem('ananya-session-id', state.sessionId);
     }
     if (state.supabase) {
-      await state.supabase.from('ananya_chat_sessions').upsert({
-        id: state.sessionId,
-        user_id: state.userId || null,
-        page_url: window.location.pathname,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'id' }).catch(() => {});
+      try {
+        await state.supabase.from('ananya_chat_sessions').upsert({
+          id: state.sessionId,
+          user_id: state.userId || null,
+          page_url: window.location.pathname,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'id' });
+      } catch (e) { /* optional */ }
     }
   }
 
   async function saveMessage(role, text) {
     if (!state.supabase || !state.sessionId) return;
-    await state.supabase.from('ananya_chat_messages').insert({
-      session_id: state.sessionId,
-      role,
-      content: text,
-      created_at: new Date().toISOString(),
-    }).catch(() => {});
-    await state.supabase.from('ananya_chat_sessions').update({
-      last_message: text.slice(0, 100),
-      updated_at: new Date().toISOString(),
-    }).eq('id', state.sessionId).catch(() => {});
+    try {
+      await state.supabase.from('ananya_chat_messages').insert({
+        session_id: state.sessionId,
+        role,
+        content: text,
+        created_at: new Date().toISOString(),
+      });
+    } catch (e) { /* optional */ }
+    try {
+      await state.supabase.from('ananya_chat_sessions').update({
+        last_message: text.slice(0, 100),
+        updated_at: new Date().toISOString(),
+      }).eq('id', state.sessionId);
+    } catch (e) { /* optional */ }
   }
 
   async function loadHistory() {
     if (!state.supabase || !state.sessionId) return [];
-    const { data } = await state.supabase
-      .from('ananya_chat_messages')
-      .select('*')
-      .eq('session_id', state.sessionId)
-      .order('created_at', { ascending: true })
-      .limit(20)
-      .catch(() => ({ data: null }));
-    return data || [];
+    try {
+      const { data } = await state.supabase
+        .from('ananya_chat_messages')
+        .select('*')
+        .eq('session_id', state.sessionId)
+        .order('created_at', { ascending: true })
+        .limit(20);
+      return data || [];
+    } catch (e) {
+      return [];
+    }
   }
 
   /* ══════════════════════════════════════════
