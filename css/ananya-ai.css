@@ -1,7 +1,7 @@
 /* ============================================================
    ANANYA AI - Premium Floating Assistant
    Rinku Kirana Store
-   Version: 1.0.0
+   Version: 2.0.0 - FIXED
    ============================================================ */
 
 /* ── CSS Variables ── */
@@ -14,12 +14,12 @@
   --ananya-gradient: linear-gradient(135deg, #6c3fc5 0%, #ec4899 100%);
   --ananya-gradient-btn: linear-gradient(135deg, #7c3aed 0%, #db2777 100%);
 
-  --ananya-bg: rgba(255, 255, 255, 0.95);
-  --ananya-bg-glass: rgba(255, 255, 255, 0.85);
+  --ananya-bg: rgba(255, 255, 255, 0.98);
+  --ananya-bg-glass: rgba(255, 255, 255, 0.92);
   --ananya-bg-header: linear-gradient(135deg, #6c3fc5 0%, #9333ea 50%, #ec4899 100%);
   --ananya-bg-msg-user: linear-gradient(135deg, #6c3fc5, #ec4899);
   --ananya-bg-msg-bot: rgba(243, 244, 246, 0.9);
-  --ananya-bg-input: rgba(255, 255, 255, 0.95);
+  --ananya-bg-input: rgba(255, 255, 255, 0.98);
   --ananya-bg-overlay: rgba(0, 0, 0, 0.4);
 
   --ananya-text: #1f2937;
@@ -46,10 +46,10 @@
 /* ── Dark Mode ── */
 [data-ananya-theme="dark"],
 .ananya-dark {
-  --ananya-bg: rgba(15, 15, 25, 0.97);
-  --ananya-bg-glass: rgba(20, 20, 35, 0.9);
+  --ananya-bg: rgba(15, 15, 25, 0.99);
+  --ananya-bg-glass: rgba(20, 20, 35, 0.95);
   --ananya-bg-msg-bot: rgba(30, 30, 50, 0.9);
-  --ananya-bg-input: rgba(25, 25, 40, 0.95);
+  --ananya-bg-input: rgba(25, 25, 40, 0.98);
   --ananya-text: #f3f4f6;
   --ananya-text-light: #d1d5db;
   --ananya-text-muted: #6b7280;
@@ -61,11 +61,23 @@
 }
 
 /* ── Reset ── */
-#ananya-widget * {
+#ananya-widget *,
+#ananya-trigger {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
   font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Noto Sans', sans-serif;
+}
+
+/* ── Backdrop-filter fallback (Firefox / old Android) ── */
+@supports not (backdrop-filter: blur(1px)) {
+  #ananya-widget {
+    background: rgba(255, 255, 255, 1) !important;
+  }
+  [data-ananya-theme="dark"] #ananya-widget,
+  .ananya-dark #ananya-widget {
+    background: rgba(15, 15, 25, 1) !important;
+  }
 }
 
 /* ── Floating Trigger Button ── */
@@ -87,6 +99,7 @@
   transition: var(--ananya-transition);
   outline: none;
   -webkit-tap-highlight-color: transparent;
+  isolation: isolate;
 }
 
 #ananya-trigger:hover {
@@ -156,7 +169,9 @@
   bottom: 100px;
   right: 24px;
   width: var(--ananya-width);
-  height: var(--ananya-height);
+  /* FIX: guard height so widget never overflows viewport */
+  height: min(var(--ananya-height), calc(100dvh - 110px));
+  max-height: calc(100dvh - 110px);
   z-index: 999999;
   border-radius: var(--ananya-radius);
   background: var(--ananya-bg);
@@ -172,6 +187,7 @@
   opacity: 0;
   pointer-events: none;
   transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+  isolation: isolate;
 }
 
 #ananya-widget.ananya-open {
@@ -322,6 +338,7 @@
   flex: 1;
   flex-direction: column;
   overflow: hidden;
+  min-height: 0;
 }
 
 .ananya-panel.active {
@@ -332,11 +349,14 @@
 .ananya-messages {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 16px 14px;
   display: flex;
   flex-direction: column;
   gap: 12px;
   scroll-behavior: smooth;
+  min-height: 0;
+  overscroll-behavior: contain;
 }
 
 .ananya-messages::-webkit-scrollbar {
@@ -390,7 +410,8 @@
 .ananya-bubble {
   padding: 10px 14px;
   border-radius: var(--ananya-radius-msg);
-  font-size: 13.5px;
+  /* FIX: increased to 14px to reduce visual gap with 16px textarea */
+  font-size: 14px;
   line-height: 1.55;
   box-shadow: var(--ananya-shadow-msg);
   word-break: break-word;
@@ -420,6 +441,7 @@
   gap: 8px;
   align-items: flex-end;
   padding: 0 14px 8px;
+  flex-shrink: 0;
 }
 
 .ananya-typing-bubble {
@@ -455,7 +477,7 @@
 .ananya-input-row {
   display: flex;
   gap: 8px;
-   margin:10px 10px;
+  /* FIX: removed margin: 10px 10px — parent padding handles spacing */
   align-items: flex-end;
 }
 
@@ -463,14 +485,17 @@
   flex: 1;
   border: 1.5px solid var(--ananya-border-input);
   border-radius: 22px;
-  padding: 25px 25px;
+  /* FIX: padding reduced so content fits within min-height */
+  padding: 10px 16px;
+  /* FIX: keep 16px — prevents iOS auto-zoom on focus */
   font-size: 16px;
-  line-height: 20px;
+  line-height: 1.4;
   background: var(--ananya-bg);
   color: var(--ananya-text);
   resize: none;
   max-height: 100px;
-  min-height: 49px;
+  /* FIX: min-height reduced to match corrected padding */
+  min-height: 44px;
   outline: none;
   transition: var(--ananya-transition);
   font-family: inherit;
@@ -485,12 +510,11 @@
 
 .ananya-input::placeholder {
   color: var(--ananya-text-muted);
-  
 }
 
 .ananya-send-btn {
-  width: 49px;
-  height: 49px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: var(--ananya-gradient-btn);
   border: none;
@@ -516,9 +540,10 @@
 }
 
 .ananya-send-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
 }
 
 /* ── WhatsApp Banner ── */
@@ -534,6 +559,7 @@
   cursor: pointer;
   transition: var(--ananya-transition);
   text-decoration: none;
+  flex-shrink: 0;
 }
 
 .ananya-whatsapp-banner:hover {
@@ -571,10 +597,13 @@
 .ananya-faq-list {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 12px 14px;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-height: 0;
+  overscroll-behavior: contain;
 }
 
 .ananya-faq-list::-webkit-scrollbar { width: 4px; }
@@ -586,6 +615,7 @@
   overflow: hidden;
   background: var(--ananya-bg-glass);
   transition: var(--ananya-transition);
+  flex-shrink: 0;
 }
 
 .ananya-faq-item:hover {
@@ -636,10 +666,13 @@
 .ananya-info-panel {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 14px;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-height: 0;
+  overscroll-behavior: contain;
 }
 
 .ananya-info-panel::-webkit-scrollbar { width: 4px; }
@@ -653,6 +686,7 @@
   display: flex;
   gap: 12px;
   align-items: flex-start;
+  flex-shrink: 0;
 }
 
 .ananya-info-card-icon {
@@ -703,7 +737,8 @@
   font-weight: 700;
   padding: 5px 11px;
   border-radius: 20px;
-  z-index: 999997;
+  /* FIX: raised above trigger (999998) and widget (999999) */
+  z-index: 1000000;
   pointer-events: none;
   opacity: 0;
   transform: translateY(6px);
@@ -761,6 +796,19 @@
     max-height: 100dvh;
     border-radius: 0;
     transform-origin: center;
+    /* FIX: on mobile use opacity instead of scale/transform to avoid
+       creating a new stacking context that breaks position:fixed children
+       on Android WebViews and older Safari */
+    transform: none !important;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  #ananya-widget.ananya-open {
+    transform: none !important;
+    opacity: 1;
+    pointer-events: all;
   }
 
   .ananya-header {
@@ -768,18 +816,15 @@
   }
 
   .ananya-input-area {
-    padding-bottom: 26px;
+    padding-bottom: 16px;
   }
 
   @supports (padding: env(safe-area-inset-bottom)) {
     .ananya-input-area {
-      padding-bottom: calc(26px + env(safe-area-inset-bottom));
+      padding-bottom: calc(16px + env(safe-area-inset-bottom));
     }
   }
 
-  /* Lifted above the store's own bottom nav bar (Home/Shop/Cart/Account)
-     so the chat bubble never sits on top of it. Adjust this value if your
-     bottom nav bar height is different. */
   #ananya-trigger {
     bottom: calc(120px + env(safe-area-inset-bottom));
     right: 10px;
