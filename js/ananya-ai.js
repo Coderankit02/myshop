@@ -170,35 +170,29 @@
      STATE
   ══════════════════════════════════════════ */
   const state = {
-    isOpen:      false,
-    activeTab:   'chat',
-    theme:       localStorage.getItem('ananya-theme') || 'system',
-    messages:    [],
-    sessionId:   null,
-    userId:      null,
-    isTyping:    false,
-    unread:      0,
-    supabase:    null,
-    initialized: false,
+    isOpen:        false,
+    activeTab:     'chat',
+    messages:      [],
+    sessionId:     null,
+    userId:        null,
+    isTyping:      false,
+    unread:        0,
+    supabase:      null,
+    initialized:   false,
+    historyLoaded: false,
   };
 
   /* ══════════════════════════════════════════
-     THEME
+     THEME — auto light/dark based on device,
+     no manual switcher shown to the user.
   ══════════════════════════════════════════ */
   function applyTheme() {
-    const isDark = state.theme === 'dark' ||
-      (state.theme === 'system' && window.matchMedia('(prefers-color-scheme:dark)').matches);
+    const isDark = window.matchMedia('(prefers-color-scheme:dark)').matches;
     const el = document.getElementById('ananya-widget');
     if (el) el.setAttribute('data-ananya-theme', isDark ? 'dark' : 'light');
-    document.querySelectorAll('.ananya-theme-btn').forEach(b => {
-      b.classList.toggle('active', b.dataset.theme === state.theme);
-    });
-    localStorage.setItem('ananya-theme', state.theme);
   }
 
-  window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change', () => {
-    if (state.theme === 'system') applyTheme();
-  });
+  window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change', applyTheme);
 
   /* ══════════════════════════════════════════
      SUPABASE — Free tier only
@@ -534,13 +528,6 @@
           </div>
           <span class="ananya-whatsapp-arrow">→</span>
         </a>
-      </div>
-
-      <!-- THEME BAR -->
-      <div class="ananya-theme-row">
-        <button class="ananya-theme-btn" data-theme="light">☀️ Light</button>
-        <button class="ananya-theme-btn" data-theme="system">⚙️ Auto</button>
-        <button class="ananya-theme-btn" data-theme="dark">🌙 Dark</button>
       </div>`;
 
     document.body.appendChild(trigger);
@@ -605,14 +592,6 @@
       });
     });
 
-    // Theme
-    document.querySelectorAll('.ananya-theme-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        state.theme = btn.dataset.theme;
-        applyTheme();
-      });
-    });
-
     // Escape key
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape' && state.isOpen) closeWidget();
@@ -625,15 +604,24 @@
   function openWidget() {
     state.isOpen = true;
     document.getElementById('ananya-widget').classList.add('ananya-open');
+    document.getElementById('ananya-trigger').classList.add('ananya-trigger-hidden');
     document.getElementById('ananya-trigger').setAttribute('aria-expanded', 'true');
+    document.querySelector('.ananya-trigger-label')?.classList.remove('show');
     state.unread = 0;
     updateBadge();
+
+    if (!state.historyLoaded) {
+      state.historyLoaded = true;
+      loadInitialConversation();
+    }
+
     setTimeout(() => document.getElementById('ananya-input')?.focus(), 420);
   }
 
   function closeWidget() {
     state.isOpen = false;
     document.getElementById('ananya-widget').classList.remove('ananya-open');
+    document.getElementById('ananya-trigger').classList.remove('ananya-trigger-hidden');
     document.getElementById('ananya-trigger').setAttribute('aria-expanded', 'false');
   }
 
@@ -648,27 +636,28 @@
   }
 
   /* ══════════════════════════════════════════
-     WELCOME
+     INITIAL CONVERSATION (loaded on first open,
+     not on page load — feels like a real reply)
   ══════════════════════════════════════════ */
-  function showWelcome() {
-    const welcome =
-      `Namaste 👋\n\nMain Ananya hoon.\n\nRinku Kirana Store ki smart shopping assistant. 🌸\n\nMain products, orders, delivery aur support mein aapki madad kar sakti hoon.\n\nAaj main aapki kaise madad kar sakti hoon?`;
-    setTimeout(() => appendMessage('bot', welcome), 600);
-  }
-
-  /* ══════════════════════════════════════════
-     RESTORE CHAT HISTORY
-  ══════════════════════════════════════════ */
-  async function restoreHistory() {
+  async function loadInitialConversation() {
     const history = await loadHistory();
+
     if (history.length > 0) {
       history.forEach(m => appendMessage(
         m.role === 'assistant' ? 'bot' : m.role === 'admin' ? 'bot' : 'user',
         m.content
       ));
-    } else {
-      showWelcome();
+      return;
     }
+
+    showTyping();
+    await new Promise(r => setTimeout(r, 1000 + Math.random() * 600));
+    removeTyping();
+
+    const welcome =
+      `Namaste 👋\n\nMain Ananya hoon.\n\nRinku Kirana Store ki smart shopping assistant. 🌸\n\nMain products, orders, delivery aur support mein aapki madad kar sakti hoon.\n\nAaj main aapki kaise madad kar sakti hoon?`;
+    appendMessage('bot', welcome);
+    saveMessage('assistant', welcome);
   }
 
   /* ══════════════════════════════════════════
@@ -684,7 +673,6 @@
 
     await initSupabase();
     await getOrCreateSession();
-    await restoreHistory();
 
     // Show label hint after 3s
     setTimeout(() => {
