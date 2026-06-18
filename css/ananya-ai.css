@@ -944,13 +944,13 @@
   }
 
   #ananya-trigger {
-    bottom: 20px;
-    right: 20px;
+    bottom: 50px;
+    right: 10px;
   }
 
   .ananya-trigger-label {
-    bottom: 30px;
-    right: 88px;
+    bottom: 116px;
+    right: 14px;
   }
 }
 
