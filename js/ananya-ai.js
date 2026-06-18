@@ -13,7 +13,7 @@
   const CONFIG = {
     storeName:      'Rinku Kirana Store',
     whatsappNumber: '916393196765',
-    supabaseUrl:    'YOUR_SUPABASE_URL',
+    supabaseUrl:    'https://pffaflasgwhydkmxwkky.supabase.co',
     supabaseKey:    'YOUR_SUPABASE_ANON_KEY',
 
     storeInfo: {
