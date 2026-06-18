@@ -16,7 +16,7 @@
 (function () {
   'use strict';
 
-  const getDB = () => window.supabase;
+  const getDB = () => window.sb;
 
   /* ── Readable order number  e.g. RK-2024-4521 ──────────── */
   function _genOrderNumber() {
