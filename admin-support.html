@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ananya AI — Admin Support Panel | Rinku Kirana Store</title>
+<style>
+/* ── Reset & Base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0f0f1a; --bg2: #16162a; --bg3: #1e1e35;
+  --card: rgba(255,255,255,0.04); --card-hover: rgba(255,255,255,0.07);
+  --border: rgba(255,255,255,0.08); --border2: rgba(108,63,197,0.3);
+  --primary: #7c3aed; --primary-light: #a78bfa; --secondary: #ec4899;
+  --gradient: linear-gradient(135deg,#7c3aed,#ec4899);
+  --text: #f1f5f9; --text2: #94a3b8; --text3: #64748b;
+  --green: #22c55e; --red: #ef4444; --yellow: #f59e0b; --blue: #3b82f6;
+  --radius: 16px; --shadow: 0 8px 32px rgba(0,0,0,0.4);
+  --font: 'Segoe UI',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; overflow-x: hidden; }
+
+/* ── Layout ── */
+.admin-layout { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
+@media(max-width:768px){ .admin-layout{grid-template-columns:1fr;} .sidebar{display:none;} }
+
+/* ── Sidebar ── */
+.sidebar {
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+.sidebar-logo {
+  padding: 24px 20px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-logo h1 {
+  font-size: 18px;
+  font-weight: 800;
+  background: var(--gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.sidebar-logo p { font-size: 11.5px; color: var(--text3); margin-top: 3px; }
+
+.sidebar-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.stat-pill {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  text-align: center;
+}
+.stat-pill .n { font-size: 22px; font-weight: 800; color: var(--primary-light); }
+.stat-pill .l { font-size: 10.5px; color: var(--text3); margin-top: 2px; }
+
+.sidebar-nav {
+  flex: 1;
+  padding: 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.nav-btn {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: var(--text2);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  transition: all 0.2s;
+}
+.nav-btn:hover { background: var(--card-hover); color: var(--text); }
+.nav-btn.active { background: rgba(124,58,237,0.2); color: var(--primary-light); }
+.nav-btn .badge {
+  margin-left: auto;
+  background: var(--red);
+  color: white;
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 20px;
+  font-weight: 700;
+}
+
+.sidebar-footer {
+  padding: 16px;
+  border-top: 1px solid var(--border);
+}
+.admin-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.admin-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--gradient);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.admin-user-info strong { display: block; font-size: 13px; color: var(--text); }
+.admin-user-info span { font-size: 11px; color: var(--text3); }
+
+/* ── Main Content ── */
+.main-content {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 100vh;
+}
+
+/* ── Topbar ── */
+.topbar {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+.topbar h2 { font-size: 17px; font-weight: 700; flex: 1; }
+.topbar-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 14px;
+  width: 260px;
+}
+.topbar-search input {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+  width: 100%;
+}
+.topbar-search input::placeholder { color: var(--text3); }
+.filter-btns { display: flex; gap: 6px; }
+.filter-btn {
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text2);
+  font-size: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+.filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+.filter-btn:hover:not(.active) { border-color: var(--primary); color: var(--primary-light); }
+
+/* ── Content Area ── */
+.content-area {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  overflow: hidden;
+}
+@media(max-width:900px){ .content-area{grid-template-columns:1fr;} }
+
+/* ── Chat List ── */
+.chat-list {
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  background: var(--bg2);
+}
+.chat-list::-webkit-scrollbar { width: 4px; }
+.chat-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.chat-item {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  transition: all 0.2s;
+  position: relative;
+}
+.chat-item:hover { background: var(--card-hover); }
+.chat-item.active { background: rgba(124,58,237,0.12); border-left: 3px solid var(--primary); }
+.chat-item.unread { background: rgba(124,58,237,0.06); }
+
+.ci-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--gradient);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+  position: relative;
+}
+.ci-avatar .online-dot {
+  position: absolute;
+  bottom: 1px;
+  right: 1px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 2px solid var(--bg2);
+}
+.ci-avatar .online-dot.green { background: var(--green); }
+.ci-avatar .online-dot.gray { background: var(--text3); }
+
+.ci-body { flex: 1; min-width: 0; }
+.ci-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.ci-name { font-size: 13.5px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ci-time { font-size: 10.5px; color: var(--text3); white-space: nowrap; }
+.ci-preview { font-size: 12px; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ci-badges { display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap; }
+.ci-tag {
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 20px;
+  font-weight: 700;
+}
+.ci-tag.open { background: rgba(34,197,94,0.15); color: var(--green); }
+.ci-tag.resolved { background: rgba(100,116,139,0.15); color: var(--text3); }
+.ci-tag.unread-tag { background: var(--primary); color: white; }
+.ci-tag.escalated { background: rgba(239,68,68,0.15); color: var(--red); }
+
+/* ── Conversation View ── */
+.conv-view {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.conv-header {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.conv-header-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--gradient);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+.conv-header-info { flex: 1; }
+.conv-header-info strong { display: block; font-size: 14px; font-weight: 700; }
+.conv-header-info span { font-size: 12px; color: var(--text3); }
+.conv-actions { display: flex; gap: 8px; }
+.action-btn {
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text2);
+  font-size: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+.action-btn:hover { background: var(--card-hover); color: var(--text); }
+.action-btn.resolve { border-color: var(--green); color: var(--green); }
+.action-btn.resolve:hover { background: rgba(34,197,94,0.12); }
+.action-btn.escalate { border-color: var(--red); color: var(--red); }
+.action-btn.escalate:hover { background: rgba(239,68,68,0.12); }
+
+.conv-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.conv-messages::-webkit-scrollbar { width: 4px; }
+.conv-messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.conv-msg { display: flex; gap: 10px; align-items: flex-end; }
+.conv-msg.admin { flex-direction: row-reverse; }
+
+.conv-msg-av {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+.conv-msg.user .conv-msg-av { background: rgba(124,58,237,0.2); }
+.conv-msg.bot .conv-msg-av { background: linear-gradient(135deg,#7c3aed,#ec4899); }
+.conv-msg.admin .conv-msg-av { background: rgba(34,197,94,0.2); }
+
+.conv-bubble {
+  max-width: 70%;
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.conv-msg.user .conv-bubble { background: rgba(255,255,255,0.07); border-bottom-left-radius: 4px; }
+.conv-msg.bot .conv-bubble { background: rgba(124,58,237,0.15); border-bottom-left-radius: 4px; color: var(--primary-light); }
+.conv-msg.admin .conv-bubble { background: linear-gradient(135deg,#16a34a,#15803d); border-bottom-right-radius: 4px; }
+.conv-msg-time { font-size: 10px; color: var(--text3); padding: 0 4px; }
+
+.empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text3);
+  gap: 12px;
+}
+.empty-state .icon { font-size: 48px; opacity: 0.4; }
+.empty-state p { font-size: 14px; }
+
+.conv-input-area {
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+  background: var(--bg2);
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+.conv-input {
+  flex: 1;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 14px;
+  color: var(--text);
+  font-size: 13.5px;
+  resize: none;
+  max-height: 120px;
+  min-height: 44px;
+  outline: none;
+  font-family: var(--font);
+  transition: all 0.2s;
+}
+.conv-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(124,58,237,0.15); }
+.conv-input::placeholder { color: var(--text3); }
+.conv-send {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--gradient);
+  border: none;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.conv-send:hover { transform: scale(1.06); opacity: 0.9; }
+
+/* ── Toast ── */
+.toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  padding: 12px 18px;
+  font-size: 13px;
+  color: var(--text);
+  box-shadow: var(--shadow);
+  z-index: 9999;
+  transform: translateX(120%);
+  transition: transform 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.toast.show { transform: translateX(0); }
+.toast.success { border-color: rgba(34,197,94,0.4); }
+.toast.error { border-color: rgba(239,68,68,0.4); }
+
+/* ── Login Screen ── */
+.login-screen {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.login-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 40px 36px;
+  width: 380px;
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+.login-card h1 {
+  font-size: 22px;
+  font-weight: 800;
+  background: var(--gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 6px;
+}
+.login-card p { font-size: 13px; color: var(--text3); margin-bottom: 28px; }
+.login-field {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 11px 14px;
+  color: var(--text);
+  font-size: 13.5px;
+  width: 100%;
+  outline: none;
+  margin-bottom: 12px;
+  font-family: var(--font);
+  transition: all 0.2s;
+}
+.login-field:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(124,58,237,0.15); }
+.login-btn {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--gradient);
+  border: none;
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.login-btn:hover { opacity: 0.9; }
+.login-error { font-size: 12px; color: var(--red); margin-top: 8px; display: none; }
+
+/* Scrollbar global */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN SCREEN ── -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div style="font-size:40px;margin-bottom:12px">🌸</div>
+    <h1>Ananya AI Admin</h1>
+    <p>Rinku Kirana Store · Support Panel</p>
+    <input type="email" class="login-field" id="adminEmail" placeholder="Admin Email" autocomplete="off">
+    <input type="password" class="login-field" id="adminPass" placeholder="Password">
+    <button class="login-btn" onclick="adminLogin()">Login →</button>
+    <div class="login-error" id="loginError">Invalid credentials. Try again.</div>
+  </div>
+</div>
+
+<!-- ── MAIN LAYOUT ── -->
+<div class="admin-layout" id="adminLayout" style="display:none">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <h1>🌸 Ananya AI Admin</h1>
+      <p>Rinku Kirana Store · Support Panel</p>
+    </div>
+
+    <div class="sidebar-stats">
+      <div class="stat-pill"><div class="n" id="stat-total">0</div><div class="l">Total</div></div>
+      <div class="stat-pill"><div class="n" id="stat-open">0</div><div class="l">Open</div></div>
+      <div class="stat-pill"><div class="n" id="stat-unread">0</div><div class="l">Unread</div></div>
+      <div class="stat-pill"><div class="n" id="stat-resolved">0</div><div class="l">Resolved</div></div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button class="nav-btn active" onclick="setFilter('all',this)">💬 All Chats <span class="badge" id="badge-all">0</span></button>
+      <button class="nav-btn" onclick="setFilter('open',this)">🟢 Open</button>
+      <button class="nav-btn" onclick="setFilter('unread',this)">🔵 Unread <span class="badge" id="badge-unread">0</span></button>
+      <button class="nav-btn" onclick="setFilter('escalated',this)">🔴 Escalated</button>
+      <button class="nav-btn" onclick="setFilter('resolved',this)">✅ Resolved</button>
+      <hr style="border:none;border-top:1px solid rgba(255,255,255,0.06);margin:8px 0">
+      <button class="nav-btn" onclick="loadSessions()">🔄 Refresh</button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="admin-user">
+        <div class="admin-avatar">👤</div>
+        <div class="admin-user-info">
+          <strong id="adminNameDisplay">Admin</strong>
+          <span>Support Agent</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main-content">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <h2 id="topbarTitle">All Conversations</h2>
+      <div class="topbar-search">
+        <span>🔍</span>
+        <input type="text" id="searchInput" placeholder="Search conversations..." oninput="filterSearch(this.value)">
+      </div>
+      <div class="filter-btns">
+        <button class="filter-btn active" onclick="setSort('newest',this)">Newest</button>
+        <button class="filter-btn" onclick="setSort('oldest',this)">Oldest</button>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="content-area">
+
+      <!-- Chat List -->
+      <div class="chat-list" id="chatList">
+        <div style="padding:40px;text-align:center;color:#475569;font-size:13px">Loading conversations...</div>
+      </div>
+
+      <!-- Conversation -->
+      <div class="conv-view" id="convView">
+        <div class="empty-state">
+          <div class="icon">💬</div>
+          <p>Select a conversation to view</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══════════════════════════════════
+   CONFIG — same as ananya-ai.js
+══════════════════════════════════ */
+const ADMIN_CONFIG = {
+  supabaseUrl: 'YOUR_SUPABASE_URL',
+  supabaseKey: 'YOUR_SUPABASE_ANON_KEY',
+  whatsappNumber: '916393196765',
+  // Simple admin credentials (replace with Supabase Auth in production)
+  adminEmail: 'admin@rinkukiranastore.com',
+  adminPass:  'Admin@Rinku2024',
+};
+
+let sb = null;
+let sessions = [];
+let currentSession = null;
+let filterMode = 'all';
+let sortMode = 'newest';
+let realtimeChannel = null;
+
+/* ── Init Supabase ── */
+function initSB() {
+  if (window.supabase) {
+    sb = window.supabase.createClient(ADMIN_CONFIG.supabaseUrl, ADMIN_CONFIG.supabaseKey);
+  }
+}
+
+/* ── Login ── */
+function adminLogin() {
+  const email = document.getElementById('adminEmail').value.trim();
+  const pass  = document.getElementById('adminPass').value;
+  if (email === ADMIN_CONFIG.adminEmail && pass === ADMIN_CONFIG.adminPass) {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('adminLayout').style.display = 'grid';
+    document.getElementById('adminNameDisplay').textContent = email.split('@')[0];
+    initSB();
+    loadSessions();
+    startRealtime();
+  } else {
+    document.getElementById('loginError').style.display = 'block';
+  }
+}
+
+/* ── Load Sessions ── */
+async function loadSessions() {
+  if (!sb) { renderMockData(); return; }
+  const { data, error } = await sb
+    .from('ananya_chat_sessions')
+    .select('*')
+    .order('updated_at', { ascending: false })
+    .limit(100);
+  if (error || !data) { renderMockData(); return; }
+  sessions = data;
+  renderChatList();
+  updateStats();
+}
+
+/* ── Mock data when no Supabase ── */
+function renderMockData() {
+  sessions = [
+    { id: 'demo1', display_name: 'Guest User', last_message: 'Delivery kab milega?', updated_at: new Date().toISOString(), status: 'open', unread: 2, page_url: '/', is_online: true },
+    { id: 'demo2', display_name: 'Rahul Kumar', last_message: 'Return policy kya hai?', updated_at: new Date(Date.now()-3600000).toISOString(), status: 'escalated', unread: 0, page_url: '/account.html', is_online: false },
+    { id: 'demo3', display_name: 'Priya Singh', last_message: 'Order received, thank you!', updated_at: new Date(Date.now()-7200000).toISOString(), status: 'resolved', unread: 0, page_url: '/index.html', is_online: false },
+  ];
+  renderChatList();
+  updateStats();
+}
+
+/* ── Render Chat List ── */
+function renderChatList() {
+  let filtered = [...sessions];
+  if (filterMode === 'open')      filtered = filtered.filter(s => s.status === 'open');
+  if (filterMode === 'resolved')  filtered = filtered.filter(s => s.status === 'resolved');
+  if (filterMode === 'escalated') filtered = filtered.filter(s => s.status === 'escalated');
+  if (filterMode === 'unread')    filtered = filtered.filter(s => s.unread > 0);
+  if (sortMode === 'oldest')      filtered.reverse();
+
+  const searchVal = document.getElementById('searchInput')?.value?.toLowerCase() || '';
+  if (searchVal) filtered = filtered.filter(s =>
+    (s.display_name||'').toLowerCase().includes(searchVal) ||
+    (s.last_message||'').toLowerCase().includes(searchVal)
+  );
+
+  if (filtered.length === 0) {
+    document.getElementById('chatList').innerHTML = `<div style="padding:40px;text-align:center;color:#475569;font-size:13px">No conversations found.</div>`;
+    return;
+  }
+
+  document.getElementById('chatList').innerHTML = filtered.map(s => `
+    <div class="chat-item ${s.unread>0?'unread':''} ${currentSession?.id===s.id?'active':''}"
+         onclick="openSession('${s.id}')">
+      <div class="ci-avatar">
+        👤
+        <span class="online-dot ${s.is_online?'green':'gray'}"></span>
+      </div>
+      <div class="ci-body">
+        <div class="ci-top">
+          <span class="ci-name">${escHtml(s.display_name||'Guest')}</span>
+          <span class="ci-time">${timeAgo(s.updated_at)}</span>
+        </div>
+        <div class="ci-preview">${escHtml(s.last_message||'No messages yet')}</div>
+        <div class="ci-badges">
+          <span class="ci-tag ${s.status}">${s.status||'open'}</span>
+          ${s.unread>0?`<span class="ci-tag unread-tag">${s.unread} new</span>`:''}
+          ${s.status==='escalated'?'<span class="ci-tag escalated">⚠️ Needs help</span>':''}
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+/* ── Open Session ── */
+async function openSession(id) {
+  currentSession = sessions.find(s => s.id === id) || { id };
+  renderChatList(); // re-render to mark active
+
+  const convView = document.getElementById('convView');
+  convView.innerHTML = `
+    <div class="conv-header">
+      <div class="conv-header-avatar">👤</div>
+      <div class="conv-header-info">
+        <strong>${escHtml(currentSession.display_name||'Guest User')}</strong>
+        <span>Session: ${id} · ${escHtml(currentSession.page_url||'/')}</span>
+      </div>
+      <div class="conv-actions">
+        <button class="action-btn resolve" onclick="resolveSession('${id}')">✅ Resolve</button>
+        <button class="action-btn escalate" onclick="escalateWA('${id}')">📲 WhatsApp</button>
+      </div>
+    </div>
+    <div class="conv-messages" id="convMsgs">
+      <div style="text-align:center;color:#475569;font-size:13px;padding:20px">Loading messages...</div>
+    </div>
+    <div class="conv-input-area">
+      <textarea class="conv-input" id="adminReplyInput" placeholder="Type a reply as admin..." rows="1"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAdminReply()}"
+        oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+      <button class="conv-send" onclick="sendAdminReply()">➤</button>
+    </div>`;
+
+  await loadMessages(id);
+
+  // Mark unread as read
+  currentSession.unread = 0;
+  if (sb) await sb.from('ananya_chat_sessions').update({ unread: 0 }).eq('id', id).catch(()=>{});
+  updateStats();
+}
+
+/* ── Load Messages ── */
+async function loadMessages(sessionId) {
+  const container = document.getElementById('convMsgs');
+  if (!container) return;
+
+  if (!sb) {
+    container.innerHTML = renderDemoMessages();
+    container.scrollTop = container.scrollHeight;
+    return;
+  }
+
+  const { data } = await sb
+    .from('ananya_chat_messages')
+    .select('*')
+    .eq('session_id', sessionId)
+    .order('created_at', { ascending: true })
+    .limit(100)
+    .catch(()=>({ data: null }));
+
+  if (!data || data.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="icon">💬</div><p>No messages in this session.</p></div>`;
+    return;
+  }
+
+  container.innerHTML = data.map(m => renderMsg(m)).join('');
+  container.scrollTop = container.scrollHeight;
+}
+
+function renderDemoMessages() {
+  const msgs = [
+    { role:'user', content:'Namaste! Delivery kab milega?', created_at: new Date(Date.now()-600000).toISOString() },
+    { role:'assistant', content:'Namaste! 😊 Same-day delivery 5km ke andar hoti hai. Aapka order kab place kiya?', created_at: new Date(Date.now()-540000).toISOString() },
+    { role:'user', content:'Abhi order kiya, 2 km door hoon.', created_at: new Date(Date.now()-480000).toISOString() },
+    { role:'assistant', content:'Great! Aapka order 2-4 ghante mein deliver ho jayega. Tracking ke liye account mein check karein. 🚚', created_at: new Date(Date.now()-420000).toISOString() },
+  ];
+  return msgs.map(m => renderMsg(m)).join('');
+}
+
+function renderMsg(m) {
+  const cls = m.role === 'user' ? 'user' : m.role === 'admin' ? 'admin' : 'bot';
+  const av  = cls === 'user' ? '👤' : cls === 'admin' ? '🛡️' : '🌸';
+  return `<div class="conv-msg ${cls}">
+    <div class="conv-msg-av">${av}</div>
+    <div>
+      <div class="conv-bubble">${escHtml(m.content)}</div>
+      <div class="conv-msg-time">${new Date(m.created_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true})}</div>
+    </div>
+  </div>`;
+}
+
+/* ── Send Admin Reply ── */
+async function sendAdminReply() {
+  const input = document.getElementById('adminReplyInput');
+  const text  = input?.value?.trim();
+  if (!text || !currentSession) return;
+  input.value = '';
+  input.style.height = 'auto';
+
+  const msg = { session_id: currentSession.id, role: 'admin', content: text, created_at: new Date().toISOString() };
+
+  const container = document.getElementById('convMsgs');
+  if (container) {
+    container.insertAdjacentHTML('beforeend', renderMsg(msg));
+    container.scrollTop = container.scrollHeight;
+  }
+
+  if (sb) {
+    await sb.from('ananya_chat_messages').insert(msg).catch(()=>{});
+    await sb.from('ananya_chat_sessions').update({ last_message: text, updated_at: new Date().toISOString() }).eq('id', currentSession.id).catch(()=>{});
+  }
+
+  // Update local
+  const s = sessions.find(s => s.id === currentSession.id);
+  if (s) s.last_message = text;
+  renderChatList();
+  showToast('✅ Reply sent!', 'success');
+}
+
+/* ── Actions ── */
+async function resolveSession(id) {
+  if (sb) await sb.from('ananya_chat_sessions').update({ status: 'resolved' }).eq('id', id).catch(()=>{});
+  const s = sessions.find(s => s.id === id);
+  if (s) s.status = 'resolved';
+  renderChatList();
+  showToast('✅ Marked as resolved!', 'success');
+}
+
+function escalateWA(id) {
+  const s = sessions.find(s => s.id === id);
+  const msg = `Namaste! Rinku Kirana Store Admin bol raha hoon. Session #${id} ke baare mein baat karni thi.`;
+  window.open(`https://wa.me/${ADMIN_CONFIG.whatsappNumber}?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+/* ── Realtime ── */
+function startRealtime() {
+  if (!sb) return;
+  realtimeChannel = sb.channel('admin-support')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'ananya_chat_sessions' }, () => loadSessions())
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ananya_chat_messages' }, payload => {
+      if (currentSession && payload.new.session_id === currentSession.id) {
+        const c = document.getElementById('convMsgs');
+        if (c) { c.insertAdjacentHTML('beforeend', renderMsg(payload.new)); c.scrollTop = c.scrollHeight; }
+      }
+      updateBadges();
+    })
+    .subscribe();
+}
+
+/* ── Stats & Badges ── */
+function updateStats() {
+  const total    = sessions.length;
+  const open     = sessions.filter(s=>s.status==='open'||!s.status).length;
+  const unread   = sessions.reduce((a,s)=>a+(s.unread||0),0);
+  const resolved = sessions.filter(s=>s.status==='resolved').length;
+  document.getElementById('stat-total').textContent    = total;
+  document.getElementById('stat-open').textContent     = open;
+  document.getElementById('stat-unread').textContent   = unread;
+  document.getElementById('stat-resolved').textContent = resolved;
+  document.getElementById('badge-all').textContent     = total;
+  document.getElementById('badge-unread').textContent  = unread;
+}
+function updateBadges() { loadSessions(); }
+
+/* ── Filter / Sort ── */
+function setFilter(mode, btn) {
+  filterMode = mode;
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  btn?.classList.add('active');
+  document.getElementById('topbarTitle').textContent =
+    mode==='all'?'All Conversations':mode==='open'?'Open Chats':
+    mode==='unread'?'Unread':mode==='resolved'?'Resolved':'Escalated';
+  renderChatList();
+}
+
+function setSort(mode, btn) {
+  sortMode = mode;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn?.classList.add('active');
+  renderChatList();
+}
+
+function filterSearch(val) { renderChatList(); }
+
+/* ── Helpers ── */
+function escHtml(t) {
+  return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function timeAgo(iso) {
+  if (!iso) return '';
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (diff < 60)   return 'just now';
+  if (diff < 3600) return Math.floor(diff/60)+'m ago';
+  if (diff < 86400) return Math.floor(diff/3600)+'h ago';
+  return Math.floor(diff/86400)+'d ago';
+}
+
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(()=>t.classList.remove('show'), 3000);
+}
+
+/* Enter key on login */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('loginScreen').style.display !== 'none') adminLogin();
+});
+</script>
+
+<!-- Supabase CDN (auto-uses if already loaded on page) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</body>
+</html>
