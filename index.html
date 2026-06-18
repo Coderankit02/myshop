@@ -242,6 +242,7 @@ const {useState,useEffect}=React;
 const SUPABASE_URL='https://pffaflasgwhydkmxwkky.supabase.co';
 const SUPABASE_ANON_KEY='sb_publishable__tFDYhkM3blZ0pIVT0YxLA_YvkKq79L';
 const supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+window.sb=supabase; // expose the real client so cart.js/profile.js/orders.js getDB() can use it
 
 const goLogin=()=>{ window.location.href='login.html'; };
 const goSignup=()=>{ window.location.href='signup.html'; };
