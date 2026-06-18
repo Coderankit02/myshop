@@ -2,10 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Ananya AI — Admin Support Panel | Rinku Kirana Store</title>
 <style>
-/* ── Reset & Base ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
   --bg: #0f0f1a; --bg2: #16162a; --bg3: #1e1e35;
@@ -20,25 +19,26 @@
 }
 body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; overflow-x: hidden; }
 
-/* ── Layout ── */
 .admin-layout { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
-@media(max-width:768px){ .admin-layout{grid-template-columns:1fr;} .sidebar{display:none;} }
 
-/* ── Sidebar ── */
 .sidebar {
   background: var(--bg2);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  padding: 0;
   position: sticky;
   top: 0;
   height: 100vh;
   overflow-y: auto;
+  z-index: 500;
 }
 .sidebar-logo {
   padding: 24px 20px 20px;
   border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 .sidebar-logo h1 {
   font-size: 18px;
@@ -49,6 +49,17 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); min-
   background-clip: text;
 }
 .sidebar-logo p { font-size: 11.5px; color: var(--text3); margin-top: 3px; }
+.sidebar-close-btn {
+  display: none;
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
 
 .sidebar-stats {
   display: grid;
@@ -69,7 +80,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); min-
 
 .sidebar-nav {
   flex: 1;
-  padding: 12px 12px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -102,196 +113,106 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); min-
   font-weight: 700;
 }
 
-.sidebar-footer {
-  padding: 16px;
-  border-top: 1px solid var(--border);
-}
-.admin-user {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
+.sidebar-footer { padding: 16px; border-top: 1px solid var(--border); }
+.admin-user { display: flex; align-items: center; gap: 10px; }
 .admin-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: var(--gradient);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  flex-shrink: 0;
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--gradient); display: flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0;
 }
-.admin-user-info strong { display: block; font-size: 13px; color: var(--text); }
+.admin-user-info { flex: 1; min-width: 0; }
+.admin-user-info strong { display: block; font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .admin-user-info span { font-size: 11px; color: var(--text3); }
-
-/* ── Main Content ── */
-.main-content {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  height: 100vh;
+.logout-btn {
+  width: 100%; margin-top: 12px; padding: 9px 12px; border-radius: 10px;
+  border: 1px solid rgba(239,68,68,0.3); background: rgba(239,68,68,0.08);
+  color: var(--red); font-size: 12.5px; font-weight: 700; cursor: pointer; transition: all 0.2s;
 }
+.logout-btn:hover { background: rgba(239,68,68,0.18); }
 
-/* ── Topbar ── */
+.sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 499; }
+.sidebar-overlay.show { display: block; }
+
+.main-content { display: flex; flex-direction: column; overflow: hidden; height: 100vh; }
+
 .topbar {
-  background: var(--bg2);
-  border-bottom: 1px solid var(--border);
-  padding: 16px 24px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-shrink: 0;
+  background: var(--bg2); border-bottom: 1px solid var(--border);
+  padding: 14px 20px; display: flex; align-items: center; gap: 14px; flex-shrink: 0;
 }
-.topbar h2 { font-size: 17px; font-weight: 700; flex: 1; }
+.hamburger-btn {
+  display: none; background: var(--card); border: 1px solid var(--border); color: var(--text);
+  width: 36px; height: 36px; border-radius: 9px; font-size: 16px; cursor: pointer; flex-shrink: 0;
+}
+.topbar h2 { font-size: 16px; font-weight: 700; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .topbar-search {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 8px 14px;
-  width: 260px;
+  display: flex; align-items: center; gap: 8px; background: var(--card);
+  border: 1px solid var(--border); border-radius: 10px; padding: 8px 14px; width: 260px;
 }
-.topbar-search input {
-  background: transparent;
-  border: none;
-  color: var(--text);
-  font-size: 13px;
-  outline: none;
-  width: 100%;
-}
+.topbar-search input { background: transparent; border: none; color: var(--text); font-size: 13px; outline: none; width: 100%; }
 .topbar-search input::placeholder { color: var(--text3); }
 .filter-btns { display: flex; gap: 6px; }
 .filter-btn {
-  padding: 7px 14px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--text2);
-  font-size: 12px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.2s;
+  padding: 7px 14px; border-radius: 8px; border: 1px solid var(--border); background: transparent;
+  color: var(--text2); font-size: 12px; cursor: pointer; font-weight: 600; transition: all 0.2s; white-space: nowrap;
 }
 .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
 .filter-btn:hover:not(.active) { border-color: var(--primary); color: var(--primary-light); }
 
-/* ── Content Area ── */
-.content-area {
-  flex: 1;
-  display: grid;
-  grid-template-columns: 360px 1fr;
-  overflow: hidden;
-}
-@media(max-width:900px){ .content-area{grid-template-columns:1fr;} }
+.content-area { flex: 1; display: grid; grid-template-columns: 360px 1fr; overflow: hidden; }
 
-/* ── Chat List ── */
-.chat-list {
-  border-right: 1px solid var(--border);
-  overflow-y: auto;
-  background: var(--bg2);
-}
+.chat-list { border-right: 1px solid var(--border); overflow-y: auto; background: var(--bg2); }
 .chat-list::-webkit-scrollbar { width: 4px; }
 .chat-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
 .chat-item {
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--border);
-  cursor: pointer;
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-  transition: all 0.2s;
-  position: relative;
+  padding: 14px 18px; border-bottom: 1px solid var(--border); cursor: pointer;
+  display: flex; gap: 12px; align-items: flex-start; transition: all 0.2s; position: relative;
 }
 .chat-item:hover { background: var(--card-hover); }
 .chat-item.active { background: rgba(124,58,237,0.12); border-left: 3px solid var(--primary); }
 .chat-item.unread { background: rgba(124,58,237,0.06); }
 
 .ci-avatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: var(--gradient);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  flex-shrink: 0;
-  position: relative;
+  width: 44px; height: 44px; border-radius: 50%; background: var(--gradient);
+  display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; position: relative;
 }
-.ci-avatar .online-dot {
-  position: absolute;
-  bottom: 1px;
-  right: 1px;
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
-  border: 2px solid var(--bg2);
-}
+.ci-avatar .online-dot { position: absolute; bottom: 1px; right: 1px; width: 11px; height: 11px; border-radius: 50%; border: 2px solid var(--bg2); }
 .ci-avatar .online-dot.green { background: var(--green); }
 .ci-avatar .online-dot.gray { background: var(--text3); }
 
 .ci-body { flex: 1; min-width: 0; }
-.ci-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.ci-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; gap: 6px; }
 .ci-name { font-size: 13.5px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ci-time { font-size: 10.5px; color: var(--text3); white-space: nowrap; }
+.ci-time { font-size: 10.5px; color: var(--text3); white-space: nowrap; flex-shrink: 0; }
 .ci-preview { font-size: 12px; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ci-badges { display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap; }
-.ci-tag {
-  font-size: 10px;
-  padding: 2px 7px;
-  border-radius: 20px;
-  font-weight: 700;
-}
+.ci-tag { font-size: 10px; padding: 2px 7px; border-radius: 20px; font-weight: 700; }
 .ci-tag.open { background: rgba(34,197,94,0.15); color: var(--green); }
 .ci-tag.resolved { background: rgba(100,116,139,0.15); color: var(--text3); }
 .ci-tag.unread-tag { background: var(--primary); color: white; }
 .ci-tag.escalated { background: rgba(239,68,68,0.15); color: var(--red); }
 
-/* ── Conversation View ── */
-.conv-view {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  background: var(--bg);
-}
+.conv-view { display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
 
 .conv-header {
-  padding: 14px 20px;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg2);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-shrink: 0;
+  padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--bg2);
+  display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+}
+.conv-back-btn {
+  display: none; background: var(--card); border: 1px solid var(--border); color: var(--text);
+  width: 32px; height: 32px; border-radius: 8px; font-size: 15px; cursor: pointer; flex-shrink: 0;
 }
 .conv-header-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--gradient);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
+  width: 40px; height: 40px; border-radius: 50%; background: var(--gradient);
+  display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;
 }
-.conv-header-info { flex: 1; }
-.conv-header-info strong { display: block; font-size: 14px; font-weight: 700; }
-.conv-header-info span { font-size: 12px; color: var(--text3); }
-.conv-actions { display: flex; gap: 8px; }
+.conv-header-info { flex: 1; min-width: 0; }
+.conv-header-info strong { display: block; font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.conv-header-info span { font-size: 11.5px; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.conv-actions { display: flex; gap: 6px; flex-shrink: 0; }
 .action-btn {
-  padding: 7px 14px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--text2);
-  font-size: 12px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.2s;
+  padding: 7px 12px; border-radius: 8px; border: 1px solid var(--border); background: transparent;
+  color: var(--text2); font-size: 11.5px; cursor: pointer; font-weight: 600; transition: all 0.2s; white-space: nowrap;
 }
 .action-btn:hover { background: var(--card-hover); color: var(--text); }
 .action-btn.resolve { border-color: var(--green); color: var(--green); }
@@ -299,14 +220,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); min-
 .action-btn.escalate { border-color: var(--red); color: var(--red); }
 .action-btn.escalate:hover { background: rgba(239,68,68,0.12); }
 
-.conv-messages {
-  flex: 1;
-  overflow-y: auto;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
+.conv-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
 .conv-messages::-webkit-scrollbar { width: 4px; }
 .conv-messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
@@ -314,197 +228,138 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); min-
 .conv-msg.admin { flex-direction: row-reverse; }
 
 .conv-msg-av {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 15px;
-  flex-shrink: 0;
+  width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; font-size: 15px; flex-shrink: 0;
 }
 .conv-msg.user .conv-msg-av { background: rgba(124,58,237,0.2); }
 .conv-msg.bot .conv-msg-av { background: linear-gradient(135deg,#7c3aed,#ec4899); }
 .conv-msg.admin .conv-msg-av { background: rgba(34,197,94,0.2); }
 
 .conv-bubble {
-  max-width: 70%;
-  padding: 10px 14px;
-  border-radius: 16px;
-  font-size: 13.5px;
-  line-height: 1.55;
-  white-space: pre-wrap;
-  word-break: break-word;
+  max-width: 70%; padding: 10px 14px; border-radius: 16px; font-size: 13.5px;
+  line-height: 1.55; white-space: pre-wrap; word-break: break-word;
 }
 .conv-msg.user .conv-bubble { background: rgba(255,255,255,0.07); border-bottom-left-radius: 4px; }
 .conv-msg.bot .conv-bubble { background: rgba(124,58,237,0.15); border-bottom-left-radius: 4px; color: var(--primary-light); }
 .conv-msg.admin .conv-bubble { background: linear-gradient(135deg,#16a34a,#15803d); border-bottom-right-radius: 4px; }
 .conv-msg-time { font-size: 10px; color: var(--text3); padding: 0 4px; }
 
-.empty-state {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: var(--text3);
-  gap: 12px;
-}
+.empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text3); gap: 12px; }
 .empty-state .icon { font-size: 48px; opacity: 0.4; }
 .empty-state p { font-size: 14px; }
 
-.conv-input-area {
-  padding: 14px 20px;
-  border-top: 1px solid var(--border);
-  background: var(--bg2);
-  display: flex;
-  gap: 10px;
-  align-items: flex-end;
-}
+.conv-input-area { padding: 12px 16px; border-top: 1px solid var(--border); background: var(--bg2); display: flex; gap: 10px; align-items: flex-end; }
 .conv-input {
-  flex: 1;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 10px 14px;
-  color: var(--text);
-  font-size: 13.5px;
-  resize: none;
-  max-height: 120px;
-  min-height: 44px;
-  outline: none;
-  font-family: var(--font);
-  transition: all 0.2s;
+  flex: 1; background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 10px 14px; color: var(--text); font-size: 13.5px; resize: none; max-height: 120px;
+  min-height: 44px; outline: none; font-family: var(--font); transition: all 0.2s;
 }
 .conv-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(124,58,237,0.15); }
 .conv-input::placeholder { color: var(--text3); }
 .conv-send {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: var(--gradient);
-  border: none;
-  color: white;
-  font-size: 18px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  flex-shrink: 0;
+  width: 44px; height: 44px; border-radius: 12px; background: var(--gradient); border: none;
+  color: white; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s; flex-shrink: 0;
 }
 .conv-send:hover { transform: scale(1.06); opacity: 0.9; }
+.conv-send:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-/* ── Toast ── */
 .toast {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  background: var(--bg2);
-  border: 1px solid var(--border2);
-  border-radius: 12px;
-  padding: 12px 18px;
-  font-size: 13px;
-  color: var(--text);
-  box-shadow: var(--shadow);
-  z-index: 9999;
-  transform: translateX(120%);
-  transition: transform 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  position: fixed; top: 20px; right: 20px; left: 20px; margin: 0 auto; max-width: 320px;
+  background: var(--bg2); border: 1px solid var(--border2); border-radius: 12px; padding: 12px 18px;
+  font-size: 13px; color: var(--text); box-shadow: var(--shadow); z-index: 9999;
+  transform: translateY(-150%); transition: transform 0.3s ease; display: flex; align-items: center; gap: 8px;
 }
-.toast.show { transform: translateX(0); }
+.toast.show { transform: translateY(0); }
 .toast.success { border-color: rgba(34,197,94,0.4); }
 .toast.error { border-color: rgba(239,68,68,0.4); }
+@media(min-width: 480px){
+  .toast { left: auto; right: 20px; transform: translateX(120%); }
+  .toast.show { transform: translateX(0); }
+}
 
-/* ── Login Screen ── */
-.login-screen {
-  position: fixed;
-  inset: 0;
-  background: var(--bg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-}
-.login-card {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 24px;
-  padding: 40px 36px;
-  width: 380px;
-  box-shadow: var(--shadow);
-  text-align: center;
-}
+.login-screen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 16px; }
+.login-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 24px; padding: 40px 32px; width: 380px; max-width: 100%; box-shadow: var(--shadow); text-align: center; }
 .login-card h1 {
-  font-size: 22px;
-  font-weight: 800;
-  background: var(--gradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin-bottom: 6px;
+  font-size: 22px; font-weight: 800; background: var(--gradient); -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 6px;
 }
 .login-card p { font-size: 13px; color: var(--text3); margin-bottom: 28px; }
 .login-field {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 11px 14px;
-  color: var(--text);
-  font-size: 13.5px;
-  width: 100%;
-  outline: none;
-  margin-bottom: 12px;
-  font-family: var(--font);
-  transition: all 0.2s;
+  background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 11px 14px;
+  color: var(--text); font-size: 13.5px; width: 100%; outline: none; margin-bottom: 12px;
+  font-family: var(--font); transition: all 0.2s;
 }
 .login-field:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(124,58,237,0.15); }
 .login-btn {
-  width: 100%;
-  padding: 12px;
-  border-radius: 10px;
-  background: var(--gradient);
-  border: none;
-  color: white;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: opacity 0.2s;
+  width: 100%; padding: 12px; border-radius: 10px; background: var(--gradient); border: none;
+  color: white; font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity 0.2s;
 }
 .login-btn:hover { opacity: 0.9; }
 .login-error { font-size: 12px; color: var(--red); margin-top: 8px; display: none; }
+.login-status { font-size: 11.5px; color: var(--text3); margin-top: 14px; }
+.login-status .dot { display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:5px; }
+.login-status .dot.ok { background: var(--green); }
+.login-status .dot.bad { background: var(--red); }
 
-/* Scrollbar global */
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+@media(max-width: 1000px){ .topbar-search { width: 180px; } }
+
+@media(max-width: 860px){
+  .admin-layout { grid-template-columns: 1fr; }
+  .sidebar {
+    position: fixed; top: 0; left: 0; width: 280px; max-width: 82vw; height: 100dvh;
+    transform: translateX(-100%); transition: transform 0.25s ease; box-shadow: 0 0 40px rgba(0,0,0,0.5);
+  }
+  .sidebar.open { transform: translateX(0); }
+  .sidebar-close-btn { display: block; }
+  .hamburger-btn { display: block; }
+  .content-area { grid-template-columns: 1fr; position: relative; }
+  .chat-list { border-right: none; display: block; }
+  .conv-view { display: none; }
+  .content-area.show-conv .chat-list { display: none; }
+  .content-area.show-conv .conv-view { display: flex; }
+  .conv-back-btn { display: flex; align-items: center; justify-content: center; }
+  .topbar-search { width: 140px; }
+  .topbar h2 { font-size: 14px; }
+  .filter-btns { display: none; }
+}
+
+@media(max-width: 420px){
+  .topbar-search { display: none; }
+  .conv-actions .action-btn span.full-label { display: none; }
+}
 </style>
 </head>
 <body>
 
-<!-- ── LOGIN SCREEN ── -->
 <div class="login-screen" id="loginScreen">
   <div class="login-card">
     <div style="font-size:40px;margin-bottom:12px">🌸</div>
     <h1>Ananya AI Admin</h1>
     <p>Rinku Kirana Store · Support Panel</p>
-    <input type="email" class="login-field" id="adminEmail" placeholder="Admin Email" autocomplete="off">
-    <input type="password" class="login-field" id="adminPass" placeholder="Password">
+    <input type="email" class="login-field" id="adminEmail" placeholder="Admin Email" autocomplete="username">
+    <input type="password" class="login-field" id="adminPass" placeholder="Password" autocomplete="current-password">
     <button class="login-btn" onclick="adminLogin()">Login →</button>
     <div class="login-error" id="loginError">Invalid credentials. Try again.</div>
+    <div class="login-status" id="loginStatus"><span class="dot bad"></span>Checking database connection...</div>
   </div>
 </div>
 
-<!-- ── MAIN LAYOUT ── -->
 <div class="admin-layout" id="adminLayout" style="display:none">
 
-  <!-- Sidebar -->
-  <aside class="sidebar">
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+  <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">
-      <h1>🌸 Ananya AI Admin</h1>
-      <p>Rinku Kirana Store · Support Panel</p>
+      <div>
+        <h1>🌸 Ananya AI Admin</h1>
+        <p>Rinku Kirana Store · Support Panel</p>
+      </div>
+      <button class="sidebar-close-btn" onclick="closeSidebar()">✕</button>
     </div>
 
     <div class="sidebar-stats">
@@ -532,18 +387,18 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); min-
           <span>Support Agent</span>
         </div>
       </div>
+      <button class="logout-btn" onclick="adminLogout()">🚪 Logout</button>
     </div>
   </aside>
 
-  <!-- Main -->
   <div class="main-content">
 
-    <!-- Topbar -->
     <div class="topbar">
+      <button class="hamburger-btn" onclick="openSidebar()">☰</button>
       <h2 id="topbarTitle">All Conversations</h2>
       <div class="topbar-search">
         <span>🔍</span>
-        <input type="text" id="searchInput" placeholder="Search conversations..." oninput="filterSearch(this.value)">
+        <input type="text" id="searchInput" placeholder="Search..." oninput="filterSearch(this.value)">
       </div>
       <div class="filter-btns">
         <button class="filter-btn active" onclick="setSort('newest',this)">Newest</button>
@@ -551,15 +406,12 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); min-
       </div>
     </div>
 
-    <!-- Content -->
-    <div class="content-area">
+    <div class="content-area" id="contentArea">
 
-      <!-- Chat List -->
       <div class="chat-list" id="chatList">
         <div style="padding:40px;text-align:center;color:#475569;font-size:13px">Loading conversations...</div>
       </div>
 
-      <!-- Conversation -->
       <div class="conv-view" id="convView">
         <div class="empty-state">
           <div class="icon">💬</div>
@@ -571,21 +423,18 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); min-
   </div>
 </div>
 
-<!-- Toast -->
 <div class="toast" id="toast"></div>
 
 <script>
-/* ══════════════════════════════════
-   CONFIG — same as ananya-ai.js
-══════════════════════════════════ */
 const ADMIN_CONFIG = {
-  supabaseUrl: 'YOUR_SUPABASE_URL',
-  supabaseKey: 'YOUR_SUPABASE_ANON_KEY',
+  supabaseUrl: 'https://pffaflasgwhydkmxwkky.supabase.co',
+  supabaseKey: 'sb_publishable__tFDYhkM3blZ0pIVT0YxLA_YvkKq79L',
   whatsappNumber: '916393196765',
-  // Simple admin credentials (replace with Supabase Auth in production)
   adminEmail: 'admin@rinkukiranastore.com',
   adminPass:  'Admin@Rinku2024',
 };
+
+const SESSION_KEY = 'ananya_admin_session';
 
 let sb = null;
 let sessions = [];
@@ -593,45 +442,83 @@ let currentSession = null;
 let filterMode = 'all';
 let sortMode = 'newest';
 let realtimeChannel = null;
+let messagesChannel = null;
 
-/* ── Init Supabase ── */
 function initSB() {
-  if (window.supabase) {
-    sb = window.supabase.createClient(ADMIN_CONFIG.supabaseUrl, ADMIN_CONFIG.supabaseKey);
+  if (window.supabase && ADMIN_CONFIG.supabaseUrl !== 'YOUR_SUPABASE_URL') {
+    try {
+      sb = window.supabase.createClient(ADMIN_CONFIG.supabaseUrl, ADMIN_CONFIG.supabaseKey);
+    } catch (e) {
+      console.error('Supabase init failed', e);
+      sb = null;
+    }
   }
 }
 
-/* ── Login ── */
+function checkExistingSession() {
+  const raw = localStorage.getItem(SESSION_KEY);
+  if (!raw) return false;
+  try {
+    const saved = JSON.parse(raw);
+    if (saved && saved.email === ADMIN_CONFIG.adminEmail) {
+      enterAdminPanel(saved.email);
+      return true;
+    }
+  } catch (e) { /* ignore */ }
+  return false;
+}
+
 function adminLogin() {
   const email = document.getElementById('adminEmail').value.trim();
   const pass  = document.getElementById('adminPass').value;
   if (email === ADMIN_CONFIG.adminEmail && pass === ADMIN_CONFIG.adminPass) {
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('adminLayout').style.display = 'grid';
-    document.getElementById('adminNameDisplay').textContent = email.split('@')[0];
-    initSB();
-    loadSessions();
-    startRealtime();
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ email, loggedInAt: Date.now() }));
+    document.getElementById('loginError').style.display = 'none';
+    enterAdminPanel(email);
   } else {
     document.getElementById('loginError').style.display = 'block';
   }
 }
 
-/* ── Load Sessions ── */
-async function loadSessions() {
-  if (!sb) { renderMockData(); return; }
-  const { data, error } = await sb
-    .from('ananya_chat_sessions')
-    .select('*')
-    .order('updated_at', { ascending: false })
-    .limit(100);
-  if (error || !data) { renderMockData(); return; }
-  sessions = data;
-  renderChatList();
-  updateStats();
+function enterAdminPanel(email) {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('adminLayout').style.display = 'grid';
+  document.getElementById('adminNameDisplay').textContent = email.split('@')[0];
+  initSB();
+  loadSessions();
+  startRealtime();
 }
 
-/* ── Mock data when no Supabase ── */
+function adminLogout() {
+  localStorage.removeItem(SESSION_KEY);
+  if (realtimeChannel) { try { sb.removeChannel(realtimeChannel); } catch(e){} realtimeChannel = null; }
+  if (messagesChannel) { try { sb.removeChannel(messagesChannel); } catch(e){} messagesChannel = null; }
+  sessions = [];
+  currentSession = null;
+  document.getElementById('adminLayout').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('adminEmail').value = '';
+  document.getElementById('adminPass').value = '';
+}
+
+async function loadSessions() {
+  if (!sb) { renderMockData(); return; }
+  try {
+    const { data, error } = await sb
+      .from('ananya_chat_sessions')
+      .select('*')
+      .order('updated_at', { ascending: false })
+      .limit(200);
+    if (error || !data) { console.warn('loadSessions error', error); renderMockData(); return; }
+    sessions = data;
+    renderChatList();
+    updateStats();
+  } catch (e) {
+    console.error('loadSessions exception', e);
+    renderMockData();
+  }
+}
+
 function renderMockData() {
   sessions = [
     { id: 'demo1', display_name: 'Guest User', last_message: 'Delivery kab milega?', updated_at: new Date().toISOString(), status: 'open', unread: 2, page_url: '/', is_online: true },
@@ -640,12 +527,12 @@ function renderMockData() {
   ];
   renderChatList();
   updateStats();
+  showToast('⚠️ Could not reach database — showing demo data', 'error');
 }
 
-/* ── Render Chat List ── */
 function renderChatList() {
   let filtered = [...sessions];
-  if (filterMode === 'open')      filtered = filtered.filter(s => s.status === 'open');
+  if (filterMode === 'open')      filtered = filtered.filter(s => s.status === 'open' || !s.status);
   if (filterMode === 'resolved')  filtered = filtered.filter(s => s.status === 'resolved');
   if (filterMode === 'escalated') filtered = filtered.filter(s => s.status === 'escalated');
   if (filterMode === 'unread')    filtered = filtered.filter(s => s.unread > 0);
@@ -676,7 +563,7 @@ function renderChatList() {
         </div>
         <div class="ci-preview">${escHtml(s.last_message||'No messages yet')}</div>
         <div class="ci-badges">
-          <span class="ci-tag ${s.status}">${s.status||'open'}</span>
+          <span class="ci-tag ${s.status||'open'}">${s.status||'open'}</span>
           ${s.unread>0?`<span class="ci-tag unread-tag">${s.unread} new</span>`:''}
           ${s.status==='escalated'?'<span class="ci-tag escalated">⚠️ Needs help</span>':''}
         </div>
@@ -684,22 +571,24 @@ function renderChatList() {
     </div>`).join('');
 }
 
-/* ── Open Session ── */
 async function openSession(id) {
   currentSession = sessions.find(s => s.id === id) || { id };
-  renderChatList(); // re-render to mark active
+  renderChatList();
+
+  document.getElementById('contentArea').classList.add('show-conv');
 
   const convView = document.getElementById('convView');
   convView.innerHTML = `
     <div class="conv-header">
+      <button class="conv-back-btn" onclick="backToList()">←</button>
       <div class="conv-header-avatar">👤</div>
       <div class="conv-header-info">
         <strong>${escHtml(currentSession.display_name||'Guest User')}</strong>
-        <span>Session: ${id} · ${escHtml(currentSession.page_url||'/')}</span>
+        <span>${escHtml(currentSession.page_url||'/')}</span>
       </div>
       <div class="conv-actions">
-        <button class="action-btn resolve" onclick="resolveSession('${id}')">✅ Resolve</button>
-        <button class="action-btn escalate" onclick="escalateWA('${id}')">📲 WhatsApp</button>
+        <button class="action-btn resolve" onclick="resolveSession('${id}')">✅<span class="full-label"> Resolve</span></button>
+        <button class="action-btn escalate" onclick="escalateWA('${id}')">📲<span class="full-label"> WhatsApp</span></button>
       </div>
     </div>
     <div class="conv-messages" id="convMsgs">
@@ -709,18 +598,24 @@ async function openSession(id) {
       <textarea class="conv-input" id="adminReplyInput" placeholder="Type a reply as admin..." rows="1"
         onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAdminReply()}"
         oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
-      <button class="conv-send" onclick="sendAdminReply()">➤</button>
+      <button class="conv-send" id="adminSendBtn" onclick="sendAdminReply()">➤</button>
     </div>`;
 
   await loadMessages(id);
+  subscribeToMessages(id);
 
-  // Mark unread as read
   currentSession.unread = 0;
-  if (sb) await sb.from('ananya_chat_sessions').update({ unread: 0 }).eq('id', id).catch(()=>{});
+  if (sb) {
+    try { await sb.from('ananya_chat_sessions').update({ unread: 0 }).eq('id', id); }
+    catch (e) { /* optional */ }
+  }
   updateStats();
 }
 
-/* ── Load Messages ── */
+function backToList() {
+  document.getElementById('contentArea').classList.remove('show-conv');
+}
+
 async function loadMessages(sessionId) {
   const container = document.getElementById('convMsgs');
   if (!container) return;
@@ -731,21 +626,27 @@ async function loadMessages(sessionId) {
     return;
   }
 
-  const { data } = await sb
-    .from('ananya_chat_messages')
-    .select('*')
-    .eq('session_id', sessionId)
-    .order('created_at', { ascending: true })
-    .limit(100)
-    .catch(()=>({ data: null }));
+  try {
+    const { data, error } = await sb
+      .from('ananya_chat_messages')
+      .select('*')
+      .eq('session_id', sessionId)
+      .order('created_at', { ascending: true })
+      .limit(200);
 
-  if (!data || data.length === 0) {
-    container.innerHTML = `<div class="empty-state"><div class="icon">💬</div><p>No messages in this session.</p></div>`;
-    return;
+    if (error) { console.warn('loadMessages error', error); container.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><p>Could not load messages.</p></div>`; return; }
+
+    if (!data || data.length === 0) {
+      container.innerHTML = `<div class="empty-state"><div class="icon">💬</div><p>No messages in this session.</p></div>`;
+      return;
+    }
+
+    container.innerHTML = data.map(m => renderMsg(m)).join('');
+    container.scrollTop = container.scrollHeight;
+  } catch (e) {
+    console.error('loadMessages exception', e);
+    container.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><p>Could not load messages.</p></div>`;
   }
-
-  container.innerHTML = data.map(m => renderMsg(m)).join('');
-  container.scrollTop = container.scrollHeight;
 }
 
 function renderDemoMessages() {
@@ -770,13 +671,15 @@ function renderMsg(m) {
   </div>`;
 }
 
-/* ── Send Admin Reply ── */
 async function sendAdminReply() {
   const input = document.getElementById('adminReplyInput');
+  const btn   = document.getElementById('adminSendBtn');
   const text  = input?.value?.trim();
   if (!text || !currentSession) return;
+
   input.value = '';
   input.style.height = 'auto';
+  if (btn) btn.disabled = true;
 
   const msg = { session_id: currentSession.id, role: 'admin', content: text, created_at: new Date().toISOString() };
 
@@ -787,20 +690,34 @@ async function sendAdminReply() {
   }
 
   if (sb) {
-    await sb.from('ananya_chat_messages').insert(msg).catch(()=>{});
-    await sb.from('ananya_chat_sessions').update({ last_message: text, updated_at: new Date().toISOString() }).eq('id', currentSession.id).catch(()=>{});
+    try {
+      const { error: insertErr } = await sb.from('ananya_chat_messages').insert(msg);
+      if (insertErr) { console.error('sendAdminReply insert error', insertErr); showToast('❌ Reply failed to save: ' + insertErr.message, 'error'); if (btn) btn.disabled = false; return; }
+
+      const { error: updateErr } = await sb.from('ananya_chat_sessions')
+        .update({ last_message: text, updated_at: new Date().toISOString(), status: 'open' })
+        .eq('id', currentSession.id);
+      if (updateErr) console.warn('session update warning', updateErr);
+    } catch (e) {
+      console.error('sendAdminReply exception', e);
+      showToast('❌ Reply failed to send', 'error');
+      if (btn) btn.disabled = false;
+      return;
+    }
   }
 
-  // Update local
   const s = sessions.find(s => s.id === currentSession.id);
   if (s) s.last_message = text;
   renderChatList();
   showToast('✅ Reply sent!', 'success');
+  if (btn) btn.disabled = false;
 }
 
-/* ── Actions ── */
 async function resolveSession(id) {
-  if (sb) await sb.from('ananya_chat_sessions').update({ status: 'resolved' }).eq('id', id).catch(()=>{});
+  if (sb) {
+    try { await sb.from('ananya_chat_sessions').update({ status: 'resolved' }).eq('id', id); }
+    catch (e) { showToast('❌ Could not update status', 'error'); return; }
+  }
   const s = sessions.find(s => s.id === id);
   if (s) s.status = 'resolved';
   renderChatList();
@@ -808,27 +725,30 @@ async function resolveSession(id) {
 }
 
 function escalateWA(id) {
-  const s = sessions.find(s => s.id === id);
   const msg = `Namaste! Rinku Kirana Store Admin bol raha hoon. Session #${id} ke baare mein baat karni thi.`;
   window.open(`https://wa.me/${ADMIN_CONFIG.whatsappNumber}?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
-/* ── Realtime ── */
 function startRealtime() {
   if (!sb) return;
-  realtimeChannel = sb.channel('admin-support')
+  realtimeChannel = sb.channel('admin-support-sessions')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'ananya_chat_sessions' }, () => loadSessions())
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ananya_chat_messages' }, payload => {
+    .subscribe();
+}
+
+function subscribeToMessages(sessionId) {
+  if (!sb) return;
+  if (messagesChannel) { try { sb.removeChannel(messagesChannel); } catch(e){} messagesChannel = null; }
+  messagesChannel = sb.channel('admin-support-messages-' + sessionId)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ananya_chat_messages', filter: `session_id=eq.${sessionId}` }, payload => {
       if (currentSession && payload.new.session_id === currentSession.id) {
         const c = document.getElementById('convMsgs');
         if (c) { c.insertAdjacentHTML('beforeend', renderMsg(payload.new)); c.scrollTop = c.scrollHeight; }
       }
-      updateBadges();
     })
     .subscribe();
 }
 
-/* ── Stats & Badges ── */
 function updateStats() {
   const total    = sessions.length;
   const open     = sessions.filter(s=>s.status==='open'||!s.status).length;
@@ -841,9 +761,7 @@ function updateStats() {
   document.getElementById('badge-all').textContent     = total;
   document.getElementById('badge-unread').textContent  = unread;
 }
-function updateBadges() { loadSessions(); }
 
-/* ── Filter / Sort ── */
 function setFilter(mode, btn) {
   filterMode = mode;
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
@@ -852,6 +770,7 @@ function setFilter(mode, btn) {
     mode==='all'?'All Conversations':mode==='open'?'Open Chats':
     mode==='unread'?'Unread':mode==='resolved'?'Resolved':'Escalated';
   renderChatList();
+  closeSidebar();
 }
 
 function setSort(mode, btn) {
@@ -863,7 +782,15 @@ function setSort(mode, btn) {
 
 function filterSearch(val) { renderChatList(); }
 
-/* ── Helpers ── */
+function openSidebar() {
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sidebarOverlay').classList.add('show');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('show');
+}
+
 function escHtml(t) {
   return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
@@ -881,16 +808,38 @@ function showToast(msg, type='') {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.className = `toast ${type} show`;
-  setTimeout(()=>t.classList.remove('show'), 3000);
+  setTimeout(()=>t.classList.remove('show'), 3500);
 }
 
-/* Enter key on login */
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && document.getElementById('loginScreen').style.display !== 'none') adminLogin();
 });
+
+(function bootstrap() {
+  const statusEl = document.getElementById('loginStatus');
+  function setStatus(ok, text) {
+    if (!statusEl) return;
+    statusEl.innerHTML = `<span class="dot ${ok?'ok':'bad'}"></span>${text}`;
+  }
+
+  function pingSupabase() {
+    if (!window.supabase) { setStatus(false, 'Database library not loaded'); return; }
+    try {
+      const client = window.supabase.createClient(ADMIN_CONFIG.supabaseUrl, ADMIN_CONFIG.supabaseKey);
+      client.from('ananya_chat_sessions').select('id', { count: 'exact', head: true }).then(({ error }) => {
+        if (error) setStatus(false, 'Database connection issue: ' + error.message);
+        else setStatus(true, 'Connected to database');
+      });
+    } catch (e) {
+      setStatus(false, 'Database connection failed');
+    }
+  }
+
+  setTimeout(pingSupabase, 400);
+  checkExistingSession();
+})();
 </script>
 
-<!-- Supabase CDN (auto-uses if already loaded on page) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </body>
 </html>
