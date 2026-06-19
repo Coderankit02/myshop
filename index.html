@@ -191,11 +191,6 @@ input,select,textarea{outline:none;border:none;font-family:'Inter',sans-serif;fo
 .pay-card .pi{font-size:1.8rem;margin-bottom:4px;}
 .pay-card .pl{font-size:0.78rem;font-weight:700;}
 .pay-card .pd{font-size:0.65rem;color:var(--gray);margin-top:2px;}
-.qr-area{background:#F0FDF4;border:2px dashed var(--primary);border-radius:14px;padding:20px;text-align:center;margin-top:10px;}
-.qr-box{width:130px;height:130px;background:#fff;border-radius:14px;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:72px;box-shadow:0 4px 16px rgba(0,0,0,0.1);animation:pulse 2s infinite;}
-@keyframes pulse{0%,100%{box-shadow:0 4px 16px rgba(27,166,114,0.2);}50%{box-shadow:0 4px 24px rgba(27,166,114,0.5);}}
-.upi-label{font-weight:800;color:var(--primary);font-size:0.9rem;}
-.upi-amt{display:inline-block;margin-top:6px;background:var(--primary);color:#fff;padding:5px 18px;border-radius:50px;font-weight:800;font-size:0.9rem;}
 .osi{display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:4px;}
 .place-order-btn{width:100%;padding:15px;background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;border-radius:14px;font-weight:800;font-size:1rem;box-shadow:0 6px 16px rgba(27,166,114,0.35);margin-top:16px;min-height:48px;cursor:pointer;}
 .success-page{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;padding:24px;text-align:center;}
@@ -260,7 +255,7 @@ html[data-theme="dark"] .verify-pending-badge{background:#3A2A14;border-color:#6
 .theme-toggle-btn{background:var(--primary-light);color:var(--primary-dark);border-radius:12px;width:38px;height:38px;min-width:38px;display:flex;align-items:center;justify-content:center;font-size:1.05rem;flex-shrink:0;transition:background 0.2s,color 0.2s;}
 .dh-theme-btn{background:var(--primary-light);color:var(--primary-dark);border-radius:10px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:1.05rem;flex-shrink:0;transition:background 0.2s,color 0.2s;}
 
-html,body,.header,.desktop-header,.prod-card,.co-card,.cart-drawer,.how-section,.bottom-nav,.desktop-sidebar,.desktop-cats-wrap,.inp,.qr-box,.qr-area{transition:background-color 0.25s ease,border-color 0.25s ease,color 0.25s ease;}
+html,body,.header,.desktop-header,.prod-card,.co-card,.cart-drawer,.how-section,.bottom-nav,.desktop-sidebar,.desktop-cats-wrap,.inp{transition:background-color 0.25s ease,border-color 0.25s ease,color 0.25s ease;}
 
 html[data-theme="dark"]{
   --primary:#2ECC82;--primary-dark:#16A34A;--primary-light:#163828;
@@ -294,8 +289,6 @@ html[data-theme="dark"] .ci{border-bottom:1px solid #1A2332;}
 html[data-theme="dark"] .co-card{background:#151B26;box-shadow:0 2px 8px rgba(0,0,0,0.4);}
 html[data-theme="dark"] .inp{background:#1A2332;color:#F1F5F9;}
 html[data-theme="dark"] .inp::placeholder{color:#64748B;}
-html[data-theme="dark"] .qr-area{background:#0F2A1C;}
-html[data-theme="dark"] .qr-box{background:#1A2332;}
 html[data-theme="dark"] .addr-card.sel{background:#163828;}
 html[data-theme="dark"] .pay-card.sel{background:#163828;}
 html[data-theme="dark"] .order-pill{background:#163828;}
@@ -306,6 +299,37 @@ html[data-theme="dark"] .offer-banner-full .ob-sub{color:#FFCC80;}
 html[data-theme="dark"] .offer-banner-ref{background:linear-gradient(135deg,#142A3D,#1A3550);border-color:#2F5878;}
 html[data-theme="dark"] .offer-banner-ref .ob-title-b{color:#64B5F6;}
 html[data-theme="dark"] .offer-banner-ref .ob-sub-b{color:#90CAF9;}
+
+/* ── UPI Pay Card (redesigned) ── */
+.upi-pay-card{border-radius:18px;overflow:hidden;border:1px solid var(--border);margin-top:10px;}
+.upi-pay-head{background:linear-gradient(135deg,var(--primary),var(--primary-dark));padding:16px 18px;}
+.upi-pay-head-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.upi-pay-head-row span{font-size:0.82rem;font-weight:700;color:#fff;}
+.upi-pay-amt-row{display:flex;justify-content:space-between;align-items:baseline;}
+.upi-pay-amt-label{font-size:0.74rem;color:rgba(255,255,255,0.85);}
+.upi-pay-amt{font-size:1.6rem;font-weight:900;color:#fff;}
+.upi-pay-body{padding:18px;background:var(--card-bg);}
+.upi-trust-badge{display:flex;align-items:center;justify-content:center;gap:7px;background:#E8F8F1;border-radius:10px;padding:8px 10px;margin-bottom:16px;}
+html[data-theme="dark"] .upi-trust-badge{background:#163828;}
+.upi-trust-badge span{font-size:0.72rem;font-weight:700;color:var(--primary-dark);}
+.bhim-wordmark{display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:14px;}
+.bhim-wordmark span{font-size:1.4rem;font-weight:700;font-style:italic;color:var(--dark);letter-spacing:0.5px;}
+.bhim-flag-arrow{display:inline-block;width:0;height:0;border-top:8px solid transparent;border-bottom:8px solid transparent;}
+.bhim-flag-arrow.saffron{border-left:11px solid #FF9933;}
+.bhim-flag-arrow.green{border-left:11px solid #138808;}
+.upi-qr-wrap{display:flex;justify-content:center;margin-bottom:8px;}
+.upi-qr-box{position:relative;background:#fff;border-radius:14px;padding:12px;border:2px solid var(--border);}
+.upi-qr-box img{display:block;width:150px;height:150px;}
+.upi-qr-mark{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:8px;padding:4px;box-shadow:0 0 0 4px #fff;}
+.upi-qr-mark-inner{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#5F259F,#00BAF2);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;color:#fff;}
+.upi-qr-hint{text-align:center;font-size:0.7rem;color:var(--gray);margin:8px 0 14px;}
+.upi-app-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:16px;}
+.upi-app-icon{aspect-ratio:1;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-direction:column;}
+.upi-app-icon.white{background:#fff;border:1px solid var(--border);}
+.upi-app-icon img{width:70%;height:70%;object-fit:contain;}
+.upi-pay-btn{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;padding:14px;background:linear-gradient(135deg,var(--primary),var(--primary-dark));border:none;border-radius:14px;color:#fff;font-weight:800;font-size:0.95rem;cursor:pointer;min-height:48px;text-decoration:none;}
+.upi-pay-id-row{display:flex;align-items:center;justify-content:center;gap:5px;margin-top:14px;}
+.upi-pay-id-row span{font-size:0.7rem;color:var(--gray);}
 </style>
 </head>
 <body>
@@ -859,6 +883,85 @@ function App(){
   );
 }
 
+function UpiPayCard({total, upiLink, upiId}){
+  const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=8&data=${encodeURIComponent(upiLink)}`;
+
+  return (
+    <div className="upi-pay-card">
+
+      <div className="upi-pay-head">
+        <div className="upi-pay-head-row">
+          <span>🛒 Rinku Kirana</span>
+        </div>
+        <div className="upi-pay-amt-row">
+          <span className="upi-pay-amt-label">Amount to pay</span>
+          <span className="upi-pay-amt">₹{total}</span>
+        </div>
+      </div>
+
+      <div className="upi-pay-body">
+
+        <div className="upi-trust-badge">
+          <span>🔒 100% Secure Payment, powered by UPI</span>
+        </div>
+
+        <div className="bhim-wordmark">
+          <span>BHIM</span>
+          <span className="bhim-flag-arrow saffron"></span>
+          <span>UPI</span>
+          <span className="bhim-flag-arrow green"></span>
+        </div>
+
+        <div className="upi-qr-wrap">
+          <div className="upi-qr-box">
+            <img src={qrImageUrl} alt="UPI QR Code"/>
+            <div className="upi-qr-mark"><div className="upi-qr-mark-inner">₹</div></div>
+          </div>
+        </div>
+        <div className="upi-qr-hint">Scan or pay directly using</div>
+
+        <div className="upi-app-grid">
+
+          <div className="upi-app-icon white">
+            <div style={{fontSize:'0.95rem',fontWeight:700,letterSpacing:'-0.5px'}}>
+              <span style={{color:'#4285F4'}}>G</span><span style={{color:'#EA4335'}}>P</span><span style={{color:'#FBBC05'}}>a</span><span style={{color:'#34A853'}}>y</span>
+            </div>
+          </div>
+
+          <div className="upi-app-icon white">
+            <span style={{fontSize:'0.75rem',fontWeight:700,color:'#00BAF2',fontStyle:'italic'}}>paytm</span>
+            <span style={{fontSize:'0.44rem',fontWeight:700,color:'var(--gray)',letterSpacing:'0.4px',marginTop:2}}>UPI</span>
+          </div>
+
+          <div className="upi-app-icon white">
+            <div style={{width:30,height:30,borderRadius:'50%',background:'#1A1A2E',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'0.68rem',fontWeight:700,color:'#fff',fontStyle:'italic'}}>pay</div>
+          </div>
+
+          <div className="upi-app-icon" style={{background:'linear-gradient(135deg,#7C4DCC,#5F259F)'}}>
+            <span style={{fontSize:'1.2rem',fontWeight:700,color:'#fff',lineHeight:1}}>पे</span>
+            <svg width="22" height="7" viewBox="0 0 20 6" style={{marginTop:2}}><path d="M1 1 Q10 5 19 1" stroke="#fff" strokeWidth="1.4" fill="none" strokeLinecap="round"/></svg>
+          </div>
+
+          <div className="upi-app-icon" style={{background:'linear-gradient(135deg,#F7941D,#D9480F)'}}>
+            <span style={{fontSize:'0.95rem',color:'#fff'}}>ⓘ</span>
+            <span style={{fontSize:'0.47rem',fontWeight:700,color:'#fff',fontStyle:'italic',marginTop:1}}>iMobile</span>
+          </div>
+
+        </div>
+
+        <a href={upiLink} className="upi-pay-btn">
+          📱 UPI app se pay karo →
+        </a>
+
+        <div className="upi-pay-id-row">
+          <span>🔒 {upiId}</span>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
 function CheckoutForm({cart,total,showToast,onSuccess,user}){
   const [pay,setPay]=useState('');
   const [f,setF]=useState({name:user?.name||'',phone:''});
@@ -943,7 +1046,6 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
     const note = orderInfo?.orderNumber ? `Order ${orderInfo.orderNumber}` : 'Rinku Kirana Order';
     return `upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent(UPI_PAYEE)}&am=${total}&cu=INR&tn=${encodeURIComponent(note)}`;
   };
-  const qrImageUrl=`https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=8&data=${encodeURIComponent(buildUpiLink())}`;
 
   const handleScreenshotChange=(e)=>{
     const file=e.target.files?.[0];
@@ -1038,14 +1140,7 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
         <div className="co-card">
           <div className="co-card-title">✅ Order #{orderInfo.orderNumber} Placed</div>
           <div className="verify-pending-badge">⏳ Payment verify hone ke baad order confirm hoga</div>
-          <div className="qr-area">
-            <div className="qr-box" style={{padding:0,overflow:'hidden'}}>
-              <img src={qrImageUrl} alt="UPI QR" style={{width:'100%',height:'100%',objectFit:'contain'}}/>
-            </div>
-            <div className="upi-label">📍 {UPI_ID}</div>
-            <div style={{fontSize:'0.72rem',color:'var(--gray)',marginTop:3}}>Scan karke pay karo, fir neeche detail bharein</div>
-            <div className="upi-amt">₹{total} bhejo</div>
-          </div>
+          <UpiPayCard total={total} upiLink={buildUpiLink()} upiId={UPI_ID}/>
         </div>
 
         <div className="co-card">
@@ -1134,16 +1229,7 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
           <div className={`pay-card ${pay==='cod'?'sel':''}`} onClick={()=>setPay('cod')}><div className="pi">💵</div><div className="pl">Cash on Delivery</div><div className="pd">Ghar pe cash dena</div></div>
           <div className={`pay-card ${pay==='upi'?'sel':''}`} onClick={()=>setPay('upi')}><div className="pi">📱</div><div className="pl">UPI / QR Code</div><div className="pd">Scan karke pay karo</div></div>
         </div>
-        {pay==='upi'&&(
-          <div className="qr-area">
-            <div className="qr-box" style={{padding:0,overflow:'hidden'}}>
-              <img src={qrImageUrl} alt="UPI QR" style={{width:'100%',height:'100%',objectFit:'contain'}}/>
-            </div>
-            <div className="upi-label">📍 {UPI_ID}</div>
-            <div style={{fontSize:'0.72rem',color:'var(--gray)',marginTop:3}}>Kisi bhi UPI app se scan karo</div>
-            <div className="upi-amt">₹{total} bhejo</div>
-          </div>
-        )}
+        {pay==='upi'&&<UpiPayCard total={total} upiLink={buildUpiLink()} upiId={UPI_ID}/>}
       </div>
 
       <button className="place-order-btn" disabled={placing} onClick={handlePlaceOrder}>
