@@ -15,7 +15,6 @@
 <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png"/>
 <link rel="shortcut icon" href="/icons/favicon.ico"/>
 <link rel="stylesheet" href="/pwa.css"/>
-<!-- ── CHANGE A: Business Logic Modules ── -->
 <script src="/js/cart.js"></script>
 <script src="/js/profile.js"></script>
 <script src="/js/orders.js"></script>
@@ -251,7 +250,7 @@ html[data-theme="dark"] .upload-box{background:#1A2332;}
 html[data-theme="dark"] .verify-pending-badge{background:#3A2A14;border-color:#6B4A1F;color:#FFCC80;}
 .utr-hint{font-size:.68rem;color:var(--gray);margin:-6px 0 10px;}
 
-/* ── THEME TOGGLE (Light/Dark mode) ── */
+/* ── THEME TOGGLE ── */
 .theme-toggle-btn{background:var(--primary-light);color:var(--primary-dark);border-radius:12px;width:38px;height:38px;min-width:38px;display:flex;align-items:center;justify-content:center;font-size:1.05rem;flex-shrink:0;transition:background 0.2s,color 0.2s;}
 .dh-theme-btn{background:var(--primary-light);color:var(--primary-dark);border-radius:10px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:1.05rem;flex-shrink:0;transition:background 0.2s,color 0.2s;}
 
@@ -300,7 +299,7 @@ html[data-theme="dark"] .offer-banner-ref{background:linear-gradient(135deg,#142
 html[data-theme="dark"] .offer-banner-ref .ob-title-b{color:#64B5F6;}
 html[data-theme="dark"] .offer-banner-ref .ob-sub-b{color:#90CAF9;}
 
-/* ── UPI Pay Card (redesigned) ── */
+/* ── UPI Pay Card ── */
 .upi-pay-card{border-radius:18px;overflow:hidden;border:1px solid var(--border);margin-top:10px;}
 .upi-pay-head{background:linear-gradient(135deg,var(--primary),var(--primary-dark));padding:16px 18px;}
 .upi-pay-head-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
@@ -317,12 +316,15 @@ html[data-theme="dark"] .upi-trust-badge{background:#163828;}
 .bhim-flag-arrow{display:inline-block;width:0;height:0;border-top:8px solid transparent;border-bottom:8px solid transparent;}
 .bhim-flag-arrow.saffron{border-left:11px solid #FF9933;}
 .bhim-flag-arrow.green{border-left:11px solid #138808;}
+
+/* ── UPDATED: Static QR styles ── */
 .upi-qr-wrap{display:flex;justify-content:center;margin-bottom:8px;}
-.upi-qr-box{position:relative;background:#fff;border-radius:14px;padding:12px;border:2px solid var(--border);}
-.upi-qr-box img{display:block;width:150px;height:150px;}
-.upi-qr-mark{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:8px;padding:4px;box-shadow:0 0 0 4px #fff;}
-.upi-qr-mark-inner{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#5F259F,#00BAF2);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;color:#fff;}
-.upi-qr-hint{text-align:center;font-size:0.7rem;color:var(--gray);margin:8px 0 14px;}
+.upi-qr-box{background:#fff;border-radius:16px;padding:14px;border:2px solid var(--border);box-shadow:0 2px 12px rgba(0,0,0,0.08);}
+.upi-qr-box img{display:block;width:180px;height:180px;object-fit:contain;border-radius:8px;}
+.upi-qr-hint{text-align:center;font-size:0.7rem;color:var(--gray);margin:8px 0 6px;}
+.upi-amt-notice{text-align:center;background:#FFF8E1;border:1px solid #FFE0A3;border-radius:10px;padding:8px 12px;font-size:0.76rem;font-weight:700;color:#92600B;margin-bottom:14px;}
+html[data-theme="dark"] .upi-amt-notice{background:#3A2A14;border-color:#6B4A1F;color:#FFCC80;}
+
 .upi-app-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:16px;}
 .upi-app-icon{aspect-ratio:1;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-direction:column;}
 .upi-app-icon.white{background:#fff;border:1px solid var(--border);}
@@ -345,7 +347,7 @@ const {useState,useEffect}=React;
 const SUPABASE_URL='https://pffaflasgwhydkmxwkky.supabase.co';
 const SUPABASE_ANON_KEY='sb_publishable__tFDYhkM3blZ0pIVT0YxLA_YvkKq79L';
 const supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
-window.sb=supabase; // expose the real client so cart.js/profile.js/orders.js/payment.js getDB() can use it
+window.sb=supabase;
 
 const goLogin=()=>{ window.location.href='login.html'; };
 const goSignup=()=>{ window.location.href='signup.html'; };
@@ -457,7 +459,6 @@ function App(){
     return()=>clearInterval(t);
   },[]);
 
-  /* ── Light/Dark mode: apply to <html>, persist, sync mobile browser chrome color ── */
   useEffect(()=>{
     document.documentElement.setAttribute('data-theme',theme);
     try{localStorage.setItem('rk_theme',theme);}catch(e){}
@@ -467,10 +468,8 @@ function App(){
 
   const toggleTheme=()=>setTheme(t=>t==='dark'?'light':'dark');
 
-  /* ── CHANGE B: Init RKCart + wire auth to modules ── */
   useEffect(()=>{
     if(window.RKCart) window.RKCart.init();
-
     supabase.auth.getSession().then(({data:{session}})=>{
       if(session?.user){
         const meta=session.user.user_metadata;
@@ -480,7 +479,6 @@ function App(){
         if(window.RKProfile) window.RKProfile.loadProfile(session.user.id);
       }
     });
-
     const {data:{subscription}}=supabase.auth.onAuthStateChange((_,session)=>{
       if(session?.user){
         const meta=session.user.user_metadata;
@@ -495,7 +493,6 @@ function App(){
     return()=>subscription.unsubscribe();
   },[]);
 
-  /* ── CHANGE D: Sync RKCart changes to React state ── */
   useEffect(()=>{
     if(!window.RKCart) return;
     const unsub=window.RKCart.onCartChange(updatedCart=>{
@@ -516,7 +513,6 @@ function App(){
 
   const showToast=msg=>{setToast(msg);setTimeout(()=>setToast(''),2200);};
 
-  /* ── CHANGE C: addToCart + updQty delegate to RKCart ── */
   const addToCart=p=>{
     if(window.RKCart){
       window.RKCart.addToCart(p);
@@ -864,18 +860,10 @@ function App(){
         ].map(n=>(
           <div key={n.id} className={`bn-item ${page===n.id?'on':''}`}
             onClick={()=>{
-              if(n.id==='cart'){
-                setCartOpen(true);
-              }
-              else if(n.id==='login'){
-                goLogin();
-              }
-              else if(n.id==='account'){
-                window.location.href='account.html';
-              }
-              else{
-                setPage(n.id);
-              }
+              if(n.id==='cart'){setCartOpen(true);}
+              else if(n.id==='login'){goLogin();}
+              else if(n.id==='account'){window.location.href='account.html';}
+              else{setPage(n.id);}
             }}>
             <span className="bn-icon">{n.i}</span>
             <span className="bn-label">{n.l}</span>
@@ -888,15 +876,18 @@ function App(){
   );
 }
 
-function UpiPayCard({total, upiLink, upiId}){
-  const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=8&data=${encodeURIComponent(upiLink)}`;
+/* ══════════════════════════════════════════════════════
+   UPDATED UpiPayCard — Static PhonePe QR + No amount in deep link
+══════════════════════════════════════════════════════ */
+function UpiPayCard({total, upiId}){
+  const simpleUpiLink = `upi://pay?pa=${upiId}&pn=${encodeURIComponent('Rinku Kirana')}&cu=INR`;
 
   return (
     <div className="upi-pay-card">
 
       <div className="upi-pay-head">
         <div className="upi-pay-head-row">
-          <span>🛒 Rinku Kirana</span>
+          <span>🛒 Rinku Kirana Store</span>
         </div>
         <div className="upi-pay-amt-row">
           <span className="upi-pay-amt-label">Amount to pay</span>
@@ -907,7 +898,7 @@ function UpiPayCard({total, upiLink, upiId}){
       <div className="upi-pay-body">
 
         <div className="upi-trust-badge">
-          <span>🔒 100% Secure Payment, powered by UPI</span>
+          <span>🔒 100% Secure Payment — BHIM UPI</span>
         </div>
 
         <div className="bhim-wordmark">
@@ -917,50 +908,51 @@ function UpiPayCard({total, upiLink, upiId}){
           <span className="bhim-flag-arrow green"></span>
         </div>
 
+        {/* ── Static PhonePe QR ── */}
         <div className="upi-qr-wrap">
           <div className="upi-qr-box">
-            <img src={qrImageUrl} alt="UPI QR Code"/>
-            <div className="upi-qr-mark"><div className="upi-qr-mark-inner">₹</div></div>
+            <img src="/images/payment-qr.png" alt="Rinku Kirana UPI QR Code"/>
           </div>
         </div>
-        <div className="upi-qr-hint">Scan or pay directly using</div>
+        <div className="upi-qr-hint">📷 Kisi bhi UPI app se scan karein</div>
 
+        {/* ── Amount notice ── */}
+        <div className="upi-amt-notice">
+          💰 Scan karne ke baad <b>₹{total}</b> amount khud type karein
+        </div>
+
+        {/* ── UPI App Icons ── */}
         <div className="upi-app-grid">
-
           <div className="upi-app-icon white">
             <div style={{fontSize:'0.95rem',fontWeight:700,letterSpacing:'-0.5px'}}>
               <span style={{color:'#4285F4'}}>G</span><span style={{color:'#EA4335'}}>P</span><span style={{color:'#FBBC05'}}>a</span><span style={{color:'#34A853'}}>y</span>
             </div>
           </div>
-
           <div className="upi-app-icon white">
             <span style={{fontSize:'0.75rem',fontWeight:700,color:'#00BAF2',fontStyle:'italic'}}>paytm</span>
-            <span style={{fontSize:'0.44rem',fontWeight:700,color:'var(--gray)',letterSpacing:'0.4px',marginTop:2}}>UPI</span>
           </div>
-
           <div className="upi-app-icon white">
-            <div style={{width:30,height:30,borderRadius:'50%',background:'#1A1A2E',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'0.68rem',fontWeight:700,color:'#fff',fontStyle:'italic'}}>pay</div>
+            <div style={{width:28,height:28,borderRadius:'50%',background:'#1A1A2E',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'0.65rem',fontWeight:700,color:'#fff',fontStyle:'italic'}}>pay</div>
           </div>
-
           <div className="upi-app-icon" style={{background:'linear-gradient(135deg,#7C4DCC,#5F259F)'}}>
-            <span style={{fontSize:'1.2rem',fontWeight:700,color:'#fff',lineHeight:1}}>पे</span>
-            <svg width="22" height="7" viewBox="0 0 20 6" style={{marginTop:2}}><path d="M1 1 Q10 5 19 1" stroke="#fff" strokeWidth="1.4" fill="none" strokeLinecap="round"/></svg>
+            <span style={{fontSize:'1.1rem',fontWeight:700,color:'#fff',lineHeight:1}}>पे</span>
           </div>
-
-          <div className="upi-app-icon" style={{background:'linear-gradient(135deg,#F7941D,#D9480F)'}}>
-            <span style={{fontSize:'0.95rem',color:'#fff'}}>ⓘ</span>
-            <span style={{fontSize:'0.47rem',fontWeight:700,color:'#fff',fontStyle:'italic',marginTop:1}}>iMobile</span>
+          <div className="upi-app-icon" style={{background:'linear-gradient(135deg,#5F259F,#00BAF2)'}}>
+            <span style={{fontSize:'0.82rem',fontWeight:900,color:'#fff',fontStyle:'italic'}}>Pe</span>
           </div>
-
         </div>
 
-        <a href={upiLink} className="upi-pay-btn">
-          📱 UPI app se pay karo →
+        {/* ── Mobile UPI deep link button (hidden on desktop) ── */}
+        <a href={simpleUpiLink} className="upi-pay-btn">
+          📱 UPI App Se Pay Karo →
         </a>
-        <div className="upi-retry-hint">App khulne mein kabhi-kabhi time lagta hai — pehli baar na khule to dobara tap karein, ya upar wala QR scan kar lein.</div>
+
+        <div className="upi-retry-hint">
+          App na khule to QR scan karein • Amount: <b>₹{total}</b>
+        </div>
 
         <div className="upi-pay-id-row">
-          <span>🔒 {upiId}</span>
+          <span>🔒 UPI ID: {upiId}</span>
         </div>
 
       </div>
@@ -968,6 +960,9 @@ function UpiPayCard({total, upiLink, upiId}){
   );
 }
 
+/* ══════════════════════════════════════════════════════
+   CheckoutForm
+══════════════════════════════════════════════════════ */
 function CheckoutForm({cart,total,showToast,onSuccess,user}){
   const [pay,setPay]=useState('');
   const [f,setF]=useState({name:user?.name||'',phone:''});
@@ -979,18 +974,14 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
   const [savingAddr,setSavingAddr]=useState(false);
   const [phoneTouched,setPhoneTouched]=useState(false);
   const [placing,setPlacing]=useState(false);
-
-  /* ── UPI verification state ── */
-  const [orderInfo,setOrderInfo]=useState(null);       // {orderId, orderNumber}
+  const [orderInfo,setOrderInfo]=useState(null);
   const [showVerifyForm,setShowVerifyForm]=useState(false);
   const [utr,setUtr]=useState('');
   const [screenshotFile,setScreenshotFile]=useState(null);
   const [screenshotPreview,setScreenshotPreview]=useState(null);
   const [submittingVerify,setSubmittingVerify]=useState(false);
 
-  /* ── Payment wait timer: sirf gentle reminder ke liye, UPI payment kabhi expire nahi hota
-     isliye time khatam hone par QR/button block NAHI hote, bas ek soft nudge dikhta hai ── */
-  const REMINDER_AFTER_SEC=120; // 2 minute
+  const REMINDER_AFTER_SEC=120;
   const [elapsedSec,setElapsedSec]=useState(0);
   useEffect(()=>{
     if(!showVerifyForm) return;
@@ -998,17 +989,10 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
     const t=setInterval(()=>setElapsedSec(s=>s+1),1000);
     return()=>clearInterval(t);
   },[showVerifyForm]);
-  const fmtTime=s=>{
-    const m=Math.floor(s/60);
-    const ss=String(s%60).padStart(2,'0');
-    return `${m}:${ss}`;
-  };
+  const fmtTime=s=>{const m=Math.floor(s/60);const ss=String(s%60).padStart(2,'0');return `${m}:${ss}`;};
 
-  const UPI_ID='Q025544077@ybl';
-  const UPI_PAYEE='Rinku Kirana';
-  const fallbackId='RK'+Math.floor(1000+Math.random()*9000);
+  const UPI_ID='6393196765@okbizaxis';
 
-  /* ── Load saved addresses + profile (name/phone) so user doesn't retype every time ── */
   useEffect(()=>{
     let active=true;
     (async()=>{
@@ -1025,7 +1009,7 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
         else setShowNewForm(true);
         setF(prev=>({name:prev.name||profile?.name||'',phone:prev.phone||profile?.phone||''}));
       } catch(err){
-        console.error('[Checkout] address/profile load failed:',err);
+        console.error('[Checkout] load failed:',err);
         if(active) setShowNewForm(true);
       } finally {
         if(active) setLoadingAddrs(false);
@@ -1063,12 +1047,6 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
     }
   };
 
-  /* ── UPI deep link + live QR (amount always = current cart total) ── */
-  const buildUpiLink=()=>{
-    const note = orderInfo?.orderNumber ? `Order ${orderInfo.orderNumber}` : 'Rinku Kirana Order';
-    return `upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent(UPI_PAYEE)}&cu=INR&tn=${encodeURIComponent(note)}`;
-  };
-
   const handleScreenshotChange=(e)=>{
     const file=e.target.files?.[0];
     if(!file) return;
@@ -1079,7 +1057,6 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
     reader.readAsDataURL(file);
   };
 
-  /* ── Step 1: validate + create order. COD finishes here; UPI moves to verification step ── */
   const handlePlaceOrder=async()=>{
     setPhoneTouched(true);
     if(!f.name.trim()){showToast('Naam zaroori hai!');return;}
@@ -1088,26 +1065,18 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
     if(!selectedAddr){showToast('Delivery address chunein ya add karein!');return;}
 
     const addressPayload={
-      name:f.name.trim(),
-      phone:f.phone.trim(),
-      line1:selectedAddr.line1,
-      line2:selectedAddr.line2||'',
-      city:selectedAddr.city||'Prayagraj',
-      pincode:selectedAddr.pincode||'',
+      name:f.name.trim(),phone:f.phone.trim(),
+      line1:selectedAddr.line1,line2:selectedAddr.line2||'',
+      city:selectedAddr.city||'Prayagraj',pincode:selectedAddr.pincode||'',
     };
 
     setPlacing(true);
     let result=null;
     if(window.RKOrders && user){
-      result=await window.RKOrders.createOrder(user.uid,{
-        cart,
-        total,
-        address:addressPayload,
-        paymentMethod:pay,
-      });
+      result=await window.RKOrders.createOrder(user.uid,{cart,total,address:addressPayload,paymentMethod:pay});
     }
-    const orderNumber = result?.orderNumber || fallbackId;
-    const orderId = result?.orderId || null;
+    const orderNumber=result?.orderNumber||('RK'+Math.floor(1000+Math.random()*9000));
+    const orderId=result?.orderId||null;
     setPlacing(false);
 
     if(pay==='cod'){
@@ -1116,35 +1085,24 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
       return;
     }
 
-    // UPI → reveal verification form. Cart clears only after UTR+screenshot submitted.
     setOrderInfo({orderId,orderNumber});
     setShowVerifyForm(true);
   };
 
-  /* ── Step 2 (UPI only): upload screenshot + submit verification ── */
   const handleSubmitVerification=async()=>{
-    if(!utr.trim() || utr.trim().length<6){ showToast('Sahi UTR / Transaction ID daalein'); return; }
-    if(!screenshotFile){ showToast('Payment screenshot upload karein'); return; }
-    if(!window.RKPayment){ showToast('Verification system load nahi hua, page refresh karein'); return; }
+    if(!utr.trim()||utr.trim().length<6){showToast('Sahi UTR / Transaction ID daalein');return;}
+    if(!screenshotFile){showToast('Payment screenshot upload karein');return;}
+    if(!window.RKPayment){showToast('Verification system load nahi hua, page refresh karein');return;}
 
     setSubmittingVerify(true);
-    const screenshotUrl = await window.RKPayment.uploadScreenshot(screenshotFile, orderInfo.orderNumber);
-    if(!screenshotUrl){
-      setSubmittingVerify(false);
-      showToast('Screenshot upload fail hua, dobara try karein');
-      return;
-    }
+    const screenshotUrl=await window.RKPayment.uploadScreenshot(screenshotFile,orderInfo.orderNumber);
+    if(!screenshotUrl){setSubmittingVerify(false);showToast('Screenshot upload fail hua, dobara try karein');return;}
 
-    const saved = await window.RKPayment.submitVerification(user?.uid,{
-      orderId: orderInfo.orderId,
-      orderNumber: orderInfo.orderNumber,
-      customerName: f.name.trim(),
-      mobile: f.phone.trim(),
-      utr: utr.trim(),
-      screenshotUrl,
-      amount: total,
+    const saved=await window.RKPayment.submitVerification(user?.uid,{
+      orderId:orderInfo.orderId,orderNumber:orderInfo.orderNumber,
+      customerName:f.name.trim(),mobile:f.phone.trim(),
+      utr:utr.trim(),screenshotUrl,amount:total,
     });
-
     setSubmittingVerify(false);
 
     if(saved){
@@ -1155,22 +1113,21 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
     }
   };
 
-  /* ══════════════ RENDER: Verification step (after order placed, UPI only) ══════════════ */
+  /* ── Verification step ── */
   if(showVerifyForm){
     return(
       <>
         <div className="co-card">
           <div className="co-card-title">✅ Order #{orderInfo.orderNumber} Placed</div>
           <div className="verify-pending-badge">⏳ Payment verify hone ke baad order confirm hoga • {fmtTime(elapsedSec)}</div>
-          <UpiPayCard total={total} upiLink={buildUpiLink()} upiId={UPI_ID}/>
-          {elapsedSec>=REMINDER_AFTER_SEC && (
+          <UpiPayCard total={total} upiId={UPI_ID}/>
+          {elapsedSec>=REMINDER_AFTER_SEC&&(
             <div className="payment-wait-hint">
               <span>⏰</span>
-              <span>Itna time lag raha hai? Koi baat nahi — UPI payment kabhi expire nahi hota. Upar wala QR dobara scan kar lein ya UPI ID <b>{UPI_ID}</b> par manually pay karein, fir neeche UTR aur screenshot daal kar submit kar dein.</span>
+              <span>Itna time lag raha hai? Koi baat nahi — QR dobara scan karein ya UPI ID <b>{UPI_ID}</b> par manually pay karein, fir neeche UTR aur screenshot submit karein.</span>
             </div>
           )}
         </div>
-
         <div className="co-card">
           <div className="co-card-title">🧾 Payment Verification</div>
           <input className="inp" placeholder="Customer Name" value={f.name} disabled style={{opacity:0.7}}/>
@@ -1178,24 +1135,22 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
           <input className="inp" placeholder="Order ID" value={orderInfo.orderNumber} disabled style={{opacity:0.7}}/>
           <input className="inp" placeholder="UTR / Transaction ID *" value={utr} onChange={e=>setUtr(e.target.value.replace(/\s/g,''))}/>
           <div className="utr-hint">UTR aapke UPI app ke payment history mein milega (12 digit number)</div>
-
           <label className={`upload-box ${screenshotFile?'has-file':''}`}>
             <input type="file" accept="image/*" onChange={handleScreenshotChange}/>
             {!screenshotPreview
-              ? <><div style={{fontSize:'1.8rem'}}>📷</div><div style={{fontWeight:700,fontSize:'0.85rem',marginTop:6}}>Payment Screenshot Upload Karein</div><div style={{fontSize:'0.7rem',color:'var(--gray)',marginTop:2}}>JPG/PNG • Max 5MB</div></>
-              : <img className="upload-preview" src={screenshotPreview} alt="Screenshot preview"/>
+              ?<><div style={{fontSize:'1.8rem'}}>📷</div><div style={{fontWeight:700,fontSize:'0.85rem',marginTop:6}}>Payment Screenshot Upload Karein</div><div style={{fontSize:'0.7rem',color:'var(--gray)',marginTop:2}}>JPG/PNG • Max 5MB</div></>
+              :<img className="upload-preview" src={screenshotPreview} alt="Screenshot preview"/>
             }
           </label>
         </div>
-
         <button className="place-order-btn" disabled={submittingVerify} onClick={handleSubmitVerification}>
-          {submittingVerify ? '⏳ Submitting...' : '✅ Verification Submit Karein'}
+          {submittingVerify?'⏳ Submitting...':'✅ Verification Submit Karein'}
         </button>
       </>
     );
   }
 
-  /* ══════════════ RENDER: Normal checkout form ══════════════ */
+  /* ── Normal checkout ── */
   return(
     <>
       <div className="co-card">
@@ -1211,28 +1166,27 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
         <input className="inp" type="tel" inputMode="numeric" maxLength="10" placeholder="10-digit mobile number *" value={f.phone}
           onChange={e=>setF({...f,phone:e.target.value.replace(/\D/g,'').slice(0,10)})}
           onBlur={()=>setPhoneTouched(true)}/>
-        {phoneTouched && !isPhoneValid && <div className="phone-error">⚠️ Sahi 10-digit mobile number daalein (jaise 9876543210)</div>}
+        {phoneTouched&&!isPhoneValid&&<div className="phone-error">⚠️ Sahi 10-digit mobile number daalein (jaise 9876543210)</div>}
       </div>
 
       <div className="co-card">
         <div className="co-card-title">📍 Delivery Address</div>
         {loadingAddrs
-          ? <div style={{fontSize:'0.8rem',color:'var(--gray)',padding:'8px 0'}}>Addresses load ho rahe hain…</div>
-          : <>
-              {addresses.map(a=>(
-                <div key={a.id} className={`addr-card ${selectedAddrId===a.id?'sel':''}`} onClick={()=>{setSelectedAddrId(a.id);setShowNewForm(false);}}>
-                  <div className="addr-card-label-row">
-                    <span className="addr-card-label">{a.label}</span>
-                    {a.is_default&&<span className="addr-default-tag">DEFAULT</span>}
-                  </div>
-                  <div className="addr-card-text">{a.line1}{a.line2?', '+a.line2:''}<br/>{a.city}{a.pincode?' - '+a.pincode:''}</div>
+          ?<div style={{fontSize:'0.8rem',color:'var(--gray)',padding:'8px 0'}}>Addresses load ho rahe hain…</div>
+          :<>
+            {addresses.map(a=>(
+              <div key={a.id} className={`addr-card ${selectedAddrId===a.id?'sel':''}`} onClick={()=>{setSelectedAddrId(a.id);setShowNewForm(false);}}>
+                <div className="addr-card-label-row">
+                  <span className="addr-card-label">{a.label}</span>
+                  {a.is_default&&<span className="addr-default-tag">DEFAULT</span>}
                 </div>
-              ))}
-              {!showNewForm && <button className="addr-add-btn" onClick={()=>setShowNewForm(true)}>+ Naya Address Add Karo</button>}
-            </>
+                <div className="addr-card-text">{a.line1}{a.line2?', '+a.line2:''}<br/>{a.city}{a.pincode?' - '+a.pincode:''}</div>
+              </div>
+            ))}
+            {!showNewForm&&<button className="addr-add-btn" onClick={()=>setShowNewForm(true)}>+ Naya Address Add Karo</button>}
+          </>
         }
-
-        {showNewForm && (
+        {showNewForm&&(
           <div style={{border:'1.5px dashed var(--border)',borderRadius:12,padding:12,marginTop:6}}>
             <input className="inp" placeholder="Label (Home/Office)" value={newAddr.label} onChange={e=>setNewAddr({...newAddr,label:e.target.value})}/>
             <input className="inp" placeholder="Ghar ka pura pata, gali, makaan no. *" value={newAddr.line1} onChange={e=>setNewAddr({...newAddr,line1:e.target.value})}/>
@@ -1244,10 +1198,9 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
             <button className="addr-add-btn" disabled={savingAddr} onClick={saveNewAddress} style={{background:'var(--primary)',color:'#fff'}}>
               {savingAddr?'Saving…':'💾 Address Save Karke Use Karo'}
             </button>
-            {addresses.length>0 && <button className="addr-add-btn" style={{marginTop:6}} onClick={()=>setShowNewForm(false)}>Cancel</button>}
+            {addresses.length>0&&<button className="addr-add-btn" style={{marginTop:6}} onClick={()=>setShowNewForm(false)}>Cancel</button>}
           </div>
         )}
-
         <a href="account.html?tab=addresses" target="_blank" rel="noopener" className="addr-manage-link">✏️ Saare Addresses Manage Karo →</a>
       </div>
 
@@ -1257,11 +1210,11 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
           <div className={`pay-card ${pay==='cod'?'sel':''}`} onClick={()=>setPay('cod')}><div className="pi">💵</div><div className="pl">Cash on Delivery</div><div className="pd">Ghar pe cash dena</div></div>
           <div className={`pay-card ${pay==='upi'?'sel':''}`} onClick={()=>setPay('upi')}><div className="pi">📱</div><div className="pl">UPI / QR Code</div><div className="pd">Scan karke pay karo</div></div>
         </div>
-        {pay==='upi'&&<UpiPayCard total={total} upiLink={buildUpiLink()} upiId={UPI_ID}/>}
+        {pay==='upi'&&<UpiPayCard total={total} upiId={UPI_ID}/>}
       </div>
 
       <button className="place-order-btn" disabled={placing} onClick={handlePlaceOrder}>
-        {placing ? '⏳ Order Place Ho Raha Hai...' : (pay==='upi'?'📲 Pay Karke Continue Karein':'🚚 Order Place Karo')} →
+        {placing?'⏳ Order Place Ho Raha Hai...':(pay==='upi'?'📲 Order Confirm Karein':'🚚 Order Place Karo')} →
       </button>
     </>
   );
@@ -1271,6 +1224,6 @@ ReactDOM.render(React.createElement(App),document.getElementById('root'));
 </script>
   <script src="/pwa.js?v=1"></script>
   <link rel="stylesheet" href="/css/ananya-ai.css">
-<script src="/js/ananya-ai.js"></script>
+  <script src="/js/ananya-ai.js"></script>
 </body>
 </html>
