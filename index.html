@@ -424,6 +424,7 @@ function useProducts(options={}){
   const [products,setProducts]=useState([]);
   const [loading,setLoading]=useState(true);
   const [total,setTotal]=useState(0);
+  const instanceId=useRef(Math.random().toString(36).slice(2)).current;
   const fetch=useCallback(async()=>{
     setLoading(true);
     let q=supabase.from('products')
@@ -446,7 +447,7 @@ function useProducts(options={}){
   },[categoryId,featured,search,page,pageSize]);
   useEffect(()=>{
     fetch();
-    const ch=supabase.channel(`prods-rt-${categoryId||'all'}`)
+   const ch=supabase.channel(`prods-rt-${instanceId}`)
       .on('postgres_changes',{event:'*',schema:'public',table:'products'},fetch)
       .on('postgres_changes',{event:'*',schema:'public',table:'product_images'},fetch)
       .subscribe();
