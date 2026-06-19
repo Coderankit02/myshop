@@ -1066,7 +1066,7 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
   /* ── UPI deep link + live QR (amount always = current cart total) ── */
   const buildUpiLink=()=>{
     const note = orderInfo?.orderNumber ? `Order ${orderInfo.orderNumber}` : 'Rinku Kirana Order';
-    return `upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent(UPI_PAYEE)}&am=${total}&cu=INR&tn=${encodeURIComponent(note)}`;
+    return `upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent(UPI_PAYEE)}&cu=INR&tn=${encodeURIComponent(note)}`;
   };
 
   const handleScreenshotChange=(e)=>{
