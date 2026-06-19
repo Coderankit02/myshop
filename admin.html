@@ -41,7 +41,6 @@ body::before{
 button{cursor:pointer;border:none;font-family:'Inter',sans-serif;}
 input,textarea{outline:none;border:none;font-family:'Inter',sans-serif;font-size:15px;background:transparent;color:var(--text);}
 
-/* ── Glass utility ── */
 .glass{
   background:var(--glass-bg);
   border:1px solid var(--glass-border);
@@ -71,7 +70,7 @@ input,textarea{outline:none;border:none;font-family:'Inter',sans-serif;font-size
 .field-label{font-size:.72rem;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;display:block;}
 .field-input{
   width:100%;padding:13px 14px;border-radius:12px;background:var(--card-bg);
-  border:1.5px solid var(--border);transition:border-color .2s;
+  border:1.5px solid var(--border);transition:border-color .2s;color:var(--text);font-size:15px;
 }
 .field-input:focus{border-color:var(--primary);}
 .login-btn{
@@ -108,18 +107,14 @@ input,textarea{outline:none;border:none;font-family:'Inter',sans-serif;font-size
 
 .dash-body{max-width:1100px;margin:0 auto;padding:18px;}
 
-/* stat pills */
 .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px;}
-.stat-card{
-  border-radius:16px;padding:14px 16px;
-}
+.stat-card{border-radius:16px;padding:14px 16px;}
 .stat-num{font-size:1.5rem;font-weight:900;color:var(--dark);}
 .stat-label{font-size:.7rem;color:var(--gray);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-top:2px;}
 .stat-card.pending .stat-num{color:var(--yellow);}
 .stat-card.paid .stat-num{color:var(--primary);}
 .stat-card.rejected .stat-num{color:var(--red);}
 
-/* filter + search */
 .toolbar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
 .filter-tabs{display:flex;gap:6px;background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:4px;flex-wrap:wrap;}
 .filter-tab{padding:8px 14px;border-radius:9px;font-size:.78rem;font-weight:700;color:var(--gray);background:transparent;}
@@ -136,7 +131,6 @@ input,textarea{outline:none;border:none;font-family:'Inter',sans-serif;font-size
 .refresh-btn.spinning .ri{animation:spin 0.8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
 
-/* list */
 #list-wrap{display:flex;flex-direction:column;gap:10px;}
 .pv-card{
   border-radius:16px;padding:14px 16px;display:flex;gap:12px;align-items:center;
@@ -202,7 +196,6 @@ html[data-theme="dark"] .pv-badge.paid{color:var(--primary);}
 .detail-row .dl{color:var(--gray);font-weight:600;}
 .detail-row .dv{font-weight:700;color:var(--dark);text-align:right;}
 .detail-row .dv.mono{font-family:monospace;}
-.status-row{margin:14px 0;}
 .action-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;}
 .btn-approve{
   background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;
@@ -218,7 +211,7 @@ html[data-theme="dark"] .pv-badge.paid{color:var(--primary);}
 .reject-box{display:none;margin-top:12px;}
 .reject-box textarea{
   width:100%;background:var(--page-bg);border:1.5px solid var(--border);border-radius:12px;
-  padding:11px 12px;font-size:.85rem;resize:none;min-height:64px;margin-bottom:10px;
+  padding:11px 12px;font-size:.85rem;resize:none;min-height:64px;margin-bottom:10px;color:var(--text);
 }
 .already-done{
   text-align:center;padding:16px;border-radius:14px;font-weight:700;font-size:.88rem;margin-top:16px;
@@ -226,7 +219,6 @@ html[data-theme="dark"] .pv-badge.paid{color:var(--primary);}
 .already-done.paid{background:rgba(27,166,114,0.1);color:var(--primary-dark);}
 .already-done.rejected{background:rgba(230,57,70,0.1);color:var(--red);}
 
-/* lightbox for fullscreen screenshot */
 .lightbox{
   position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:400;
   display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;
@@ -235,7 +227,6 @@ html[data-theme="dark"] .pv-badge.paid{color:var(--primary);}
 .lightbox img{max-width:92vw;max-height:88vh;border-radius:10px;}
 .lightbox-close{position:absolute;top:18px;right:18px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.15);color:#fff;font-size:1.2rem;}
 
-/* toast */
 .toast{
   position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
   background:var(--dark);color:#fff;padding:12px 22px;border-radius:50px;font-size:.85rem;font-weight:600;
@@ -246,7 +237,6 @@ html[data-theme="dark"] .pv-badge.paid{color:var(--primary);}
 .toast.success{background:var(--primary-dark);}
 .toast.error{background:var(--red);}
 
-/* success burst animation on approve */
 .burst-check{
   width:64px;height:64px;border-radius:50%;background:var(--primary);
   display:flex;align-items:center;justify-content:center;color:#fff;font-size:28px;margin:0 auto 12px;
@@ -272,7 +262,7 @@ html[data-theme="dark"] .pv-badge.paid{color:var(--primary);}
     <div class="login-error" id="login-error"></div>
     <div class="field-group">
       <label class="field-label">Email</label>
-      <input class="field-input" id="login-email" type="email" placeholder="admin@rinkukirana.com" autocomplete="username"/>
+      <input class="field-input" id="login-email" type="email" placeholder="admin@example.com" autocomplete="username"/>
     </div>
     <div class="field-group">
       <label class="field-label">Password</label>
@@ -325,11 +315,10 @@ html[data-theme="dark"] .pv-badge.paid{color:var(--primary);}
       <div class="modal-title">Payment Request</div>
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
-    <div class="modal-body" id="modal-body"><!-- filled by JS --></div>
+    <div class="modal-body" id="modal-body"></div>
   </div>
 </div>
 
-<!-- fullscreen screenshot lightbox -->
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
   <button class="lightbox-close">✕</button>
   <img id="lightbox-img" src=""/>
@@ -339,15 +328,12 @@ html[data-theme="dark"] .pv-badge.paid{color:var(--primary);}
 
 <script>
 /* ════════════════════════════════════════════════════════════
-   CONFIG — must match index.html's Supabase project
+   CONFIG
    ════════════════════════════════════════════════════════════ */
 const SUPABASE_URL = 'https://pffaflasgwhydkmxwkky.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable__tFDYhkM3blZ0pIVT0YxLA_YvkKq79L';
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-window.sb = supabase; // payment.js reads window.sb
-
-/* ⚠️ Add every admin's email here — must match their Supabase Auth login email */
-const ADMIN_EMAILS = ['admin@rinkukirana.com'];
+window.sb = supabase;
 
 let currentList = [];
 let currentFilter = 'all';
@@ -379,12 +365,12 @@ function showToast(msg, type=''){
   setTimeout(()=>{ el.className = 'toast ' + type; }, 2600);
 }
 
-/* ── Auth ── */
+/* ── Auth: Teen checks — Password + Role + is_active ── */
 async function handleLogin(){
-  const email = document.getElementById('login-email').value.trim();
+  const email    = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
-  const errEl = document.getElementById('login-error');
-  const btn = document.getElementById('login-btn');
+  const errEl    = document.getElementById('login-error');
+  const btn      = document.getElementById('login-btn');
   errEl.style.display = 'none';
 
   if(!email || !password){
@@ -393,25 +379,41 @@ async function handleLogin(){
     return;
   }
 
-  btn.disabled = true; btn.textContent = '⏳ Checking...';
+  btn.disabled = true;
+  btn.textContent = '⏳ Checking...';
 
+  /* ── CHECK 1: Password verify (Supabase Auth) ── */
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if(error){
-    errEl.textContent = 'Login fail: ' + error.message;
+    errEl.textContent = '❌ Email ya password galat hai';
     errEl.style.display = 'block';
-    btn.disabled = false; btn.textContent = '🔑 Login';
+    btn.disabled = false;
+    btn.textContent = '🔑 Login';
     return;
   }
 
-  if(!ADMIN_EMAILS.includes(data.user.email)){
+  /* ── CHECK 2: Role verify (app_metadata) ── */
+  if(data.user.app_metadata?.role !== 'admin'){
     await supabase.auth.signOut();
     errEl.textContent = '⛔ Ye account admin nahi hai';
     errEl.style.display = 'block';
-    btn.disabled = false; btn.textContent = '🔑 Login';
+    btn.disabled = false;
+    btn.textContent = '🔑 Login';
     return;
   }
 
+  /* ── CHECK 3: is_active verify (app_metadata) ── */
+  if(!data.user.app_metadata?.is_active){
+    await supabase.auth.signOut();
+    errEl.textContent = '⛔ Ye admin account deactivate hai';
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = '🔑 Login';
+    return;
+  }
+
+  /* ── Teeno check pass — Dashboard open karo ── */
   enterDashboard();
 }
 
@@ -430,15 +432,21 @@ function enterDashboard(){
   subscribeRealtime();
 }
 
-/* Restore session on page load */
+/* ── Session restore on page load (teeno check) ── */
 (async function checkSession(){
   const { data: { session } } = await supabase.auth.getSession();
-  if(session?.user && ADMIN_EMAILS.includes(session.user.email)){
-    enterDashboard();
-  }
+  if(!session?.user) return;
+
+  // Role check
+  if(session.user.app_metadata?.role !== 'admin') return;
+
+  // is_active check
+  if(!session.user.app_metadata?.is_active) return;
+
+  enterDashboard();
 })();
 
-/* ── Realtime: auto-refresh on new submissions ── */
+/* ── Realtime ── */
 function subscribeRealtime(){
   supabase.channel('pv-changes')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'payment_verifications' }, () => {
@@ -457,7 +465,7 @@ document.getElementById('filter-tabs').addEventListener('click', (e)=>{
   loadList();
 });
 
-/* ── Search (debounced) ── */
+/* ── Search ── */
 document.getElementById('search-input').addEventListener('input', (e)=>{
   clearTimeout(searchDebounce);
   searchDebounce = setTimeout(()=>{
@@ -477,17 +485,15 @@ async function loadList(silent){
   currentList = data;
   refreshBtn.classList.remove('spinning');
   renderList(data);
-  renderStats(data);
+  renderStats();
 }
 
 function renderStats(){
-  // stats reflect overall counts, not just filtered view — fetch unfiltered counts
   const counts = { pending:0, paid:0, rejected:0 };
-  (currentFilter==='all' ? currentList : currentList).forEach(()=>{}); // noop, computed below
   window.RKPayment.loadVerifications({status:'all', limit:1000}).then(all=>{
     all.forEach(r=>{ if(counts[r.status]!==undefined) counts[r.status]++; });
-    document.getElementById('stat-pending').textContent = counts.pending;
-    document.getElementById('stat-paid').textContent = counts.paid;
+    document.getElementById('stat-pending').textContent  = counts.pending;
+    document.getElementById('stat-paid').textContent     = counts.paid;
     document.getElementById('stat-rejected').textContent = counts.rejected;
   });
 }
@@ -529,7 +535,9 @@ function openModal(id){
 
   body.innerHTML = `
     <div class="shot-frame" onclick="${i.screenshot_url ? `openLightbox('${i.screenshot_url}')` : ''}">
-      ${i.screenshot_url ? `<img src="${i.screenshot_url}"/>` : `<div style="padding:40px;color:var(--gray);font-size:.85rem;">Screenshot upload nahi hua</div>`}
+      ${i.screenshot_url
+        ? `<img src="${i.screenshot_url}"/>`
+        : `<div style="padding:40px;color:var(--gray);font-size:.85rem;">Screenshot upload nahi hua</div>`}
     </div>
     <div class="detail-row"><span class="dl">Customer</span><span class="dv">${escapeHtml(i.customer_name)}</span></div>
     <div class="detail-row"><span class="dl">Mobile</span><span class="dv mono">${escapeHtml(i.mobile)}</span></div>
@@ -606,7 +614,7 @@ async function doReject(){
 
 function showSuccessBurst(msg){
   const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;display:flex;align-items:center;justify-content:center;animation:fadeIn .2s;';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;display:flex;align-items:center;justify-content:center;';
   overlay.innerHTML = `
     <div style="background:var(--card-bg);border-radius:20px;padding:32px 28px;text-align:center;max-width:300px;">
       <div class="burst-check">✓</div>
@@ -628,7 +636,7 @@ function closeLightbox(){
 
 /* ── Helpers ── */
 function escapeHtml(s){
-  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  return String(s ?? '').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 function timeAgo(iso){
   const diff = (Date.now() - new Date(iso).getTime()) / 1000;
