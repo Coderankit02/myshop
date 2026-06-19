@@ -332,7 +332,8 @@ html[data-theme="dark"] .pv-badge.paid{color:var(--primary);}
    ════════════════════════════════════════════════════════════ */
 const SUPABASE_URL = 'https://pffaflasgwhydkmxwkky.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable__tFDYhkM3blZ0pIVT0YxLA_YvkKq79L';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+var supabase = window.rkAdmin || window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+window.rkAdmin = supabase;
 window.sb = supabase;
 
 let currentList = [];
