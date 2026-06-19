@@ -317,7 +317,7 @@ html[data-theme="dark"] .upi-trust-badge{background:#163828;}
 .bhim-flag-arrow.saffron{border-left:11px solid #FF9933;}
 .bhim-flag-arrow.green{border-left:11px solid #138808;}
 
-/* ── UPDATED: Static QR styles ── */
+/* ── Static QR styles ── */
 .upi-qr-wrap{display:flex;justify-content:center;margin-bottom:8px;}
 .upi-qr-box{background:#fff;border-radius:16px;padding:14px;border:2px solid var(--border);box-shadow:0 2px 12px rgba(0,0,0,0.08);}
 .upi-qr-box img{display:block;width:180px;height:180px;object-fit:contain;border-radius:8px;}
@@ -329,14 +329,25 @@ html[data-theme="dark"] .upi-amt-notice{background:#3A2A14;border-color:#6B4A1F;
 .upi-app-icon{aspect-ratio:1;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-direction:column;}
 .upi-app-icon.white{background:#fff;border:1px solid var(--border);}
 .upi-app-icon img{width:70%;height:70%;object-fit:contain;}
-.upi-pay-btn{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;padding:14px;background:linear-gradient(135deg,var(--primary),var(--primary-dark));border:none;border-radius:14px;color:#fff;font-weight:800;font-size:0.95rem;cursor:pointer;min-height:48px;text-decoration:none;}
 .upi-pay-id-row{display:flex;align-items:center;justify-content:center;gap:5px;margin-top:14px;}
 .upi-pay-id-row span{font-size:0.7rem;color:var(--gray);}
 .upi-retry-hint{text-align:center;font-size:0.66rem;color:var(--gray);margin-top:9px;line-height:1.5;}
-@media(min-width:768px){.upi-pay-btn{display:none;}}
 
 .payment-wait-hint{display:flex;align-items:flex-start;gap:8px;background:#FFF8E1;border:1px solid #FFE0A3;border-radius:10px;padding:10px 12px;margin-top:12px;font-size:.74rem;color:#92600B;font-weight:600;line-height:1.5;}
 html[data-theme="dark"] .payment-wait-hint{background:#3A2A14;border-color:#6B4A1F;color:#FFCC80;}
+
+/* ── Fullscreen QR / countdown checkout ── */
+.qr-fullscreen{position:fixed;inset:0;background:var(--page-bg);z-index:500;display:flex;flex-direction:column;overflow-y:auto;}
+.qr-fs-header{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;background:var(--card-bg);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:1;}
+.qr-fs-close{background:none;font-size:1.3rem;color:var(--gray);width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:50%;}
+.qr-fs-title{font-weight:800;font-size:0.95rem;color:var(--dark);}
+.qr-fs-timer{display:flex;align-items:center;gap:6px;background:#FFF3E0;color:#E65100;font-weight:800;font-size:0.85rem;padding:6px 14px;border-radius:50px;}
+html[data-theme="dark"] .qr-fs-timer{background:#3A2A14;color:#FFB74D;}
+.qr-fs-timer.urgent{background:#FFEBEE;color:#C62828;}
+html[data-theme="dark"] .qr-fs-timer.urgent{background:#3A1414;color:#FF6B6B;}
+.qr-fs-body{flex:1;display:flex;flex-direction:column;align-items:center;padding:24px 18px 40px;max-width:460px;margin:0 auto;width:100%;}
+.qr-fs-amt{font-size:2.2rem;font-weight:900;color:var(--dark);margin:6px 0 18px;}
+.qr-fs-amt-label{font-size:0.78rem;color:var(--gray);font-weight:600;}
 </style>
 </head>
 <body>
@@ -796,7 +807,7 @@ function App(){
         {page==='checkout'&&(
           <div className="checkout-page">
             <h2>← Checkout</h2>
-            <CheckoutForm cart={cart} total={total} showToast={showToast} user={user} onSuccess={(id,pay)=>{setSuccess({id,pay});setPage('success');}}/>
+            <CheckoutForm cart={cart} total={total} showToast={showToast} user={user} onExpire={()=>setPage('home')} onSuccess={(id,pay)=>{setSuccess({id,pay});setPage('success');}}/>
           </div>
         )}
 
@@ -877,11 +888,9 @@ function App(){
 }
 
 /* ══════════════════════════════════════════════════════
-   UPDATED UpiPayCard — Static PhonePe QR + No amount in deep link
+   UpiPayCard — Static PhonePe QR (no intent button; risk-policy safe)
 ══════════════════════════════════════════════════════ */
 function UpiPayCard({total, upiId}){
-  const simpleUpiLink = "upi://pay?mode=02&pa=Q025544077@ybl&purpose=00&mc=0000&pn=PhonePeMerchant&orgid=180001&sign=MEUCIGwsYhzRi2FADSfR+Ii/iXUuWoFe7wuBXumpbmQfzecyAiEAnAvOlUfgmFhVMKZf+LFvoIc9M0RkW982ZYQeaJysQyo=";
-
   return (
     <div className="upi-pay-card">
 
@@ -942,15 +951,6 @@ function UpiPayCard({total, upiId}){
           </div>
         </div>
 
-        {/* ── Mobile UPI deep link button (hidden on desktop) ── */}
-        <a href={simpleUpiLink} className="upi-pay-btn">
-          📱 UPI App Se Pay Karo →
-        </a>
-
-        <div className="upi-retry-hint">
-          App na khule to QR scan karein • Amount: <b>₹{total}</b>
-        </div>
-
         <div className="upi-pay-id-row">
           <span>🔒 UPI ID: {upiId}</span>
         </div>
@@ -963,7 +963,7 @@ function UpiPayCard({total, upiId}){
 /* ══════════════════════════════════════════════════════
    CheckoutForm
 ══════════════════════════════════════════════════════ */
-function CheckoutForm({cart,total,showToast,onSuccess,user}){
+function CheckoutForm({cart,total,showToast,onSuccess,user,onExpire}){
   const [pay,setPay]=useState('');
   const [f,setF]=useState({name:user?.name||'',phone:''});
   const [addresses,setAddresses]=useState([]);
@@ -980,16 +980,31 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
   const [screenshotFile,setScreenshotFile]=useState(null);
   const [screenshotPreview,setScreenshotPreview]=useState(null);
   const [submittingVerify,setSubmittingVerify]=useState(false);
+  const [pendingOrder,setPendingOrder]=useState(null);
 
+  const COUNTDOWN_SEC=600; // 10 minute time limit
   const REMINDER_AFTER_SEC=120;
-  const [elapsedSec,setElapsedSec]=useState(0);
+  const [remainingSec,setRemainingSec]=useState(COUNTDOWN_SEC);
   useEffect(()=>{
     if(!showVerifyForm) return;
-    setElapsedSec(0);
-    const t=setInterval(()=>setElapsedSec(s=>s+1),1000);
+    setRemainingSec(COUNTDOWN_SEC);
+    const t=setInterval(()=>{
+      setRemainingSec(s=>{
+        if(s<=1){
+          clearInterval(t);
+          setShowVerifyForm(false);
+          setPendingOrder(null);
+          showToast('⏰ Time khatam ho gaya, dobara try karein');
+          if(onExpire) onExpire();
+          return 0;
+        }
+        return s-1;
+      });
+    },1000);
     return()=>clearInterval(t);
   },[showVerifyForm]);
   const fmtTime=s=>{const m=Math.floor(s/60);const ss=String(s%60).padStart(2,'0');return `${m}:${ss}`;};
+  const showWaitHint=remainingSec<=COUNTDOWN_SEC-REMINDER_AFTER_SEC;
 
   const UPI_ID='Q025544077@ybl';
 
@@ -1070,22 +1085,23 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
       city:selectedAddr.city||'Prayagraj',pincode:selectedAddr.pincode||'',
     };
 
-    setPlacing(true);
-    let result=null;
-    if(window.RKOrders && user){
-      result=await window.RKOrders.createOrder(user.uid,{cart,total,address:addressPayload,paymentMethod:pay});
-    }
-    const orderNumber=result?.orderNumber||('RK'+Math.floor(1000+Math.random()*9000));
-    const orderId=result?.orderId||null;
-    setPlacing(false);
-
     if(pay==='cod'){
+      setPlacing(true);
+      let result=null;
+      if(window.RKOrders && user){
+        result=await window.RKOrders.createOrder(user.uid,{cart,total,address:addressPayload,paymentMethod:pay});
+      }
+      const orderNumber=result?.orderNumber||('RK'+Math.floor(1000+Math.random()*9000));
+      setPlacing(false);
       if(window.RKCart) window.RKCart.clearCart();
       onSuccess(orderNumber,'cod');
       return;
     }
 
-    setOrderInfo({orderId,orderNumber});
+    // UPI: order yahan NAHI banta — sirf payment verify submit hone par banega
+    const tempOrderNumber='RK'+Math.floor(1000+Math.random()*9000);
+    setPendingOrder({address:addressPayload,paymentMethod:pay});
+    setOrderInfo({orderId:null,orderNumber:tempOrderNumber});
     setShowVerifyForm(true);
   };
 
@@ -1093,13 +1109,28 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
     if(!utr.trim()||utr.trim().length<6){showToast('Sahi UTR / Transaction ID daalein');return;}
     if(!screenshotFile){showToast('Payment screenshot upload karein');return;}
     if(!window.RKPayment){showToast('Verification system load nahi hua, page refresh karein');return;}
+    if(!pendingOrder){showToast('Order data missing, dobara try karein');return;}
 
     setSubmittingVerify(true);
-    const screenshotUrl=await window.RKPayment.uploadScreenshot(screenshotFile,orderInfo.orderNumber);
+
+    // Asli order yahan ban raha hai — sirf jab verification submit ho
+    let result=null;
+    if(window.RKOrders && user){
+      result=await window.RKOrders.createOrder(user.uid,{cart,total,address:pendingOrder.address,paymentMethod:pendingOrder.paymentMethod});
+    }
+    if(!result){
+      setSubmittingVerify(false);
+      showToast('Order create nahi hua, dobara try karein');
+      return;
+    }
+    const realOrderId=result.orderId;
+    const realOrderNumber=result.orderNumber||orderInfo.orderNumber;
+
+    const screenshotUrl=await window.RKPayment.uploadScreenshot(screenshotFile,realOrderNumber);
     if(!screenshotUrl){setSubmittingVerify(false);showToast('Screenshot upload fail hua, dobara try karein');return;}
 
     const saved=await window.RKPayment.submitVerification(user?.uid,{
-      orderId:orderInfo.orderId,orderNumber:orderInfo.orderNumber,
+      orderId:realOrderId,orderNumber:realOrderNumber,
       customerName:f.name.trim(),mobile:f.phone.trim(),
       utr:utr.trim(),screenshotUrl,amount:total,
     });
@@ -1107,46 +1138,48 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
 
     if(saved){
       if(window.RKCart) window.RKCart.clearCart();
-      onSuccess(orderInfo.orderNumber,'upi');
+      onSuccess(realOrderNumber,'upi');
     } else {
       showToast('Verification submit nahi hua, dobara try karein');
     }
   };
 
-  /* ── Verification step ── */
+  /* ── Verification step (fullscreen with countdown) ── */
   if(showVerifyForm){
     return(
-      <>
-        <div className="co-card">
-          <div className="co-card-title">✅ Order #{orderInfo.orderNumber} Placed</div>
-          <div className="verify-pending-badge">⏳ Payment verify hone ke baad order confirm hoga • {fmtTime(elapsedSec)}</div>
+      <div className="qr-fullscreen">
+        <div className="qr-fs-header">
+          <button className="qr-fs-close" onClick={()=>{setShowVerifyForm(false);setPendingOrder(null);if(onExpire) onExpire();}}>✕</button>
+          <div className="qr-fs-title">Payment Karein</div>
+          <div className={`qr-fs-timer ${remainingSec<=60?'urgent':''}`}>⏱ {fmtTime(remainingSec)}</div>
+        </div>
+        <div className="qr-fs-body">
+          <div className="qr-fs-amt-label">Order #{orderInfo.orderNumber}</div>
+          <div className="qr-fs-amt">₹{total}</div>
           <UpiPayCard total={total} upiId={UPI_ID}/>
-          {elapsedSec>=REMINDER_AFTER_SEC&&(
+          {showWaitHint&&(
             <div className="payment-wait-hint">
               <span>⏰</span>
               <span>Itna time lag raha hai? Koi baat nahi — QR dobara scan karein ya UPI ID <b>{UPI_ID}</b> par manually pay karein, fir neeche UTR aur screenshot submit karein.</span>
             </div>
           )}
+          <div className="co-card" style={{width:'100%',marginTop:14}}>
+            <div className="co-card-title">🧾 Payment Verification</div>
+            <input className="inp" placeholder="UTR / Transaction ID *" value={utr} onChange={e=>setUtr(e.target.value.replace(/\s/g,''))}/>
+            <div className="utr-hint">UTR aapke UPI app ke payment history mein milega (12 digit number)</div>
+            <label className={`upload-box ${screenshotFile?'has-file':''}`}>
+              <input type="file" accept="image/*" onChange={handleScreenshotChange}/>
+              {!screenshotPreview
+                ?<><div style={{fontSize:'1.8rem'}}>📷</div><div style={{fontWeight:700,fontSize:'0.85rem',marginTop:6}}>Payment Screenshot Upload Karein</div><div style={{fontSize:'0.7rem',color:'var(--gray)',marginTop:2}}>JPG/PNG • Max 5MB</div></>
+                :<img className="upload-preview" src={screenshotPreview} alt="Screenshot preview"/>
+              }
+            </label>
+          </div>
+          <button className="place-order-btn" style={{marginTop:14}} disabled={submittingVerify} onClick={handleSubmitVerification}>
+            {submittingVerify?'⏳ Submitting...':'✅ Verification Submit Karein'}
+          </button>
         </div>
-        <div className="co-card">
-          <div className="co-card-title">🧾 Payment Verification</div>
-          <input className="inp" placeholder="Customer Name" value={f.name} disabled style={{opacity:0.7}}/>
-          <input className="inp" placeholder="Mobile Number" value={f.phone} disabled style={{opacity:0.7}}/>
-          <input className="inp" placeholder="Order ID" value={orderInfo.orderNumber} disabled style={{opacity:0.7}}/>
-          <input className="inp" placeholder="UTR / Transaction ID *" value={utr} onChange={e=>setUtr(e.target.value.replace(/\s/g,''))}/>
-          <div className="utr-hint">UTR aapke UPI app ke payment history mein milega (12 digit number)</div>
-          <label className={`upload-box ${screenshotFile?'has-file':''}`}>
-            <input type="file" accept="image/*" onChange={handleScreenshotChange}/>
-            {!screenshotPreview
-              ?<><div style={{fontSize:'1.8rem'}}>📷</div><div style={{fontWeight:700,fontSize:'0.85rem',marginTop:6}}>Payment Screenshot Upload Karein</div><div style={{fontSize:'0.7rem',color:'var(--gray)',marginTop:2}}>JPG/PNG • Max 5MB</div></>
-              :<img className="upload-preview" src={screenshotPreview} alt="Screenshot preview"/>
-            }
-          </label>
-        </div>
-        <button className="place-order-btn" disabled={submittingVerify} onClick={handleSubmitVerification}>
-          {submittingVerify?'⏳ Submitting...':'✅ Verification Submit Karein'}
-        </button>
-      </>
+      </div>
     );
   }
 
