@@ -880,7 +880,7 @@ function App(){
    UPDATED UpiPayCard — Static PhonePe QR + No amount in deep link
 ══════════════════════════════════════════════════════ */
 function UpiPayCard({total, upiId}){
-  const simpleUpiLink = `upi://pay?pa=${upiId}&pn=${encodeURIComponent('Rinku Kirana')}&cu=INR`;
+  const simpleUpiLink = "upi://pay?mode=02&pa=Q025544077@ybl&purpose=00&mc=0000&pn=PhonePeMerchant&orgid=180001&sign=MEUCIGwsYhzRi2FADSfR+Ii/iXUuWoFe7wuBXumpbmQfzecyAiEAnAvOlUfgmFhVMKZf+LFvoIc9M0RkW982ZYQeaJysQyo=";
 
   return (
     <div className="upi-pay-card">
