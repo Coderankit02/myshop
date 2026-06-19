@@ -701,11 +701,15 @@ function App(){
     return()=>clearInterval(t);
   },[banners.length]);
 
-  // Keep carousel scroll position in sync with bannerIdx (fixes auto-rotate not scrolling)
+  // Keep carousel scroll position in sync with bannerIdx (fixes auto-rotate not scrolling).
+  // Frontend-only fix: scrollIntoView() used to scroll the *whole page* vertically back up
+  // to bring an off-screen banner into view every 4s. Scoping the scroll to just this
+  // container (scrollTo on el, not scrollIntoView on the child) stops that page-jump bug.
   useEffect(()=>{
     const el=bannerWrapRef.current;
-    if(!el||!el.children[bannerIdx])return;
-    el.children[bannerIdx].scrollIntoView({behavior:'smooth',inline:'start',block:'nearest'});
+    const child=el&&el.children[bannerIdx];
+    if(!el||!child)return;
+    el.scrollTo({left:child.offsetLeft,behavior:'smooth'});
   },[bannerIdx]);
 
   // Frontend-only fix: when the user manually swipes the banner carousel, detect which
