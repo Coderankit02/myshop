@@ -30,7 +30,7 @@
   --primary:#1BA672;--primary-dark:#158A5E;--primary-light:#E8F8F1;
   --orange:#FF6B35;--yellow:#FFB800;--red:#E63946;
   --dark:#1A1A2E;--text:#2D3748;--gray:#718096;--light:#F7FAFC;
-  --border:#E2E8F0;--white:#fff;
+  --border:#E2E8F0;
   --page-bg:#F5F5F5;--card-bg:#fff;--footer-bg:#1A1A2E;
 }
 html{-webkit-text-size-adjust:100%;}
@@ -46,7 +46,7 @@ input,select,textarea{outline:none;border:none;font-family:'Inter',sans-serif;fo
 .logo span{color:var(--orange);}
 .dh-location{display:flex;align-items:center;gap:6px;background:#F7FAFC;border:1.5px solid var(--border);border-radius:10px;padding:9px 14px;font-size:0.82rem;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;}
 .dh-search{flex:1;display:flex;align-items:center;background:#F0F0F0;border-radius:10px;padding:10px 16px;gap:10px;border:1.5px solid transparent;transition:border 0.2s;}
-.dh-search:focus-within{border-color:var(--primary);background:#fff;}
+.dh-search:focus-within{border-color:var(--primary);background:var(--card-bg);}
 .dh-search input{flex:1;background:transparent;font-size:0.95rem;color:var(--dark);}
 .dh-search input::placeholder{color:#A0AEC0;}
 .dh-nav{display:flex;align-items:center;gap:8px;flex-shrink:0;}
@@ -125,8 +125,10 @@ input,select,textarea{outline:none;border:none;font-family:'Inter',sans-serif;fo
 .prod-sp{font-size:0.88rem;font-weight:800;color:var(--dark);}
 .add-btn{background:#fff;border:1.5px solid var(--primary);color:var(--primary);border-radius:8px;padding:6px 12px;font-size:0.78rem;font-weight:700;transition:all 0.2s;min-height:32px;}
 .add-btn:hover{background:var(--primary);color:#fff;}
+.add-btn:disabled{opacity:0.45;cursor:not-allowed;}
 .qty-ctrl{display:flex;align-items:center;border:1.5px solid var(--primary);border-radius:8px;overflow:hidden;}
 .qbtn{background:var(--primary);color:#fff;width:30px;height:30px;font-size:1rem;font-weight:700;display:flex;align-items:center;justify-content:center;}
+.qbtn:disabled{background:var(--border);color:var(--gray);cursor:not-allowed;}
 .qnum{font-size:0.78rem;font-weight:700;width:26px;text-align:center;color:var(--dark);}
 .banner-slider{padding:12px 16px;overflow:hidden;}
 .banner-wrap{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;}
@@ -220,12 +222,15 @@ input,select,textarea{outline:none;border:none;font-family:'Inter',sans-serif;fo
 .pdp-add-btn{flex:1;padding:13px;background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;border-radius:14px;font-weight:800;font-size:0.95rem;min-height:48px;}
 .pdp-qty-ctrl{display:flex;align-items:center;border:2px solid var(--primary);border-radius:12px;overflow:hidden;}
 .pdp-qbtn{background:var(--primary);color:#fff;width:44px;height:44px;font-size:1.3rem;font-weight:700;display:flex;align-items:center;justify-content:center;}
+.pdp-qbtn:disabled{background:var(--border);color:var(--gray);cursor:not-allowed;}
 .pdp-qnum{font-size:1rem;font-weight:800;width:40px;text-align:center;color:var(--dark);}
+.pdp-stock-left{font-size:0.7rem;color:var(--gray);margin-top:6px;}
 /* Checkout remains same */
 .checkout-page{padding:16px;padding-bottom:80px;max-width:700px;margin:0 auto;}
 .checkout-page h2{font-size:1.1rem;font-weight:800;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
 .co-card{background:#fff;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);}
 .co-card-title{font-weight:700;font-size:0.85rem;color:var(--gray);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;}
+.field-label{display:block;font-size:0.72rem;font-weight:700;color:var(--gray);margin-bottom:5px;}
 .inp{width:100%;background:#F7FAFC;border:1.5px solid var(--border);border-radius:10px;padding:12px 13px;font-size:16px;color:var(--dark);margin-bottom:10px;transition:border 0.2s;min-height:44px;}
 .inp:focus{border-color:var(--primary);}
 .pay-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
@@ -236,6 +241,9 @@ input,select,textarea{outline:none;border:none;font-family:'Inter',sans-serif;fo
 .pay-card .pd{font-size:0.65rem;color:var(--gray);margin-top:2px;}
 .osi{display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:4px;}
 .place-order-btn{width:100%;padding:15px;background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;border-radius:14px;font-weight:800;font-size:1rem;box-shadow:0 6px 16px rgba(27,166,114,0.35);margin-top:16px;min-height:48px;cursor:pointer;}
+.place-order-btn:disabled{opacity:0.6;cursor:not-allowed;}
+.order-error-banner{display:flex;align-items:flex-start;gap:8px;background:#FFEBEE;border:1px solid #FFCDD2;border-radius:10px;padding:10px 12px;margin-top:10px;font-size:0.78rem;color:#C62828;font-weight:600;line-height:1.5;}
+html[data-theme="dark"] .order-error-banner{background:#3A1414;border-color:#5A1F1F;color:#FF8A8A;}
 .success-page{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;padding:24px;text-align:center;}
 .success-anim{font-size:5rem;animation:successPop 0.6s cubic-bezier(0.34,1.56,0.64,1);}
 @keyframes successPop{from{transform:scale(0) rotate(-30deg);}to{transform:scale(1) rotate(0);}}
@@ -245,8 +253,6 @@ input,select,textarea{outline:none;border:none;font-family:'Inter',sans-serif;fo
 .home-btn{margin-top:20px;background:var(--primary);color:#fff;padding:13px 40px;border-radius:50px;font-weight:800;font-size:0.95rem;min-height:48px;cursor:pointer;}
 .toast{position:fixed;bottom:calc(90px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:#1A1A2E;color:#fff;padding:10px 22px;border-radius:50px;font-size:0.82rem;font-weight:600;z-index:999;animation:toastUp 0.3s ease;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,0.25);max-width:90%;overflow:hidden;text-overflow:ellipsis;}
 @keyframes toastUp{from{opacity:0;transform:translateX(-50%) translateY(20px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
-.site-footer{background:#1A1A2E;color:rgba(255,255,255,0.6);padding:28px 24px;text-align:center;font-size:0.75rem;line-height:2;border-radius:16px;margin-bottom:16px;}
-.footer-logo{color:#fff;font-weight:900;font-size:1.1rem;margin-bottom:8px;}
 /* Dark mode */
 .theme-toggle-btn{background:var(--primary-light);color:var(--primary-dark);border-radius:12px;width:38px;height:38px;min-width:38px;display:flex;align-items:center;justify-content:center;font-size:1.05rem;flex-shrink:0;transition:background 0.2s,color 0.2s;}
 .dh-theme-btn{background:var(--primary-light);color:var(--primary-dark);border-radius:10px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:1.05rem;flex-shrink:0;}
@@ -255,7 +261,7 @@ html[data-theme="dark"]{
   --primary:#2ECC82;--primary-dark:#16A34A;--primary-light:#163828;
   --orange:#FF8A5C;--yellow:#FFCB47;--red:#FF6B6B;
   --dark:#F1F5F9;--text:#CBD5E1;--gray:#94A3B8;--light:#1A2332;
-  --border:#2D3B4E;--white:#151B26;
+  --border:#2D3B4E;
   --page-bg:#0F1521;--card-bg:#151B26;--footer-bg:#0A0E16;
 }
 html[data-theme="dark"] body{background:#0F1521;}
@@ -322,6 +328,7 @@ html[data-theme="dark"] .upi-amt-notice{background:#3A2A14;border-color:#6B4A1F;
 .qr-fs-timer{display:flex;align-items:center;gap:6px;background:#FFF3E0;color:#E65100;font-weight:800;font-size:0.85rem;padding:6px 14px;border-radius:50px;}
 html[data-theme="dark"] .qr-fs-timer{background:#3A2A14;color:#FFB74D;}
 .qr-fs-timer.urgent{background:#FFEBEE;color:#C62828;}
+html[data-theme="dark"] .qr-fs-timer.urgent{background:#3A1414;color:#FF6B6B;}
 .qr-fs-body{flex:1;display:flex;flex-direction:column;align-items:center;padding:24px 18px 40px;max-width:460px;margin:0 auto;width:100%;}
 .qr-fs-amt{font-size:2.2rem;font-weight:900;color:var(--dark);margin:6px 0 18px;}
 .qr-fs-amt-label{font-size:0.78rem;color:var(--gray);font-weight:600;}
@@ -342,6 +349,7 @@ html[data-theme="dark"] .payment-wait-hint{background:#3A2A14;border-color:#6B4A
 .bhim-flag-arrow{display:inline-block;width:0;height:0;border-top:8px solid transparent;border-bottom:8px solid transparent;}
 .bhim-flag-arrow.saffron{border-left:11px solid #FF9933;}
 .bhim-flag-arrow.green{border-left:11px solid #138808;}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
 @media(min-width:768px){
   .header{display:none!important;}
   .bottom-nav{display:none!important;}
@@ -356,7 +364,6 @@ html[data-theme="dark"] .payment-wait-hint{background:#3A2A14;border-color:#6B4A
   .desktop-header{display:none!important;}
   .desktop-sidebar{display:none!important;}
   .how-section{border-radius:0;margin:0 0 8px;}
-  .site-footer{border-radius:0;margin-bottom:0;}
 }
 @media(min-width:768px) and (max-width:1023px){
   .desktop-sidebar{width:160px;}
@@ -370,6 +377,17 @@ html[data-theme="dark"] .payment-wait-hint{background:#3A2A14;border-color:#6B4A
   .user-pill-btn{padding:7px 8px;max-width:64px;}
 }
 </style>
+<script>
+/* Apply saved/preferred theme BEFORE paint to avoid a light->dark flash on load.
+   This does not touch any backend logic — purely cosmetic, runs once. */
+(function(){
+  try{
+    var saved=localStorage.getItem('rk_theme');
+    var theme=(saved==='dark'||saved==='light')?saved:(window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
+    document.documentElement.setAttribute('data-theme',theme);
+  }catch(e){}
+})();
+</script>
 </head>
 <body>
 <div id="root"></div>
@@ -500,6 +518,7 @@ function PCard({p,cart,addToCart,updQty,onDetail}){
   const inC=cart.find(i=>i.id===p.id);
   const disc=p.discount;
   const oos=p.stock_quantity<=0;
+  const atMax=inC&&typeof p.stock_quantity==='number'&&inC.qty>=p.stock_quantity;
   return(
     <div className="prod-card" onClick={()=>onDetail&&onDetail(p)}>
       <div className="prod-img-box" style={{background:'#F7FAFC'}}>
@@ -518,12 +537,13 @@ function PCard({p,cart,addToCart,updQty,onDetail}){
           {!oos&&(!inC
             ?<button className="add-btn" onClick={e=>{e.stopPropagation();addToCart(p);}}>ADD</button>
             :<div className="qty-ctrl" onClick={e=>e.stopPropagation()}>
-              <button className="qbtn" onClick={()=>updQty(p.id,-1)}>−</button>
+              <button className="qbtn" aria-label="Quantity kam karein" onClick={()=>updQty(p.id,-1)}>−</button>
               <span className="qnum">{inC.qty}</span>
-              <button className="qbtn" onClick={()=>updQty(p.id,1)}>+</button>
+              <button className="qbtn" aria-label="Quantity badhayein" disabled={atMax} onClick={()=>!atMax&&updQty(p.id,1,p.stock_quantity)}>+</button>
             </div>
           )}
         </div>
+        {atMax&&<div style={{fontSize:'0.62rem',color:'var(--red)',marginTop:4,fontWeight:600}}>Sirf {p.stock_quantity} stock mein hai</div>}
       </div>
     </div>
   );
@@ -560,6 +580,7 @@ function ProductDetail({product,cart,addToCart,updQty,onBack}){
   const inC=cart.find(i=>i.id===product.id);
   const disc=product.discount;
   const oos=product.stock_quantity<=0;
+  const atMax=inC&&typeof product.stock_quantity==='number'&&inC.qty>=product.stock_quantity;
   const [imgErr,setImgErr]=useState({});
 
   const images=product.images||[];
@@ -600,10 +621,13 @@ function ProductDetail({product,cart,addToCart,updQty,onBack}){
       {!oos&&(
         <div className="pdp-add-section">
           {inC
-            ?<div className="pdp-qty-ctrl">
-              <button className="pdp-qbtn" onClick={()=>updQty(product.id,-1)}>−</button>
-              <span className="pdp-qnum">{inC.qty}</span>
-              <button className="pdp-qbtn" onClick={()=>updQty(product.id,1)}>+</button>
+            ?<div style={{flex:1}}>
+              <div className="pdp-qty-ctrl">
+                <button className="pdp-qbtn" aria-label="Quantity kam karein" onClick={()=>updQty(product.id,-1)}>−</button>
+                <span className="pdp-qnum">{inC.qty}</span>
+                <button className="pdp-qbtn" aria-label="Quantity badhayein" disabled={atMax} onClick={()=>!atMax&&updQty(product.id,1,product.stock_quantity)}>+</button>
+              </div>
+              {atMax&&<div className="pdp-stock-left">Sirf {product.stock_quantity} stock mein hai</div>}
             </div>
             :<button className="pdp-add-btn" onClick={()=>addToCart(product)}>🛒 Cart Mein Add Karo</button>
           }
@@ -632,6 +656,9 @@ function App(){
     try{const s=localStorage.getItem('rk_theme');if(s==='dark'||s==='light')return s;}catch(e){}
     return window.matchMedia?.('(prefers-color-scheme:dark)').matches?'dark':'light';
   });
+
+  // Pages where the search field should not auto-redirect away from the current flow
+  const SEARCH_LOCKED_PAGES=['checkout','detail','success'];
 
   // Data hooks
   const {cats,loading:catsLoading}=useCategories();
@@ -681,6 +708,31 @@ function App(){
     el.children[bannerIdx].scrollIntoView({behavior:'smooth',inline:'start',block:'nearest'});
   },[bannerIdx]);
 
+  // Frontend-only fix: when the user manually swipes the banner carousel, detect which
+  // card is now closest to the scroll position and sync bannerIdx to it. This makes the
+  // 4-second auto-rotate continue from where the user actually swiped to, instead of
+  // jumping from a stale index. Debounced so it only fires once scrolling settles.
+  const bannerScrollTimer=useRef(null);
+  useEffect(()=>{
+    const el=bannerWrapRef.current;
+    if(!el)return;
+    const onScroll=()=>{
+      clearTimeout(bannerScrollTimer.current);
+      bannerScrollTimer.current=setTimeout(()=>{
+        const children=Array.from(el.children);
+        if(!children.length)return;
+        let closest=0,minDist=Infinity;
+        children.forEach((c,i)=>{
+          const dist=Math.abs(c.offsetLeft-el.scrollLeft);
+          if(dist<minDist){minDist=dist;closest=i;}
+        });
+        setBannerIdx(closest);
+      },120);
+    };
+    el.addEventListener('scroll',onScroll,{passive:true});
+    return()=>{el.removeEventListener('scroll',onScroll);clearTimeout(bannerScrollTimer.current);};
+  },[banners.length]);
+
   useEffect(()=>{
     document.documentElement.setAttribute('data-theme',theme);
     try{localStorage.setItem('rk_theme',theme);}catch(e){}
@@ -728,7 +780,17 @@ function App(){
     showToast(`${p.name} cart mein add hua! 🛒`);
   };
 
-  const updQty=(id,d)=>{
+  // Frontend-only stock guard: prevents qty from exceeding available stock when known.
+  // Falls back to old unguarded behaviour if stockLimit is not provided (so it never breaks
+  // callers/backends that don't pass a limit).
+  const updQty=(id,d,stockLimit)=>{
+    if(d>0&&typeof stockLimit==='number'){
+      const existing=cart.find(i=>i.id===id);
+      if(existing&&existing.qty>=stockLimit){
+        showToast(`Sirf ${stockLimit} stock mein hai`);
+        return;
+      }
+    }
     if(window.RKCart)window.RKCart.updateQuantity(id,d);
     else setCart(prev=>prev.map(i=>i.id===id?{...i,qty:i.qty+d}:i).filter(i=>i.qty>0));
   };
@@ -746,6 +808,7 @@ function App(){
   // ── Desktop Banner Row ────────────────────────────────
   const DesktopBannerRow=()=>{
     if(bannersLoading)return(<div className="desktop-banner-row">{[0,1,2].map(i=><SkelBanner key={i}/>)}</div>);
+    if(!banners.length)return null;
     const shown=banners.slice(0,3);
     return(
       <div className="desktop-banner-row">
@@ -825,7 +888,7 @@ function App(){
       <div>📍 Aapke mohalle ki dukaan</div>
       <div>📞 Call/WhatsApp: 6393196765</div>
       <div>⏰ Subah 7am – Raat 10pm</div>
-      <div style={{marginTop:8,opacity:0.4}}>© 2024 Rinku Kirana &amp; General Store</div>
+      <div style={{marginTop:8,opacity:0.4}}>© {new Date().getFullYear()} Rinku Kirana &amp; General Store</div>
     </div>
   );
 
@@ -911,22 +974,26 @@ function App(){
     );
   };
 
+  const searchDisabled=SEARCH_LOCKED_PAGES.includes(page);
+
   return(
     <div style={{background:'var(--page-bg)',minHeight:'100vh'}}>
       {/* Desktop header */}
       <div className="desktop-header">
         <div className="dh-inner">
           <div className="logo" onClick={()=>setPage('home')}>rinku<span>.</span></div>
-          <div className="dh-location">📍 Aapka Mohalla ▾</div>
-          <div className="dh-search">
+          <div className="dh-location" onClick={()=>showToast('📍 Location change abhi available nahi hai')}>📍 Aapka Mohalla ▾</div>
+          <div className="dh-search" style={searchDisabled?{opacity:0.5}:{}}>
             <span>🔍</span>
-            <input placeholder="Search groceries, snacks, dairy..." value={search} onChange={e=>{setSearch(e.target.value);setPage('shop');setShopPage(1);}}/>
-            {search&&<button onClick={()=>setSearch('')} style={{color:'#A0AEC0',background:'none'}}>✕</button>}
+            <input placeholder="Search groceries, snacks, dairy..." value={search} disabled={searchDisabled}
+              onFocus={()=>{if(searchDisabled)showToast('Pehle yeh kaam poora karein 🙏');}}
+              onChange={e=>{setSearch(e.target.value);setPage('shop');setShopPage(1);}}/>
+            {search&&!searchDisabled&&<button onClick={()=>setSearch('')} style={{color:'#A0AEC0',background:'none'}}>✕</button>}
           </div>
           <div className="dh-nav">
             <button className={`dh-nav-btn ${page==='home'?'on':''}`} onClick={()=>setPage('home')}>🏠 Home</button>
             <button className={`dh-nav-btn ${page==='shop'?'on':''}`} onClick={()=>setPage('shop')}>🛍️ Shop</button>
-            <button className="dh-theme-btn" onClick={toggleTheme}>{theme==='dark'?'☀️':'🌙'}</button>
+            <button className="dh-theme-btn" aria-label="Theme badlein" onClick={toggleTheme}>{theme==='dark'?'☀️':'🌙'}</button>
             {user?<button className="dh-user-btn" onClick={()=>window.location.href='account.html'}>👤 {user.name.split(' ')[0]}</button>
               :<button className="dh-user-btn" onClick={goLogin}>👤 Login</button>}
             <button className="dh-cart-btn" onClick={()=>setCartOpen(true)}>🛒 Cart {count>0&&<span className="c-badge">{count}</span>}</button>
@@ -937,18 +1004,20 @@ function App(){
       <div className="header">
         <div className="header-top">
           <div className="logo-sm">rinku<span>.</span></div>
-          <div className="delivery-info"><div className="delivery-min">Delivery in</div><div className="delivery-addr">📍 Aapka Mohalla ▾</div></div>
+          <div className="delivery-info" onClick={()=>showToast('📍 Location change abhi available nahi hai')}><div className="delivery-min">Delivery in</div><div className="delivery-addr">📍 Aapka Mohalla ▾</div></div>
           <div className="header-right">
-            <button className="theme-toggle-btn" onClick={toggleTheme}>{theme==='dark'?'☀️':'🌙'}</button>
+            <button className="theme-toggle-btn" aria-label="Theme badlein" onClick={toggleTheme}>{theme==='dark'?'☀️':'🌙'}</button>
             {user?<button className="user-pill-btn" onClick={()=>window.location.href='account.html'}>👤 <span className="upn">{user.name.split(' ')[0]}</span></button>
               :<button className="user-pill-btn" onClick={goLogin}>👤 <span className="upn">Login</span></button>}
             <button className="cart-icon-btn" onClick={()=>setCartOpen(true)}>🛒 {count>0&&<span className="c-badge">{count}</span>}</button>
           </div>
         </div>
-        <div className="search-bar">
+        <div className="search-bar" style={searchDisabled?{opacity:0.5}:{}}>
           <span style={{fontSize:'1rem'}}>🔍</span>
-          <input placeholder="Search groceries, snacks, dairy..." value={search} onChange={e=>{setSearch(e.target.value);setPage('shop');setShopPage(1);}}/>
-          {search&&<button onClick={()=>setSearch('')} style={{color:'#A0AEC0',fontSize:'1rem',background:'none'}}>✕</button>}
+          <input placeholder="Search groceries, snacks, dairy..." value={search} disabled={searchDisabled}
+            onFocus={()=>{if(searchDisabled)showToast('Pehle yeh kaam poora karein 🙏');}}
+            onChange={e=>{setSearch(e.target.value);setPage('shop');setShopPage(1);}}/>
+          {search&&!searchDisabled&&<button onClick={()=>setSearch('')} style={{color:'#A0AEC0',fontSize:'1rem',background:'none'}}>✕</button>}
         </div>
       </div>
       {/* Ticker */}
@@ -1075,7 +1144,8 @@ function App(){
         {/* ── CHECKOUT ── */}
         {page==='checkout'&&(
           <div className="checkout-page">
-            <h2>← Checkout</h2>
+            <button className="pdp-back" style={{marginBottom:6}} onClick={()=>setPage('home')}>← Checkout se Bahar Jao</button>
+            <h2>🚚 Checkout</h2>
             <CheckoutForm cart={cart} total={total} showToast={showToast} user={user} onExpire={()=>setPage('home')}
               onSuccess={(id,pay)=>{setSuccess({id,pay});setPage('success');}}/>
           </div>
@@ -1102,7 +1172,7 @@ function App(){
             <div className="drawer-handle"/>
             <div className="drawer-head">
               <div className="drawer-title">🛒 Mera Cart ({count} items)</div>
-              <button style={{fontSize:'1.1rem',color:'var(--gray)',background:'none'}} onClick={()=>setCartOpen(false)}>✕</button>
+              <button aria-label="Cart band karein" style={{fontSize:'1.1rem',color:'var(--gray)',background:'none'}} onClick={()=>setCartOpen(false)}>✕</button>
             </div>
             <div className="drawer-body">
               {cart.length===0
@@ -1117,9 +1187,9 @@ function App(){
                       <div className="ci-price">₹{i.price} × {i.qty} = <b>₹{(i.price*i.qty).toFixed(0)}</b></div>
                     </div>
                     <div className="qty-ctrl" style={{marginLeft:'auto'}}>
-                      <button className="qbtn" onClick={()=>updQty(i.id,-1)}>−</button>
+                      <button className="qbtn" aria-label="Quantity kam karein" onClick={()=>updQty(i.id,-1)}>−</button>
                       <span className="qnum">{i.qty}</span>
-                      <button className="qbtn" onClick={()=>updQty(i.id,1)}>+</button>
+                      <button className="qbtn" aria-label="Quantity badhayein" onClick={()=>updQty(i.id,1)}>+</button>
                     </div>
                   </div>
                 ))
@@ -1187,7 +1257,7 @@ function UpiPayCard({total,upiId}){
 }
 
 /* ══════════════════════════════════════════════════════════
-   CheckoutForm (unchanged from original, kept intact)
+   CheckoutForm
 ══════════════════════════════════════════════════════════ */
 function CheckoutForm({cart,total,showToast,onSuccess,user,onExpire}){
   const [pay,setPay]=useState('');
@@ -1200,6 +1270,7 @@ function CheckoutForm({cart,total,showToast,onSuccess,user,onExpire}){
   const [savingAddr,setSavingAddr]=useState(false);
   const [phoneTouched,setPhoneTouched]=useState(false);
   const [placing,setPlacing]=useState(false);
+  const [orderError,setOrderError]=useState('');
   const [orderInfo,setOrderInfo]=useState(null);
   const [showVerifyForm,setShowVerifyForm]=useState(false);
   const [utr,setUtr]=useState('');
@@ -1260,6 +1331,7 @@ function CheckoutForm({cart,total,showToast,onSuccess,user,onExpire}){
   };
   const handlePlaceOrder=async()=>{
     setPhoneTouched(true);
+    setOrderError('');
     if(!f.name.trim()){showToast('Naam zaroori hai!');return;}
     if(!isPhoneValid){showToast('Sahi 10-digit mobile number daalein!');return;}
     if(!pay){showToast('Payment method chunein!');return;}
@@ -1267,12 +1339,29 @@ function CheckoutForm({cart,total,showToast,onSuccess,user,onExpire}){
     const addressPayload={name:f.name.trim(),phone:f.phone.trim(),line1:selectedAddr.line1,line2:selectedAddr.line2||'',city:selectedAddr.city||'Prayagraj',pincode:selectedAddr.pincode||''};
     if(pay==='cod'){
       setPlacing(true);
-      let result=null;
-      if(window.RKOrders&&user)result=await window.RKOrders.createOrder(user.uid,{cart,total,address:addressPayload,paymentMethod:pay});
-      const orderNumber=result?.orderNumber||('RK'+Math.floor(1000+Math.random()*9000));
-      setPlacing(false);
-      if(window.RKCart)window.RKCart.clearCart();
-      onSuccess(orderNumber,'cod');return;
+      try{
+        let result=null;
+        if(window.RKOrders&&user)result=await window.RKOrders.createOrder(user.uid,{cart,total,address:addressPayload,paymentMethod:pay});
+        // Frontend-only fix: previously a failed/null createOrder() still showed the
+        // success screen with a randomly-generated fake order number. Now we only
+        // show success if the order actually saved (or if no backend hook exists at all,
+        // which preserves old behaviour for environments without window.RKOrders).
+        if(window.RKOrders&&user&&!result){
+          setPlacing(false);
+          setOrderError('⚠️ Order save nahi hua. Kripya dobara try karein ya thodi der baad try karein.');
+          showToast('Order place nahi ho saka, dobara try karein');
+          return;
+        }
+        const orderNumber=result?.orderNumber||('RK'+Math.floor(1000+Math.random()*9000));
+        setPlacing(false);
+        if(window.RKCart)window.RKCart.clearCart();
+        onSuccess(orderNumber,'cod');
+      }catch(err){
+        setPlacing(false);
+        setOrderError('⚠️ Kuch galat ho gaya. Kripya dobara try karein.');
+        showToast('Order place nahi ho saka');
+      }
+      return;
     }
     const tempOrderNumber='RK'+Math.floor(1000+Math.random()*9000);
     setPendingOrder({address:addressPayload,paymentMethod:pay});
@@ -1301,7 +1390,7 @@ function CheckoutForm({cart,total,showToast,onSuccess,user,onExpire}){
     return(
       <div className="qr-fullscreen">
         <div className="qr-fs-header">
-          <button className="qr-fs-close" onClick={()=>{setShowVerifyForm(false);setPendingOrder(null);if(onExpire)onExpire();}}>✕</button>
+          <button className="qr-fs-close" aria-label="Band karein" onClick={()=>{setShowVerifyForm(false);setPendingOrder(null);if(onExpire)onExpire();}}>✕</button>
           <div className="qr-fs-title">Payment Karein</div>
           <div className={`qr-fs-timer ${remainingSec<=60?'urgent':''}`}>⏱ {fmtTime(remainingSec)}</div>
         </div>
@@ -1312,10 +1401,11 @@ function CheckoutForm({cart,total,showToast,onSuccess,user,onExpire}){
           {showWaitHint&&<div className="payment-wait-hint"><span>⏰</span><span>QR dobara scan karein ya UPI ID <b>{UPI_ID}</b> par manually pay karein</span></div>}
           <div className="co-card" style={{width:'100%',marginTop:14}}>
             <div className="co-card-title">🧾 Payment Verification</div>
-            <input className="inp" placeholder="UTR / Transaction ID *" value={utr} onChange={e=>setUtr(e.target.value.replace(/\s/g,''))}/>
+            <label className="field-label" htmlFor="utr-input">UTR / Transaction ID</label>
+            <input id="utr-input" className="inp" placeholder="UTR / Transaction ID *" value={utr} onChange={e=>setUtr(e.target.value.replace(/\s/g,''))}/>
             <div className="utr-hint">UTR aapke UPI app ke payment history mein milega (12 digit number)</div>
             <label className={`upload-box ${screenshotFile?'has-file':''}`}>
-              <input type="file" accept="image/*" onChange={handleScreenshotChange}/>
+              <input type="file" accept="image/*" onChange={handleScreenshotChange} aria-label="Payment screenshot upload karein"/>
               {!screenshotPreview?<><div style={{fontSize:'1.8rem'}}>📷</div><div style={{fontWeight:700,fontSize:'0.85rem',marginTop:6}}>Payment Screenshot Upload Karein</div><div style={{fontSize:'0.7rem',color:'var(--gray)',marginTop:2}}>JPG/PNG • Max 5MB</div></>
                 :<img className="upload-preview" src={screenshotPreview} alt="Screenshot preview"/>}
             </label>
@@ -1337,8 +1427,10 @@ function CheckoutForm({cart,total,showToast,onSuccess,user,onExpire}){
       </div>
       <div className="co-card">
         <div className="co-card-title">🙋 Contact Details</div>
-        <input className="inp" placeholder="Aapka naam *" value={f.name} onChange={e=>setF({...f,name:e.target.value})}/>
-        <input className="inp" type="tel" inputMode="numeric" maxLength="10" placeholder="10-digit mobile number *" value={f.phone} onChange={e=>setF({...f,phone:e.target.value.replace(/\D/g,'').slice(0,10)})} onBlur={()=>setPhoneTouched(true)}/>
+        <label className="field-label" htmlFor="co-name">Aapka naam</label>
+        <input id="co-name" className="inp" placeholder="Aapka naam *" value={f.name} onChange={e=>setF({...f,name:e.target.value})}/>
+        <label className="field-label" htmlFor="co-phone">Mobile number</label>
+        <input id="co-phone" className="inp" type="tel" inputMode="numeric" maxLength="10" placeholder="10-digit mobile number *" value={f.phone} onChange={e=>setF({...f,phone:e.target.value.replace(/\D/g,'').slice(0,10)})} onBlur={()=>setPhoneTouched(true)}/>
         {phoneTouched&&!isPhoneValid&&<div className="phone-error">⚠️ Sahi 10-digit mobile number daalein (jaise 9876543210)</div>}
       </div>
       <div className="co-card">
@@ -1356,12 +1448,21 @@ function CheckoutForm({cart,total,showToast,onSuccess,user,onExpire}){
         }
         {showNewForm&&(
           <div style={{border:'1.5px dashed var(--border)',borderRadius:12,padding:12,marginTop:6}}>
-            <input className="inp" placeholder="Label (Home/Office)" value={newAddr.label} onChange={e=>setNewAddr({...newAddr,label:e.target.value})}/>
-            <input className="inp" placeholder="Ghar ka pura pata, gali, makaan no. *" value={newAddr.line1} onChange={e=>setNewAddr({...newAddr,line1:e.target.value})}/>
-            <input className="inp" placeholder="Mohalla / Landmark (optional)" value={newAddr.line2} onChange={e=>setNewAddr({...newAddr,line2:e.target.value})}/>
+            <label className="field-label" htmlFor="addr-label">Label</label>
+            <input id="addr-label" className="inp" placeholder="Label (Home/Office)" value={newAddr.label} onChange={e=>setNewAddr({...newAddr,label:e.target.value})}/>
+            <label className="field-label" htmlFor="addr-line1">Pura pata</label>
+            <input id="addr-line1" className="inp" placeholder="Ghar ka pura pata, gali, makaan no. *" value={newAddr.line1} onChange={e=>setNewAddr({...newAddr,line1:e.target.value})}/>
+            <label className="field-label" htmlFor="addr-line2">Landmark</label>
+            <input id="addr-line2" className="inp" placeholder="Mohalla / Landmark (optional)" value={newAddr.line2} onChange={e=>setNewAddr({...newAddr,line2:e.target.value})}/>
             <div className="addr-form-grid">
-              <input className="inp" placeholder="City *" value={newAddr.city} onChange={e=>setNewAddr({...newAddr,city:e.target.value})}/>
-              <input className="inp" placeholder="Pincode" value={newAddr.pincode} onChange={e=>setNewAddr({...newAddr,pincode:e.target.value.replace(/\D/g,'').slice(0,6)})}/>
+              <div>
+                <label className="field-label" htmlFor="addr-city">City</label>
+                <input id="addr-city" className="inp" placeholder="City *" value={newAddr.city} onChange={e=>setNewAddr({...newAddr,city:e.target.value})}/>
+              </div>
+              <div>
+                <label className="field-label" htmlFor="addr-pin">Pincode</label>
+                <input id="addr-pin" className="inp" placeholder="Pincode" value={newAddr.pincode} onChange={e=>setNewAddr({...newAddr,pincode:e.target.value.replace(/\D/g,'').slice(0,6)})}/>
+              </div>
             </div>
             <button className="addr-add-btn" disabled={savingAddr} onClick={saveNewAddress} style={{background:'var(--primary)',color:'#fff'}}>{savingAddr?'Saving…':'💾 Address Save Karke Use Karo'}</button>
             {addresses.length>0&&<button className="addr-add-btn" style={{marginTop:6}} onClick={()=>setShowNewForm(false)}>Cancel</button>}
@@ -1376,6 +1477,7 @@ function CheckoutForm({cart,total,showToast,onSuccess,user,onExpire}){
           <div className={`pay-card ${pay==='upi'?'sel':''}`} onClick={()=>setPay('upi')}><div className="pi">📱</div><div className="pl">UPI / QR Code</div><div className="pd">Scan karke pay karo</div></div>
         </div>
       </div>
+      {orderError&&<div className="order-error-banner"><span>⚠️</span><span>{orderError}</span></div>}
       <button className="place-order-btn" disabled={placing} onClick={handlePlaceOrder}>
         {placing?'⏳ Order Place Ho Raha Hai...':(pay==='upi'?'📲 Order Confirm Karein':'🚚 Order Place Karo')} →
       </button>
