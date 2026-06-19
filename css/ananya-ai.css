@@ -7,11 +7,11 @@
 
 /* ── CSS Variables ── */
 :root {
-  /* Brand */
-  --an-primary:        #FF6B35;
-  --an-primary-light:  #FF8C5A;
-  --an-primary-dark:   #E55A28;
-  --an-accent:         #FFB347;
+  /* Brand — matched to Rinku Kirana site palette (green primary, yellow accent) */
+  --an-primary:        #1BA672;
+  --an-primary-light:  #4ECB99;
+  --an-primary-dark:   #158A5E;
+  --an-accent:         #FFB800;
 
   /* Light Theme */
   --an-bg:             #FFFFFF;
@@ -33,10 +33,10 @@
   --an-user-text:      #FFFFFF;
 
   /* Header */
-  --an-header-bg:      linear-gradient(135deg, #FF6B35 0%, #FF8C5A 50%, #FFB347 100%);
+  --an-header-bg:      linear-gradient(135deg, #1BA672 0%, #15803D 50%, #0EA86B 100%);
 
   /* Tabs */
-  --an-tab-active:     #FF6B35;
+  --an-tab-active:     #1BA672;
 
   /* Input */
   --an-input-bg:       #F7F8FA;
@@ -57,6 +57,10 @@
 
 /* ── Dark Theme ── */
 [data-ananya-theme="dark"] {
+  --an-primary:      #2ECC82;
+  --an-primary-light:#5FE0A8;
+  --an-primary-dark: #16A34A;
+  --an-accent:       #FFCB47;
   --an-bg:           #1C1C1E;
   --an-surface:      #2C2C2E;
   --an-surface2:     #3A3A3C;
@@ -70,6 +74,8 @@
   --an-bot-text:     #F2F2F7;
   --an-input-bg:     #2C2C2E;
   --an-input-border: #3A3A3C;
+  --an-header-bg:    linear-gradient(135deg, #16A34A 0%, #15803D 50%, #2ECC82 100%);
+  --an-tab-active:   #2ECC82;
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -83,13 +89,13 @@
   width: 62px;
   height: 62px;
   border-radius: var(--an-r-full);
-  background: linear-gradient(135deg, #FF6B35, #FFB347);
+  background: linear-gradient(135deg, #1BA672, #FFB800);
   border: none;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 20px rgba(255,107,53,0.45), 0 0 0 0 rgba(255,107,53,0.3);
+  box-shadow: 0 4px 20px rgba(27,166,114,0.45), 0 0 0 0 rgba(27,166,114,0.3);
   transition: transform 0.3s var(--an-ease), box-shadow 0.3s ease;
   -webkit-tap-highlight-color: transparent;
   outline: none;
@@ -98,7 +104,7 @@
 
 #ananya-trigger:hover {
   transform: scale(1.1) translateY(-2px);
-  box-shadow: 0 8px 30px rgba(255,107,53,0.55), 0 0 0 8px rgba(255,107,53,0.12);
+  box-shadow: 0 8px 30px rgba(27,166,114,0.55), 0 0 0 8px rgba(27,166,114,0.12);
 }
 
 #ananya-trigger:active {
@@ -126,20 +132,20 @@
   position: absolute;
   inset: -3px;
   border-radius: var(--an-r-full);
-  border: 2px solid rgba(255,107,53,0.4);
+  border: 2px solid rgba(27,166,114,0.4);
   animation: an-ring-spin 3s linear infinite;
 }
 
 @keyframes an-ring-spin {
-  0%   { transform: rotate(0deg); border-color: rgba(255,107,53,0.4); }
-  50%  { border-color: rgba(255,179,71,0.6); }
-  100% { transform: rotate(360deg); border-color: rgba(255,107,53,0.4); }
+  0%   { transform: rotate(0deg); border-color: rgba(27,166,114,0.4); }
+  50%  { border-color: rgba(255,184,0,0.6); }
+  100% { transform: rotate(360deg); border-color: rgba(27,166,114,0.4); }
 }
 
 @keyframes an-pulse-ring {
-  0%   { box-shadow: 0 4px 20px rgba(255,107,53,0.45), 0 0 0 0 rgba(255,107,53,0.3); }
-  50%  { box-shadow: 0 4px 20px rgba(255,107,53,0.45), 0 0 0 12px rgba(255,107,53,0); }
-  100% { box-shadow: 0 4px 20px rgba(255,107,53,0.45), 0 0 0 0 rgba(255,107,53,0); }
+  0%   { box-shadow: 0 4px 20px rgba(27,166,114,0.45), 0 0 0 0 rgba(27,166,114,0.3); }
+  50%  { box-shadow: 0 4px 20px rgba(27,166,114,0.45), 0 0 0 12px rgba(27,166,114,0); }
+  100% { box-shadow: 0 4px 20px rgba(27,166,114,0.45), 0 0 0 0 rgba(27,166,114,0); }
 }
 
 /* ── Notification Badge ── */
@@ -656,7 +662,7 @@
 
 @keyframes an-typing {
   0%, 60%, 100% { transform: translateY(0); background: #9CA3AF; }
-  30%            { transform: translateY(-6px); background: #FF6B35; }
+  30%            { transform: translateY(-6px); background: #1BA672; }
 }
 
 /* Avatar for typing — small emoji */
@@ -664,7 +670,7 @@
   width: 28px;
   height: 28px;
   border-radius: var(--an-r-full);
-  background: linear-gradient(135deg, #FF6B35, #FFB347);
+  background: linear-gradient(135deg, #1BA672, #FFB800);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -677,7 +683,7 @@
 .ananya-msg.bot .ananya-sender-name {
   font-size: 12px;
   font-weight: 600;
-  color: #FF6B35;
+  color: #1BA672;
   margin-bottom: 3px;
   padding-left: 2px;
   font-family: 'Inter', sans-serif;
@@ -904,7 +910,7 @@
   width: 42px;
   height: 42px;
   border-radius: var(--an-r-sm);
-  background: linear-gradient(135deg, rgba(255,107,53,0.12), rgba(255,179,71,0.12));
+  background: linear-gradient(135deg, rgba(27,166,114,0.12), rgba(255,184,0,0.12));
   display: flex;
   align-items: center;
   justify-content: center;
