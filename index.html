@@ -330,6 +330,11 @@ html[data-theme="dark"] .upi-trust-badge{background:#163828;}
 .upi-pay-btn{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;padding:14px;background:linear-gradient(135deg,var(--primary),var(--primary-dark));border:none;border-radius:14px;color:#fff;font-weight:800;font-size:0.95rem;cursor:pointer;min-height:48px;text-decoration:none;}
 .upi-pay-id-row{display:flex;align-items:center;justify-content:center;gap:5px;margin-top:14px;}
 .upi-pay-id-row span{font-size:0.7rem;color:var(--gray);}
+.upi-retry-hint{text-align:center;font-size:0.66rem;color:var(--gray);margin-top:9px;line-height:1.5;}
+@media(min-width:768px){.upi-pay-btn{display:none;}}
+
+.payment-wait-hint{display:flex;align-items:flex-start;gap:8px;background:#FFF8E1;border:1px solid #FFE0A3;border-radius:10px;padding:10px 12px;margin-top:12px;font-size:.74rem;color:#92600B;font-weight:600;line-height:1.5;}
+html[data-theme="dark"] .payment-wait-hint{background:#3A2A14;border-color:#6B4A1F;color:#FFCC80;}
 </style>
 </head>
 <body>
@@ -952,6 +957,7 @@ function UpiPayCard({total, upiLink, upiId}){
         <a href={upiLink} className="upi-pay-btn">
           📱 UPI app se pay karo →
         </a>
+        <div className="upi-retry-hint">App khulne mein kabhi-kabhi time lagta hai — pehli baar na khule to dobara tap karein, ya upar wala QR scan kar lein.</div>
 
         <div className="upi-pay-id-row">
           <span>🔒 {upiId}</span>
@@ -981,6 +987,22 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
   const [screenshotFile,setScreenshotFile]=useState(null);
   const [screenshotPreview,setScreenshotPreview]=useState(null);
   const [submittingVerify,setSubmittingVerify]=useState(false);
+
+  /* ── Payment wait timer: sirf gentle reminder ke liye, UPI payment kabhi expire nahi hota
+     isliye time khatam hone par QR/button block NAHI hote, bas ek soft nudge dikhta hai ── */
+  const REMINDER_AFTER_SEC=120; // 2 minute
+  const [elapsedSec,setElapsedSec]=useState(0);
+  useEffect(()=>{
+    if(!showVerifyForm) return;
+    setElapsedSec(0);
+    const t=setInterval(()=>setElapsedSec(s=>s+1),1000);
+    return()=>clearInterval(t);
+  },[showVerifyForm]);
+  const fmtTime=s=>{
+    const m=Math.floor(s/60);
+    const ss=String(s%60).padStart(2,'0');
+    return `${m}:${ss}`;
+  };
 
   const UPI_ID='6393196765@okbizaxis';
   const UPI_PAYEE='Rinku Kirana';
@@ -1139,8 +1161,14 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
       <>
         <div className="co-card">
           <div className="co-card-title">✅ Order #{orderInfo.orderNumber} Placed</div>
-          <div className="verify-pending-badge">⏳ Payment verify hone ke baad order confirm hoga</div>
+          <div className="verify-pending-badge">⏳ Payment verify hone ke baad order confirm hoga • {fmtTime(elapsedSec)}</div>
           <UpiPayCard total={total} upiLink={buildUpiLink()} upiId={UPI_ID}/>
+          {elapsedSec>=REMINDER_AFTER_SEC && (
+            <div className="payment-wait-hint">
+              <span>⏰</span>
+              <span>Itna time lag raha hai? Koi baat nahi — UPI payment kabhi expire nahi hota. Upar wala QR dobara scan kar lein ya UPI ID <b>{UPI_ID}</b> par manually pay karein, fir neeche UTR aur screenshot daal kar submit kar dein.</span>
+            </div>
+          )}
         </div>
 
         <div className="co-card">
