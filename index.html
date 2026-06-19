@@ -350,6 +350,7 @@ html[data-theme="dark"] .payment-wait-hint{background:#3A2A14;border-color:#6B4A
   .toast{bottom:24px;}
   .pdp-main-img,.pdp-main-placeholder{height:420px;}
   .desktop-banner-row{grid-template-columns:repeat(3,1fr);}
+  .pdp-add-section{bottom:0;}
 }
 @media(max-width:767px){
   .desktop-header{display:none!important;}
@@ -622,6 +623,7 @@ function App(){
   const [search,setSearch]=useState('');
   const [toast,setToast]=useState('');
   const [bannerIdx,setBannerIdx]=useState(0);
+  const bannerWrapRef=useRef(null);
   const [success,setSuccess]=useState(null);
   const [user,setUser]=useState(null);
   const [detailProduct,setDetailProduct]=useState(null);
@@ -671,6 +673,13 @@ function App(){
     const t=setInterval(()=>setBannerIdx(i=>(i+1)%banners.length),4000);
     return()=>clearInterval(t);
   },[banners.length]);
+
+  // Keep carousel scroll position in sync with bannerIdx (fixes auto-rotate not scrolling)
+  useEffect(()=>{
+    const el=bannerWrapRef.current;
+    if(!el||!el.children[bannerIdx])return;
+    el.children[bannerIdx].scrollIntoView({behavior:'smooth',inline:'start',block:'nearest'});
+  },[bannerIdx]);
 
   useEffect(()=>{
     document.documentElement.setAttribute('data-theme',theme);
@@ -763,7 +772,7 @@ function App(){
         ?<div style={{display:'flex',gap:10,marginTop:12,flexWrap:'wrap'}}>{[...Array(8)].map((_,i)=><div key={i} className="skel" style={{width:110,height:80,borderRadius:12}}/>)}</div>
         :<div className="desktop-cat-grid">
           {allCats.map(c=>(
-            <div key={c.id} className={`desktop-cat-item ${activeCatId===c.id?'on':''}`} onClick={()=>{setActiveCatId(c.id);setPage('shop');setShopPage(1);}}>
+            <div key={c.id} className={`desktop-cat-item ${activeCatId===c.id?'on':''}`} onClick={()=>{setActiveCatId(c.id);setPage('shop');setShopPage(1);setSearch('');}}>
               {c.image_url
                 ?<img src={c.image_url} alt={c.name}/>
                 :<div className="cat-emoji-box">🛒</div>
@@ -781,7 +790,7 @@ function App(){
     <div className="desktop-sidebar">
       <div className="sidebar-title">Categories</div>
       {allCats.map(c=>(
-        <div key={c.id} className={`sidebar-cat ${activeCatId===c.id?'on':''}`} onClick={()=>{setActiveCatId(c.id);setShopPage(1);}}>
+        <div key={c.id} className={`sidebar-cat ${activeCatId===c.id?'on':''}`} onClick={()=>{setActiveCatId(c.id);setShopPage(1);setSearch('');}}>
           {c.image_url
             ?<img src={c.image_url} alt={c.name} className="sidebar-cat-img"/>
             :<div className="sidebar-cat-emoji">🛒</div>
@@ -844,15 +853,15 @@ function App(){
       )}
       {/* Category sections */}
       {cats.slice(0,6).map(c=>{
-        const items=sectionProds[c.id]||[];
-        if(!items.length&&!catsLoading)return null;
+        const items=sectionProds[c.id];
+        if(items&&items.length===0)return null;
         return(
           <div key={c.id} style={{background:'var(--card-bg)',borderRadius:16,padding:'18px 20px',marginBottom:14}}>
             <div className="dsec-hd">
               <div className="dsec-title">{c.name}</div>
-              <button className="see-all" onClick={()=>{setActiveCatId(c.id);setPage('shop');setShopPage(1);}}>See All →</button>
+              <button className="see-all" onClick={()=>{setActiveCatId(c.id);setPage('shop');setShopPage(1);setSearch('');}}>See All →</button>
             </div>
-            {!sectionProds[c.id]
+            {!items
               ?<div className="desktop-prod-grid">{[...Array(4)].map((_,i)=><SkelCard key={i}/>)}</div>
               :<div className="desktop-prod-grid">{items.slice(0,6).map(p=><PCard key={p.id} p={p} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={openDetail}/>)}</div>
             }
@@ -959,7 +968,7 @@ function App(){
             <div className="m-view">
               {/* Banner */}
               <div className="banner-slider">
-                <div className="banner-wrap">
+                <div className="banner-wrap" ref={bannerWrapRef}>
                   {bannersLoading
                     ?<SkelBanner/>
                     :banners.map((b,i)=><BannerCardM key={b.id} b={b} active={i===bannerIdx} onClick={()=>setPage('shop')}/>)
@@ -975,7 +984,7 @@ function App(){
               {/* Shop by category */}
               <div style={{background:'var(--card-bg)',marginBottom:8,paddingBottom:4}}>
                 <div style={{padding:'12px 16px 0',fontWeight:800,fontSize:'0.92rem'}}>Shop by Category</div>
-                <MobileCatRow onClick={id=>{setActiveCatId(id);setPage('shop');setShopPage(1);}}/>
+                <MobileCatRow onClick={id=>{setActiveCatId(id);setPage('shop');setShopPage(1);setSearch('');}}/>
               </div>
               {/* Featured */}
               {(featLoading||featuredProds.length>0)&&(
@@ -992,16 +1001,16 @@ function App(){
               )}
               {/* Category sections */}
               {cats.slice(0,6).map(c=>{
-                const items=sectionProds[c.id]||[];
-                if(!items.length&&!catsLoading)return null;
+                const items=sectionProds[c.id];
+                if(items&&items.length===0)return null;
                 return(
                   <div key={c.id} style={{background:'var(--card-bg)',marginBottom:8,padding:'14px 0 4px'}}>
                     <div className="section-hd">
                       <div className="section-hd-title">{c.name}</div>
-                      <button className="see-all" onClick={()=>{setActiveCatId(c.id);setPage('shop');setShopPage(1);}}>See All →</button>
+                      <button className="see-all" onClick={()=>{setActiveCatId(c.id);setPage('shop');setShopPage(1);setSearch('');}}>See All →</button>
                     </div>
                     <div className="prods-row">
-                      {!sectionProds[c.id]?[...Array(4)].map((_,i)=><div key={i} className="skel" style={{width:140,height:190,borderRadius:14,flexShrink:0}}/>)
+                      {!items?[...Array(4)].map((_,i)=><div key={i} className="skel" style={{width:140,height:190,borderRadius:14,flexShrink:0}}/>)
                         :items.map(p=><PCard key={p.id} p={p} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={openDetail}/>)}
                     </div>
                   </div>
@@ -1027,10 +1036,10 @@ function App(){
             <div className="d-view"><DesktopShop/></div>
             <div className="m-view">
               <div style={{background:'var(--card-bg)',marginBottom:8}}>
-                <MobileCatRow onClick={id=>{setActiveCatId(id);setShopPage(1);}}/>
+                <MobileCatRow onClick={id=>{setActiveCatId(id);setShopPage(1);setSearch('');}}/>
               </div>
               <div style={{background:'var(--card-bg)',padding:'10px 0 4px'}}>
-                {shopLoading&&search.trim().length<2
+                {((shopLoading&&search.trim().length<2)||(searchLoading&&search.trim().length>1))
                   ?<>
                     <div style={{fontWeight:800,fontSize:'0.9rem',marginBottom:2,padding:'0 16px'}}>Loading…</div>
                     <div className="mobile-shop-grid">{[...Array(6)].map((_,i)=><SkelCard key={i}/>)}</div>
