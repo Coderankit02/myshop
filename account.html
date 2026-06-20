@@ -963,7 +963,7 @@ function orderRowHTML(o) {
     <div class="order-icon-box">🛒</div>
     <div class="order-info">
       <div class="order-num">${o.order_number}</div>
-      <div class="order-meta">${o.delivery_name || ''} • ${o.delivery_city || 'Prayagraj'}</div>
+      <div class="order-meta">${o.delivery_name || ''} • ${o.delivery_city || 'Jaunpur'}</div>
       <div class="order-date">${fmtTime(o.created_at)}</div>
     </div>
     <div class="order-right">
@@ -1122,7 +1122,7 @@ function showAddrForm(editId) {
       </div>
       <div class="field-group">
         <label class="field-label">Address Line 1 *</label>
-        <input class="inp" id="af_line1" placeholder="House no., Street name" value="${a?.line1 || ''}"/>
+        <input class="inp" id="af_line1" placeholder="House no., Street name" value="${a?.line1 || ''}" required/>
       </div>
       <div class="field-group">
         <label class="field-label">Address Line 2</label>
@@ -1131,11 +1131,11 @@ function showAddrForm(editId) {
       <div class="form-grid">
         <div class="field-group">
           <label class="field-label">City *</label>
-          <input class="inp" id="af_city" placeholder="City" value="${a?.city || 'Prayagraj'}"/>
+          <input class="inp" id="af_city" placeholder="City" value="${a?.city || 'Jaunpur'}" required/>
         </div>
         <div class="field-group">
-          <label class="field-label">Pincode</label>
-          <input class="inp" id="af_pin" placeholder="211001" type="tel" value="${a?.pincode || ''}"/>
+          <label class="field-label">Pincode *</label>
+          <input class="inp" id="af_pin" placeholder="222001" type="tel" value="${a?.pincode || '222001'}" required/>
         </div>
       </div>
       <div class="toggle-wrap">
@@ -1156,9 +1156,13 @@ function showAddrForm(editId) {
 async function saveAddr(editId) {
   const line1 = $('af_line1').value.trim();
   const city  = $('af_city').value.trim();
-  if (!line1 || !city) { showToast('Address aur city zaroori hai!'); return; }
+  const pin   = $('af_pin').value.trim();
+  if (!line1 || !city || !/^\d{6}$/.test(pin)) {
+    showToast('Address, city aur 6-digit pincode zaroori hai!');
+    return;
+  }
   const isDefault = $('af_default').classList.contains('on');
-  const payload = { label: $('af_label').value || 'Home', line1, line2: $('af_line2').value, city, pincode: $('af_pin').value, is_default: isDefault, id: editId || undefined };
+  const payload = { label: $('af_label').value || 'Home', line1, line2: $('af_line2').value, city, pincode: pin, is_default: isDefault, id: editId || undefined };
   const saved = window.RKProfile ? await window.RKProfile.saveAddress(STATE.user.id, payload) : null;
   if (saved || window.RKProfile) {
     showToast('Address save ho gaya! 📍');
@@ -1523,7 +1527,7 @@ function renderSettings(wrap) {
   </div>
 
   <div style="text-align:center;font-size:.68rem;color:var(--muted);padding:10px 0 20px;line-height:2;">
-    🛒 Rinku Kirana Store • Prayagraj<br/>
+    🛒 Rinku Kirana Store • Jaunpur<br/>
     📞 6393196765 • v1.0.0
   </div>`;
 }
