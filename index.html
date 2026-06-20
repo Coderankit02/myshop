@@ -1331,7 +1331,7 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
   const [loadingAddrs,setLoadingAddrs]=useState(true);
   const [selectedAddrId,setSelectedAddrId]=useState(null);
   const [showNewForm,setShowNewForm]=useState(false);
-  const [newAddr,setNewAddr]=useState({label:'Home',line1:'',line2:'',city:'Prayagraj',pincode:'',is_default:false});
+  const [newAddr,setNewAddr]=useState({label:'Home',line1:'',line2:'',city:'Jaunpur',pincode:'222001',is_default:false});
   const [savingAddr,setSavingAddr]=useState(false);
   const [phoneTouched,setPhoneTouched]=useState(false);
   const [placing,setPlacing]=useState(false);
@@ -1386,12 +1386,12 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
   const isPhoneValid=/^[6-9]\d{9}$/.test(f.phone.trim());
   const selectedAddr=addresses.find(a=>a.id===selectedAddrId)||null;
   const saveNewAddress=async()=>{
-    if(!newAddr.line1.trim()||!newAddr.city.trim()){showToast('Address aur city zaroori hai!');return;}
+    if(!newAddr.line1.trim()||!newAddr.city.trim()||!/^\d{6}$/.test(newAddr.pincode.trim())){showToast('Address, city aur 6-digit pincode zaroori hai!');return;}
     if(!window.RKProfile||!user){showToast('Login zaroori hai!');return;}
     setSavingAddr(true);
     try{
       const saved=await window.RKProfile.saveAddress(user.uid,newAddr);
-      if(saved){setAddresses(prev=>{const next=newAddr.is_default?prev.map(a=>({...a,is_default:false})):prev;return[...next,saved];});setSelectedAddrId(saved.id);setShowNewForm(false);setNewAddr({label:'Home',line1:'',line2:'',city:'Prayagraj',pincode:'',is_default:false});showToast('Address save ho gaya! 📍');}
+      if(saved){setAddresses(prev=>{const next=newAddr.is_default?prev.map(a=>({...a,is_default:false})):prev;return[...next,saved];});setSelectedAddrId(saved.id);setShowNewForm(false);setNewAddr({label:'Home',line1:'',line2:'',city:'Jaunpur',pincode:'222001',is_default:false});showToast('Address save ho gaya! 📍');}
       else showToast('Address save nahi hua.');
     }catch(err){showToast('Error! Dobara try karo.');}
     finally{setSavingAddr(false);}
@@ -1410,7 +1410,7 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
     if(!isPhoneValid){showToast('Sahi 10-digit mobile number daalein!');return;}
     if(!pay){showToast('Payment method chunein!');return;}
     if(!selectedAddr){showToast('Delivery address chunein ya add karein!');return;}
-    const addressPayload={name:f.name.trim(),phone:f.phone.trim(),line1:selectedAddr.line1,line2:selectedAddr.line2||'',city:selectedAddr.city||'Prayagraj',pincode:selectedAddr.pincode||''};
+    const addressPayload={name:f.name.trim(),phone:f.phone.trim(),line1:selectedAddr.line1,line2:selectedAddr.line2||'',city:selectedAddr.city||'Jaunpur',pincode:selectedAddr.pincode||''};
     if(pay==='cod'){
       setPlacing(true);
       try{
@@ -1527,18 +1527,18 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
           <div style={{border:'1.5px dashed var(--border)',borderRadius:12,padding:12,marginTop:6}}>
             <label className="field-label" htmlFor="addr-label">Label</label>
             <input id="addr-label" className="inp" placeholder="Label (Home/Office)" value={newAddr.label} onChange={e=>setNewAddr({...newAddr,label:e.target.value})}/>
-            <label className="field-label" htmlFor="addr-line1">Pura pata</label>
-            <input id="addr-line1" className="inp" placeholder="Ghar ka pura pata, gali, makaan no. *" value={newAddr.line1} onChange={e=>setNewAddr({...newAddr,line1:e.target.value})}/>
+            <label className="field-label" htmlFor="addr-line1">Pura pata *</label>
+            <input id="addr-line1" className="inp" placeholder="Ghar ka pura pata, gali, makaan no. *" value={newAddr.line1} onChange={e=>setNewAddr({...newAddr,line1:e.target.value})} required/>
             <label className="field-label" htmlFor="addr-line2">Landmark</label>
             <input id="addr-line2" className="inp" placeholder="Mohalla / Landmark (optional)" value={newAddr.line2} onChange={e=>setNewAddr({...newAddr,line2:e.target.value})}/>
             <div className="addr-form-grid">
               <div>
-                <label className="field-label" htmlFor="addr-city">City</label>
-                <input id="addr-city" className="inp" placeholder="City *" value={newAddr.city} onChange={e=>setNewAddr({...newAddr,city:e.target.value})}/>
+                <label className="field-label" htmlFor="addr-city">City *</label>
+                <input id="addr-city" className="inp" placeholder="City *" value={newAddr.city} onChange={e=>setNewAddr({...newAddr,city:e.target.value})} required/>
               </div>
               <div>
-                <label className="field-label" htmlFor="addr-pin">Pincode</label>
-                <input id="addr-pin" className="inp" placeholder="Pincode" value={newAddr.pincode} onChange={e=>setNewAddr({...newAddr,pincode:e.target.value.replace(/\D/g,'').slice(0,6)})}/>
+                <label className="field-label" htmlFor="addr-pin">Pincode *</label>
+                <input id="addr-pin" className="inp" placeholder="222001 *" value={newAddr.pincode} onChange={e=>setNewAddr({...newAddr,pincode:e.target.value.replace(/\D/g,'').slice(0,6)})} required/>
               </div>
             </div>
             <button className="addr-add-btn" disabled={savingAddr} onClick={saveNewAddress} style={{background:'var(--primary)',color:'#fff'}}>{savingAddr?'Saving…':'💾 Address Save Karke Use Karo'}</button>
