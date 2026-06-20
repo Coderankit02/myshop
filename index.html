@@ -1387,7 +1387,7 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
   const isPhoneValid=/^[6-9]\d{9}$/.test(f.phone.trim());
   const selectedAddr=addresses.find(a=>a.id===selectedAddrId)||null;
   const saveNewAddress=async()=>{
-    if(!newAddr.line1.trim()||!newAddr.city.trim()||!/^\d{6}$/.test(newAddr.pincode.trim())){showToast('Address, city aur 6-digit pincode zaroori hai!');return;}
+    if(!newAddr.line1.trim()||!newAddr.line2.trim()||!newAddr.city.trim()||!/^\d{6}$/.test(newAddr.pincode.trim())){showToast('Address, landmark, city aur 6-digit pincode zaroori hai!');return;}
     if(!window.RKProfile||!user){showToast('Login zaroori hai!');return;}
     setSavingAddr(true);
     try{
@@ -1530,8 +1530,8 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
             <input id="addr-label" className="inp" placeholder="Label (Home/Office)" value={newAddr.label} onChange={e=>setNewAddr({...newAddr,label:e.target.value})}/>
             <label className="field-label" htmlFor="addr-line1">Pura pata *</label>
             <input id="addr-line1" className="inp" placeholder="Ghar ka pura pata, gali, makaan no. *" value={newAddr.line1} onChange={e=>setNewAddr({...newAddr,line1:e.target.value})} required/>
-            <label className="field-label" htmlFor="addr-line2">Landmark</label>
-            <input id="addr-line2" className="inp" placeholder="Mohalla / Landmark (optional)" value={newAddr.line2} onChange={e=>setNewAddr({...newAddr,line2:e.target.value})}/>
+            <label className="field-label" htmlFor="addr-line2">Landmark *</label>
+            <input id="addr-line2" className="inp" placeholder="Mohalla / Landmark *" value={newAddr.line2} onChange={e=>setNewAddr({...newAddr,line2:e.target.value})} required/>
             <div className="addr-form-grid">
               <div>
                 <label className="field-label" htmlFor="addr-city">City *</label>
