@@ -46,7 +46,9 @@ input,select,textarea{outline:none;border:none;font-family:'Inter',sans-serif;fo
 .dh-inner{max-width:1280px;margin:0 auto;padding:14px 28px;display:flex;align-items:center;gap:16px;}
 .logo{font-size:1.5rem;font-weight:900;color:var(--primary);flex-shrink:0;cursor:pointer;}
 .logo span{color:var(--orange);}
-.dh-location{display:flex;align-items:center;gap:6px;background:#F7FAFC;border:1.5px solid var(--border);border-radius:10px;padding:9px 14px;font-size:0.82rem;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;}
+.dh-location{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:1px;background:#F7FAFC;border:1.5px solid var(--border);border-radius:10px;padding:7px 14px;cursor:pointer;flex-shrink:0;max-width:190px;min-width:0;}
+.dh-location-label{font-size:0.62rem;color:var(--gray);text-transform:uppercase;letter-spacing:0.5px;font-weight:700;white-space:nowrap;}
+.dh-location-addr{font-size:0.8rem;font-weight:700;color:var(--dark);white-space:normal;line-height:1.25;word-break:break-word;}
 .dh-search{flex:1;display:flex;align-items:center;background:#F0F0F0;border-radius:10px;padding:10px 16px;gap:10px;border:1.5px solid transparent;transition:border 0.2s;}
 .dh-search:focus-within{border-color:var(--primary);background:var(--card-bg);}
 .dh-search input{flex:1;background:transparent;font-size:0.95rem;color:var(--dark);}
@@ -63,7 +65,7 @@ input,select,textarea{outline:none;border:none;font-family:'Inter',sans-serif;fo
 .logo-sm span{color:var(--orange);}
 .delivery-info{text-align:center;flex:1;padding:0 8px;min-width:0;}
 .delivery-min{font-size:0.7rem;color:var(--gray);text-transform:uppercase;letter-spacing:0.5px;}
-.delivery-addr{font-size:0.82rem;font-weight:700;color:var(--dark);display:flex;align-items:center;gap:3px;justify-content:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.delivery-addr{font-size:0.82rem;font-weight:700;color:var(--dark);white-space:normal;line-height:1.25;text-align:center;word-break:break-word;}
 .header-right{display:flex;align-items:center;gap:6px;flex-shrink:0;}
 .user-pill-btn{background:var(--primary-light);color:var(--primary-dark);border-radius:12px;padding:8px 10px;font-weight:700;font-size:0.78rem;display:flex;align-items:center;gap:5px;max-width:88px;overflow:hidden;}
 .user-pill-btn span.upn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -378,6 +380,20 @@ html[data-theme="dark"] .payment-wait-hint{background:#3A2A14;border-color:#6B4A
   .desktop-banner-row{grid-template-columns:repeat(2,1fr);}
   .desktop-prod-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));}
   .desktop-offer-row{grid-template-columns:1fr;}
+  /* Tablet-only header relief: at this width the full desktop header (logo +
+     location pill + search + Home/Shop labels + theme + user + cart) was all
+     fighting for the same row and squeezing/overlapping. We only trim the
+     header here — mobile (<768) and laptop/desktop (>1023) are untouched. */
+  .dh-inner{padding:12px 16px;gap:8px;}
+  .dh-location{max-width:120px;padding:6px 10px;}
+  .dh-location-label{display:none;}
+  .dh-nav{gap:4px;}
+  .dh-nav-btn{padding:9px 9px;}
+  .dh-nav-label{display:none;}
+  .dh-cart-label{display:none;}
+  .dh-cart-btn{padding:10px 12px;}
+  .dh-user-btn{padding:10px 10px;}
+  .dh-user-btn span{max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 }
 @media(max-width:360px){
   .logo-sm{font-size:1.2rem;}
@@ -847,6 +863,11 @@ function App(){
         ?`${headerCity} • ${headerDistanceKm<1?Math.round(headerDistanceKm*1000)+' m':headerDistanceKm.toFixed(1)+' km'}`
         :headerCity)
     :'Aapka Mohalla';
+  // The label can get long once distance is appended (e.g. "Jaunpur • 2.3 km").
+  // Rather than truncate it with "...", shrink the font a notch so the FULL
+  // text always stays visible — wrapping is also allowed in CSS as a backstop
+  // for extreme cases.
+  const headerLabelStyle=headerLabel.length>13?{fontSize:'0.7rem'}:headerLabel.length>9?{fontSize:'0.76rem'}:undefined;
 
   // Called by CheckoutForm once its own (optional, best-effort) GPS fetch
   // resolves a distance — lets the header pick up a live "X km away" without
@@ -1106,7 +1127,10 @@ function App(){
       <div className="desktop-header" ref={desktopHeaderRef}>
         <div className="dh-inner">
           <div className="logo" onClick={()=>setPage('home')}>rinku<span>.</span></div>
-          <div className="dh-location" onClick={()=>showToast('📍 Location change abhi available nahi hai')}>📍 {headerLabel} ▾</div>
+          <div className="dh-location" onClick={()=>showToast('📍 Location change abhi available nahi hai')}>
+            <div className="dh-location-label">Delivery in</div>
+            <div className="dh-location-addr" style={headerLabelStyle}>📍 {headerLabel} ▾</div>
+          </div>
           <div className="dh-search" style={searchDisabled?{opacity:0.5}:{}}>
             <span>🔍</span>
             <input placeholder="Search groceries, snacks, dairy..." value={search} disabled={searchDisabled}
@@ -1115,12 +1139,12 @@ function App(){
             {search&&!searchDisabled&&<button onClick={()=>setSearch('')} style={{color:'#A0AEC0',background:'none'}}>✕</button>}
           </div>
           <div className="dh-nav">
-            <button className={`dh-nav-btn ${page==='home'?'on':''}`} onClick={()=>setPage('home')}>🏠 Home</button>
-            <button className={`dh-nav-btn ${page==='shop'?'on':''}`} onClick={()=>setPage('shop')}>🛍️ Shop</button>
+            <button className={`dh-nav-btn ${page==='home'?'on':''}`} onClick={()=>setPage('home')}>🏠 <span className="dh-nav-label">Home</span></button>
+            <button className={`dh-nav-btn ${page==='shop'?'on':''}`} onClick={()=>setPage('shop')}>🛍️ <span className="dh-nav-label">Shop</span></button>
             <button className="dh-theme-btn" aria-label="Theme badlein" onClick={toggleTheme}>{theme==='dark'?'☀️':'🌙'}</button>
-            {user?<button className="dh-user-btn" onClick={()=>window.location.href='account.html'}>👤 {user.name.split(' ')[0]}</button>
+            {user?<button className="dh-user-btn" onClick={()=>window.location.href='account.html'}>👤 <span>{user.name.split(' ')[0]}</span></button>
               :<button className="dh-user-btn" onClick={goLogin}>👤 Login</button>}
-            <button className="dh-cart-btn" onClick={()=>setCartOpen(true)}><CartIcon/> Cart {count>0&&<span className="c-badge">{count}</span>}</button>
+            <button className="dh-cart-btn" onClick={()=>setCartOpen(true)}><CartIcon/> <span className="dh-cart-label">Cart</span> {count>0&&<span className="c-badge">{count}</span>}</button>
           </div>
         </div>
       </div>
@@ -1128,7 +1152,7 @@ function App(){
       <div className="header">
         <div className="header-top">
           <div className="logo-sm">rinku<span>.</span></div>
-          <div className="delivery-info" onClick={()=>showToast('📍 Location change abhi available nahi hai')}><div className="delivery-min">Delivery in</div><div className="delivery-addr">📍 {headerLabel} ▾</div></div>
+          <div className="delivery-info" onClick={()=>showToast('📍 Location change abhi available nahi hai')}><div className="delivery-min">Delivery in</div><div className="delivery-addr" style={headerLabelStyle}>📍 {headerLabel} ▾</div></div>
           <div className="header-right">
             <button className="theme-toggle-btn" aria-label="Theme badlein" onClick={toggleTheme}>{theme==='dark'?'☀️':'🌙'}</button>
             {user?<button className="user-pill-btn" onClick={()=>window.location.href='account.html'}>👤 <span className="upn">{user.name.split(' ')[0]}</span></button>
