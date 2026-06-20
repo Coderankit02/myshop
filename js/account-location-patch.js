@@ -105,8 +105,29 @@
           _detectedLng    = pos.lng;
           _detectedDistKm = info.distanceKm;
 
-          // Pre-fill city if blank.
-          const cityInput = document.getElementById('af_city');
+          // Reverse-geocode the GPS fix into a best-effort address and fill
+          // any empty fields (never overwrite something the user already typed).
+          const line1Input = document.getElementById('af_line1');
+          const cityInput  = document.getElementById('af_city');
+          const pinInput   = document.getElementById('af_pin');
+
+          if (window.RKDelivery?.reverseGeocode) {
+            const addr = await window.RKDelivery.reverseGeocode(pos.lat, pos.lng);
+            if (addr) {
+              if (line1Input && !line1Input.value.trim() && addr.line1) {
+                line1Input.value = addr.line1;
+              }
+              if (cityInput && addr.city && (!cityInput.value.trim() || cityInput.value.trim() === 'Jaunpur')) {
+                cityInput.value = addr.city;
+              }
+              if (pinInput && addr.pincode && (!pinInput.value.trim() || pinInput.value.trim() === '222001')) {
+                pinInput.value = addr.pincode;
+              }
+            }
+          }
+
+          // Fallback: if reverse geocoding didn't run/produce a city, keep the
+          // previous behaviour of defaulting blank city to 'Jaunpur'.
           if (cityInput && !cityInput.value.trim()) {
             cityInput.value = 'Jaunpur';
           }
