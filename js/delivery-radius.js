@@ -127,6 +127,49 @@
       return { valid: true, reason: null, info };
     },
 
+    /**
+     * Reverse-geocode coordinates into an address using OpenStreetMap's free
+     * Nominatim API (no API key required). Returns a best-effort guess for
+     * line1 (area/locality), city, and pincode — the customer should still
+     * be able to edit these, since reverse geocoding is never 100% precise.
+     *
+     * @param {number} lat
+     * @param {number} lng
+     * @returns {Promise<{line1:string, city:string, pincode:string, raw:Object}|null>}
+     */
+    async reverseGeocode(lat, lng) {
+      try {
+        const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`;
+        const res = await fetch(url, {
+          headers: {
+            // Nominatim's usage policy asks for a descriptive Accept-Language;
+            // a custom User-Agent can't be set from browser fetch, but this is
+            // still within their free public-usage terms for light client use.
+            'Accept-Language': 'en,hi',
+          },
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
+        const a = data.address || {};
+
+        // Build a human-friendly line1 from the most specific parts available.
+        const line1Parts = [
+          a.house_number,
+          a.road || a.pedestrian || a.neighbourhood,
+          a.suburb || a.locality,
+        ].filter(Boolean);
+
+        const line1 = line1Parts.join(', ') || data.display_name || '';
+        const city  = a.city || a.town || a.village || a.county || '';
+        const pincode = a.postcode || '';
+
+        return { line1, city, pincode, raw: data };
+      } catch (err) {
+        console.error('[RKDelivery] reverseGeocode failed:', err);
+        return null;
+      }
+    },
+
     /** Google Maps destination link. */
     mapsLink(lat, lng) {
       return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
