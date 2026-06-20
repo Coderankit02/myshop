@@ -414,7 +414,6 @@ function CheckoutForm({ cart, total: cartTotal, showToast, onSuccess, user }) {
       <div className="co-card">
         <div className="co-card-title">📍 Delivery Address</div>
 
-        {/* LOCATION BUTTON */}
         <LocationButton />
         <DeliveryStatusCard />
 
@@ -480,7 +479,7 @@ function CheckoutForm({ cart, total: cartTotal, showToast, onSuccess, user }) {
         </div>
       </div>
 
-      {orderError && <div className="order-error-banner" role="alert">⚠️ {orderError.replace(/^⚠️\s*/, '')}</div>}
+      {orderError && <div className="order-error-banner" role="alert">⚠️ {orderError.replace(/^⚠️\s+/, '')}</div>}
 
       {isOutOfRange && (
         <div className="order-error-banner" role="alert">
