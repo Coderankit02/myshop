@@ -680,9 +680,13 @@ function App(){
   const [detailProduct,setDetailProduct]=useState(null);
   const [shopPage,setShopPage]=useState(1);
   // Header "📍 Aapka Mohalla ▾" → becomes the user's saved address city once
-  // known, then gains a live distance once GPS resolves at checkout. Stays
-  // hardcoded ("Aapka Mohalla") if neither is available — GPS is NEVER
-  // auto-triggered on the home page, only reused from checkout's own fetch.
+  // known. Distance gets appended in two ways: (1) silently on every page
+  // load/refresh IF the browser has already granted geolocation permission
+  // (no prompt — see the silent-geo effect below), or (2) reused from
+  // checkout's own (user-initiated) GPS fetch. If no address is saved at
+  // all, header stays fully on the hardcoded "Aapka Mohalla" fallback,
+  // regardless of distance. GPS is NEVER prompted for on the home page —
+  // only read silently when permission already exists.
   const [headerCity,setHeaderCity]=useState(null);
   const [headerDistanceKm,setHeaderDistanceKm]=useState(null);
   const [theme,setTheme]=useState(()=>{
@@ -849,6 +853,27 @@ function App(){
   // ever triggering a GPS prompt itself.
   const handleLocationResolved=useCallback((distanceKm)=>{
     if(typeof distanceKm==='number')setHeaderDistanceKm(distanceKm);
+  },[]);
+
+  // Silent header distance on load/refresh: ONLY runs the actual GPS read if
+  // the browser reports geolocation permission as already 'granted' — i.e.
+  // no permission popup will appear. If it's 'prompt' or 'denied' (or the
+  // Permissions API isn't supported), this does nothing and the header
+  // simply waits for checkout's own user-initiated fetch instead. This means
+  // a returning user who already said "yes" once gets their distance back
+  // automatically on every page load, without us ever asking again.
+  useEffect(()=>{
+    if(!navigator.permissions||!window.RKLocation||!window.RKDelivery)return;
+    let cancelled=false;
+    navigator.permissions.query({name:'geolocation'}).then(status=>{
+      if(cancelled||status.state!=='granted')return;
+      window.RKLocation.getCurrentPosition(false).then(pos=>{
+        if(cancelled)return;
+        const info=window.RKDelivery.calculate(pos.lat,pos.lng);
+        if(info&&typeof info.distanceKm==='number')setHeaderDistanceKm(info.distanceKm);
+      }).catch(()=>{/* best-effort only — header just stays without distance */});
+    }).catch(()=>{/* Permissions API unsupported in this browser — skip silently */});
+    return()=>{cancelled=true;};
   },[]);
 
   useEffect(()=>{
