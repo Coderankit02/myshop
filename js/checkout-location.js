@@ -278,11 +278,14 @@
 
       btnWrap.appendChild(btn);
 
-      // Auto-trigger if we already have a cached position.
-      const cached = window.RKLocation ? window.RKLocation.getCached() : null;
-      if (cached) {
-        _fetchAndRender({ btn, statusContainerId, onSuccess, onError, forceRefresh: false });
-      }
+      // FIX: previously this only auto-triggered when a cached position
+      // already existed, so first-time-this-session checkouts (the common
+      // case) never got prompted automatically — the location button just
+      // sat idle until the user noticed and tapped it themselves. Now we
+      // always kick off the fetch as soon as the button mounts (it will
+      // resolve instantly from cache if one exists, or prompt for a fresh
+      // GPS permission/fix otherwise).
+      _fetchAndRender({ btn, statusContainerId, onSuccess, onError, forceRefresh: false });
     },
 
     /**
