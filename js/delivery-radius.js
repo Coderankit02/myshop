@@ -1,0 +1,206 @@
+/**
+ * delivery-radius.js
+ * Rinku Kirana Store — Smart Delivery Radius Engine
+ * Haversine-formula distance calculation + tiered delivery rules.
+ */
+
+'use strict';
+
+(function (window) {
+
+  /* ─── Shop origin ──────────────────────────────────────────────── */
+  const SHOP = {
+    lat : 25.7388984,
+    lng : 82.6638101,
+    name: 'Rinku Kirana Store',
+  };
+
+  /* ─── Delivery tier config ─────────────────────────────────────── */
+  const TIERS = [
+    {
+      id         : 'free',
+      maxKm      : 5,
+      charge     : 0,
+      label      : 'FREE Delivery',
+      emoji      : '✅',
+      badgeClass : 'dr-badge--free',
+      eta        : '20–35 minutes',
+      available  : true,
+    },
+    {
+      id         : 'paid',
+      maxKm      : 8,
+      charge     : 30,
+      label      : 'Delivery Available',
+      emoji      : '🚚',
+      badgeClass : 'dr-badge--paid',
+      eta        : '35–55 minutes',
+      available  : true,
+    },
+    {
+      id         : 'unavailable',
+      maxKm      : Infinity,
+      charge     : 0,
+      label      : 'Delivery Not Available',
+      emoji      : '❌',
+      badgeClass : 'dr-badge--unavail',
+      eta        : null,
+      available  : false,
+    },
+  ];
+
+  /* ─── Haversine formula ────────────────────────────────────────── */
+  function _haversine(lat1, lng1, lat2, lng2) {
+    const R  = 6371;          // Earth radius km
+    const dL = _rad(lat2 - lat1);
+    const dN = _rad(lng2 - lng1);
+    const a  =
+      Math.sin(dL / 2) * Math.sin(dL / 2) +
+      Math.cos(_rad(lat1)) * Math.cos(_rad(lat2)) *
+      Math.sin(dN / 2) * Math.sin(dN / 2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  function _rad(deg) { return deg * (Math.PI / 180); }
+
+  /* ─── Public API ───────────────────────────────────────────────── */
+
+  const DeliveryRadius = {
+
+    SHOP,
+    TIERS,
+
+    /**
+     * Core calculation.
+     * Returns a delivery-info object for the given coordinates.
+     *
+     * @param {number} lat
+     * @param {number} lng
+     * @returns {{
+     *   distanceKm     : number,        // rounded to 1 decimal
+     *   distanceRaw    : number,        // exact float
+     *   charge         : number,        // ₹
+     *   available      : boolean,
+     *   tier           : Object,        // full tier config
+     *   label          : string,
+     *   emoji          : string,
+     *   eta            : string|null,
+     *   badgeClass     : string,
+     *   mapsLink       : string,
+     *   mapsNavLink    : string,
+     * }}
+     */
+    calculate(lat, lng) {
+      const raw  = _haversine(SHOP.lat, SHOP.lng, lat, lng);
+      const dist = Math.round(raw * 10) / 10;
+
+      const tier = TIERS.find(t => dist <= t.maxKm) || TIERS[TIERS.length - 1];
+
+      return {
+        distanceKm  : dist,
+        distanceRaw : raw,
+        charge      : tier.charge,
+        available   : tier.available,
+        tier,
+        label       : tier.label,
+        emoji       : tier.emoji,
+        eta         : tier.eta,
+        badgeClass  : tier.badgeClass,
+        mapsLink    : this.mapsLink(lat, lng),
+        mapsNavLink : this.mapsNavLink(lat, lng),
+      };
+    },
+
+    /**
+     * Validate before order creation (second-layer server-side-style check).
+     * Returns { valid, reason }.
+     */
+    validate(lat, lng) {
+      const info = this.calculate(lat, lng);
+      if (!info.available) {
+        return {
+          valid : false,
+          reason: `Aapka location hamari delivery range se bahar hai (${info.distanceKm} km). Hum sirf 8 km tak deliver karte hain.`,
+          info,
+        };
+      }
+      return { valid: true, reason: null, info };
+    },
+
+    /** Google Maps destination link. */
+    mapsLink(lat, lng) {
+      return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+    },
+
+    /** Google Maps navigation link from shop to customer. */
+    mapsNavLink(lat, lng) {
+      return `https://www.google.com/maps/dir/${SHOP.lat},${SHOP.lng}/${lat},${lng}`;
+    },
+
+    /** Human-readable distance string. */
+    distanceLabel(km) {
+      return km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`;
+    },
+
+    /**
+     * Build the HTML for the delivery status badge card.
+     * Ready to inject into any container.
+     */
+    renderBadgeHTML(info) {
+      const distLabel = this.distanceLabel(info.distanceKm);
+      const chargeLabel = info.charge === 0
+        ? '<span class="dr-free-tag">FREE</span>'
+        : `<span class="dr-charge-val">₹${info.charge}</span>`;
+
+      return `
+      <div class="dr-status-card ${info.badgeClass}">
+        <div class="dr-status-header">
+          <span class="dr-status-emoji">${info.emoji}</span>
+          <div class="dr-status-text">
+            <div class="dr-status-label">${info.label}</div>
+            ${info.available
+              ? `<div class="dr-status-sub">
+                  Delivery charge: ${chargeLabel}
+                </div>`
+              : `<div class="dr-status-sub dr-status-sub--warn">
+                  Hum is location par deliver nahi karte.
+                </div>`
+            }
+          </div>
+        </div>
+        <div class="dr-meta-row">
+          <div class="dr-meta-item">
+            <span class="dr-meta-icon">📍</span>
+            <div>
+              <div class="dr-meta-label">Distance</div>
+              <div class="dr-meta-val">${distLabel}</div>
+            </div>
+          </div>
+          ${info.available ? `
+          <div class="dr-meta-item">
+            <span class="dr-meta-icon">💰</span>
+            <div>
+              <div class="dr-meta-label">Delivery</div>
+              <div class="dr-meta-val">${info.charge === 0 ? 'FREE' : '₹' + info.charge}</div>
+            </div>
+          </div>
+          <div class="dr-meta-item">
+            <span class="dr-meta-icon">⏱️</span>
+            <div>
+              <div class="dr-meta-label">ETA</div>
+              <div class="dr-meta-val">${info.eta}</div>
+            </div>
+          </div>` : ''}
+        </div>
+        ${!info.available ? `
+        <div class="dr-unavail-msg">
+          ❌ Sorry, aapka location hamari 8 km delivery range se bahar hai.
+          <br/>Abhi hum sirf Jaunpur aur aas-paas ke areas mein deliver karte hain.
+        </div>` : ''}
+      </div>`;
+    },
+  };
+
+  window.RKDelivery = DeliveryRadius;
+
+})(window);
