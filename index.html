@@ -679,6 +679,12 @@ function App(){
   const [user,setUser]=useState(null);
   const [detailProduct,setDetailProduct]=useState(null);
   const [shopPage,setShopPage]=useState(1);
+  // Header "📍 Aapka Mohalla ▾" → becomes the user's saved address city once
+  // known, then gains a live distance once GPS resolves at checkout. Stays
+  // hardcoded ("Aapka Mohalla") if neither is available — GPS is NEVER
+  // auto-triggered on the home page, only reused from checkout's own fetch.
+  const [headerCity,setHeaderCity]=useState(null);
+  const [headerDistanceKm,setHeaderDistanceKm]=useState(null);
   const [theme,setTheme]=useState(()=>{
     try{const s=localStorage.getItem('rk_theme');if(s==='dark'||s==='light')return s;}catch(e){}
     return window.matchMedia?.('(prefers-color-scheme:dark)').matches?'dark':'light';
@@ -802,6 +808,7 @@ function App(){
         setUser(u);
         if(window.RKCart)window.RKCart.setUser(u);
         if(window.RKProfile)window.RKProfile.loadProfile(session.user.id);
+        _loadHeaderCity(u.uid);
       }
     });
     const {data:{subscription}}=supabase.auth.onAuthStateChange((_,session)=>{
@@ -810,9 +817,38 @@ function App(){
         const u={uid:session.user.id,email:session.user.email,name:meta?.name||session.user.email.split('@')[0]};
         setUser(u);
         if(window.RKCart)window.RKCart.setUser(u);
-      } else {setUser(null);if(window.RKCart)window.RKCart.setUser(null);}
+        _loadHeaderCity(u.uid);
+      } else {setUser(null);if(window.RKCart)window.RKCart.setUser(null);setHeaderCity(null);setHeaderDistanceKm(null);}
     });
     return()=>subscription.unsubscribe();
+  },[]);
+
+  // Pulls the city from the user's default (or first) saved address — no
+  // GPS involved. Used to populate the header label as soon as we know who
+  // the user is, without ever prompting for location on the home page.
+  async function _loadHeaderCity(uid){
+    if(!window.RKProfile?.loadAddresses)return;
+    try{
+      const addrs=await window.RKProfile.loadAddresses(uid);
+      const def=(addrs||[]).find(a=>a.is_default)||(addrs||[])[0];
+      if(def?.city)setHeaderCity(def.city);
+    }catch(_){/* header stays on hardcoded fallback */}
+  }
+
+  // Builds the "📍 ..." header label: city (once known) plus a live distance
+  // once GPS resolves at checkout. Falls back to the generic placeholder when
+  // neither piece of info is available yet.
+  const headerLabel=headerCity
+    ?(headerDistanceKm!=null
+        ?`${headerCity} • ${headerDistanceKm<1?Math.round(headerDistanceKm*1000)+' m':headerDistanceKm.toFixed(1)+' km'}`
+        :headerCity)
+    :'Aapka Mohalla';
+
+  // Called by CheckoutForm once its own (optional, best-effort) GPS fetch
+  // resolves a distance — lets the header pick up a live "X km away" without
+  // ever triggering a GPS prompt itself.
+  const handleLocationResolved=useCallback((distanceKm)=>{
+    if(typeof distanceKm==='number')setHeaderDistanceKm(distanceKm);
   },[]);
 
   useEffect(()=>{
@@ -1045,7 +1081,7 @@ function App(){
       <div className="desktop-header" ref={desktopHeaderRef}>
         <div className="dh-inner">
           <div className="logo" onClick={()=>setPage('home')}>rinku<span>.</span></div>
-          <div className="dh-location" onClick={()=>showToast('📍 Location change abhi available nahi hai')}>📍 Aapka Mohalla ▾</div>
+          <div className="dh-location" onClick={()=>showToast('📍 Location change abhi available nahi hai')}>📍 {headerLabel} ▾</div>
           <div className="dh-search" style={searchDisabled?{opacity:0.5}:{}}>
             <span>🔍</span>
             <input placeholder="Search groceries, snacks, dairy..." value={search} disabled={searchDisabled}
@@ -1067,7 +1103,7 @@ function App(){
       <div className="header">
         <div className="header-top">
           <div className="logo-sm">rinku<span>.</span></div>
-          <div className="delivery-info" onClick={()=>showToast('📍 Location change abhi available nahi hai')}><div className="delivery-min">Delivery in</div><div className="delivery-addr">📍 Aapka Mohalla ▾</div></div>
+          <div className="delivery-info" onClick={()=>showToast('📍 Location change abhi available nahi hai')}><div className="delivery-min">Delivery in</div><div className="delivery-addr">📍 {headerLabel} ▾</div></div>
           <div className="header-right">
             <button className="theme-toggle-btn" aria-label="Theme badlein" onClick={toggleTheme}>{theme==='dark'?'☀️':'🌙'}</button>
             {user?<button className="user-pill-btn" onClick={()=>window.location.href='account.html'}>👤 <span className="upn">{user.name.split(' ')[0]}</span></button>
@@ -1210,6 +1246,7 @@ function App(){
             <button className="pdp-back" style={{marginBottom:6}} onClick={()=>setPage('home')}>← Checkout se Bahar Jao</button>
             <h2>🚚 Checkout</h2>
             <CheckoutForm cart={cart} total={total} showToast={showToast} user={user}
+              onLocationResolved={handleLocationResolved}
               onSuccess={(id,pay)=>{setSuccess({id,pay});setPage('success');}}/>
           </div>
         )}
@@ -1330,7 +1367,7 @@ function UpiPayCard({total,upiId}){
 /* ══════════════════════════════════════════════════════════
    CheckoutForm
 ══════════════════════════════════════════════════════════ */
-function CheckoutForm({cart,total:cartTotal,showToast,onSuccess,user}){
+function CheckoutForm({cart,total:cartTotal,showToast,onSuccess,user,onLocationResolved}){
   const [pay,setPay]=useState('');
   const [f,setF]=useState({name:user?.name||'',phone:''});
   const [addresses,setAddresses]=useState([]);
@@ -1411,6 +1448,9 @@ function CheckoutForm({cart,total:cartTotal,showToast,onSuccess,user}){
       const info=window.RKDelivery.calculate(pos.lat,pos.lng);
       setDeliveryInfo({...info,lat:pos.lat,lng:pos.lng});
       setLocState('success');
+      // Bubble the resolved distance up to the header (App level). This never
+      // triggers GPS itself — it only reacts to checkout's own optional fetch.
+      if(onLocationResolved)onLocationResolved(info.distanceKm);
     }catch(err){
       setLocState(err && err.code===1?'denied':'error');
       setDeliveryInfo(null);
