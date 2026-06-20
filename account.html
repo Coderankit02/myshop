@@ -668,7 +668,9 @@ html[data-theme="dark"] .addr-btn-del{background:#2A1414;}
 ═══════════════════════════════════════════ */
 const SUPABASE_URL  = 'https://pffaflasgwhydkmxwkky.supabase.co';
 const SUPABASE_ANON = 'sb_publishable__tFDYhkM3blZ0pIVT0YxLA_YvkKq79L';
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+// Reuse an existing client if one was already created on this page (avoids
+// duplicate Supabase clients / duplicate realtime subscriptions).
+const sb = window.sb || window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 window.sb = sb; // expose the real client so cart.js / profile.js / orders.js can use it via getDB()
 
 const VALID_TABS = ['overview','orders','addresses','profile','wishlist','notifications','rewards','settings'];
@@ -1351,7 +1353,7 @@ function renderNotifications(wrap) {
     <div class="divider"></div>
     ${STATE.notifications.length
       ? STATE.notifications.map(n => `
-        <div class="notif-row ${!n.is_read ? 'unread' : ''}" onclick="markRead('${n.id}')">
+        <div class="notif-row ${!n.is_read ? 'unread' : ''}" ${!n.is_read ? `onclick="markRead('${n.id}')"` : ''}>
           <div class="notif-icon-box" style="background:${notifColor(n.type)}">${notifIcon(n.type)}</div>
           <div class="notif-body">
             <div class="notif-title">${n.title || 'Notification'}</div>
@@ -1366,8 +1368,9 @@ function renderNotifications(wrap) {
 }
 
 async function markRead(id) {
-  await sb.from('notifications').update({ is_read: true }).eq('id', id);
   const n = STATE.notifications.find(x => x.id === id);
+  if (n && n.is_read) return; // already read, skip the write
+  await sb.from('notifications').update({ is_read: true }).eq('id', id);
   if (n) n.is_read = true;
   renderNotifications($('pageWrap'));
 }
