@@ -1432,7 +1432,7 @@ function CheckoutForm({cart,total:cartTotal,showToast,onSuccess,user}){
   const isPhoneValid=/^[6-9]\d{9}$/.test(f.phone.trim());
   const selectedAddr=addresses.find(a=>a.id===selectedAddrId)||null;
   const saveNewAddress=async()=>{
-    if(!newAddr.line1.trim()||!newAddr.city.trim()||!/^\d{6}$/.test(newAddr.pincode.trim())){showToast('Address, city aur 6-digit pincode zaroori hai!');return;}
+    if(!newAddr.line1.trim()||!newAddr.line2.trim()||!newAddr.city.trim()||!/^\d{6}$/.test(newAddr.pincode.trim())){showToast('Address, landmark, city aur 6-digit pincode zaroori hai!');return;}
     if(!window.RKProfile||!user){showToast('Login zaroori hai!');return;}
     setSavingAddr(true);
     try{
@@ -1588,10 +1588,41 @@ function CheckoutForm({cart,total:cartTotal,showToast,onSuccess,user}){
                   <div className="dr-status-text">
                     <div className="dr-status-label">{deliveryInfo.label}</div>
                     {deliveryInfo.available
-                      ?<div className="dr-status-sub">Delivery: {deliveryInfo.charge===0?<span className="dr-free-tag">FREE</span>:<span className="dr-charge-val">₹{deliveryInfo.charge}</span>}</div>
-                      :<div className="dr-status-sub dr-status-sub--warn">Aapka location hamari normal range se bahar hai.</div>}
+                      ?<div className="dr-status-sub">Delivery charge: {deliveryInfo.charge===0?<span className="dr-free-tag">FREE</span>:<span className="dr-charge-val">₹{deliveryInfo.charge}</span>}</div>
+                      :<div className="dr-status-sub dr-status-sub--warn">Hum is location par deliver nahi karte.</div>}
                   </div>
                 </div>
+                <div className="dr-meta-row">
+                  <div className="dr-meta-item">
+                    <span className="dr-meta-icon">📍</span>
+                    <div>
+                      <div className="dr-meta-label">Distance</div>
+                      <div className="dr-meta-val">{deliveryInfo.distanceKm<1?Math.round(deliveryInfo.distanceKm*1000)+' m':deliveryInfo.distanceKm.toFixed(1)+' km'}</div>
+                    </div>
+                  </div>
+                  {deliveryInfo.available&&<>
+                    <div className="dr-meta-item">
+                      <span className="dr-meta-icon">💰</span>
+                      <div>
+                        <div className="dr-meta-label">Delivery</div>
+                        <div className="dr-meta-val">{deliveryInfo.charge===0?'FREE':'₹'+deliveryInfo.charge}</div>
+                      </div>
+                    </div>
+                    <div className="dr-meta-item">
+                      <span className="dr-meta-icon">⏱️</span>
+                      <div>
+                        <div className="dr-meta-label">ETA</div>
+                        <div className="dr-meta-val">{deliveryInfo.eta}</div>
+                      </div>
+                    </div>
+                  </>}
+                </div>
+                {!deliveryInfo.available&&(
+                  <div className="dr-unavail-msg">
+                    ❌ Sorry, aapka location hamari 8 km delivery range se bahar hai.
+                    <br/>Abhi hum sirf Jaunpur aur aas-paas ke areas mein deliver karte hain.
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1613,8 +1644,8 @@ function CheckoutForm({cart,total:cartTotal,showToast,onSuccess,user}){
             <input id="addr-label" className="inp" placeholder="Label (Home/Office)" value={newAddr.label} onChange={e=>setNewAddr({...newAddr,label:e.target.value})}/>
             <label className="field-label" htmlFor="addr-line1">Pura pata *</label>
             <input id="addr-line1" className="inp" placeholder="Ghar ka pura pata, gali, makaan no. *" value={newAddr.line1} onChange={e=>setNewAddr({...newAddr,line1:e.target.value})} required/>
-            <label className="field-label" htmlFor="addr-line2">Landmark</label>
-            <input id="addr-line2" className="inp" placeholder="Mohalla / Landmark (optional)" value={newAddr.line2} onChange={e=>setNewAddr({...newAddr,line2:e.target.value})}/>
+            <label className="field-label" htmlFor="addr-line2">Landmark *</label>
+            <input id="addr-line2" className="inp" placeholder="Mohalla / Landmark *" value={newAddr.line2} onChange={e=>setNewAddr({...newAddr,line2:e.target.value})} required/>
             <div className="addr-form-grid">
               <div>
                 <label className="field-label" htmlFor="addr-city">City *</label>
