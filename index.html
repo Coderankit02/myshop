@@ -142,7 +142,7 @@ input,select,textarea{outline:none;border:none;font-family:'Inter',sans-serif;fo
 .banner-title{font-size:1.3rem;font-weight:900;color:#fff;line-height:1.2;margin-bottom:4px;}
 .banner-glow{color:var(--yellow);text-shadow:0 0 12px rgba(255,184,0,0.7);}
 .banner-sub{font-size:0.72rem;color:rgba(255,255,255,0.8);}
-.banner-btn-sm{display:inline-block;margin-top:8px;background:#fff;color:var(--dark);font-size:0.72rem;font-weight:700;padding:5px 14px;border-radius:50px;border:none;cursor:pointer;}
+.banner-btn-sm{display:inline-block;margin-top:8px;background:#fff;color:#1A1A2E;font-size:0.72rem;font-weight:700;padding:5px 14px;border-radius:50px;border:none;cursor:pointer;}
 .banner-dots{display:flex;justify-content:center;gap:6px;margin-top:8px;}
 .bdot{width:6px;height:6px;border-radius:50%;background:#CBD5E0;transition:all 0.3s;cursor:pointer;}
 .bdot.on{width:18px;border-radius:3px;background:var(--primary);}
@@ -247,6 +247,11 @@ input,select,textarea{outline:none;border:none;font-family:'Inter',sans-serif;fo
 .place-order-btn:disabled{opacity:0.6;cursor:not-allowed;}
 .order-error-banner{display:flex;align-items:flex-start;gap:8px;background:#FFEBEE;border:1px solid #FFCDD2;border-radius:10px;padding:10px 12px;margin-top:10px;font-size:0.78rem;color:#C62828;font-weight:600;line-height:1.5;}
 html[data-theme="dark"] .order-error-banner{background:#3A1414;border-color:#5A1F1F;color:#FF8A8A;}
+.order-error-banner--info{background:#FFF7ED;border-color:#FED7AA;color:#C2410C;}
+html[data-theme="dark"] .order-error-banner--info{background:#2A2110;border-color:#5A4A1F;color:#FDE68A;}
+.loc-detect-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:11px 14px;border-radius:12px;border:1.5px solid var(--border);background:var(--primary-light);color:var(--primary-dark);font-weight:700;font-size:0.8rem;transition:all 0.2s;min-height:44px;}
+.loc-detect-btn:disabled{opacity:0.65;cursor:not-allowed;}
+html[data-theme="dark"] .loc-detect-btn{background:var(--primary-light);color:#2ECC82;border-color:var(--border);}
 .success-page{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;padding:24px;text-align:center;}
 .success-anim{font-size:5rem;animation:successPop 0.6s cubic-bezier(0.34,1.56,0.64,1);}
 @keyframes successPop{from{transform:scale(0) rotate(-30deg);}to{transform:scale(1) rotate(0);}}
@@ -1325,7 +1330,7 @@ function UpiPayCard({total,upiId}){
 /* ══════════════════════════════════════════════════════════
    CheckoutForm
 ══════════════════════════════════════════════════════════ */
-function CheckoutForm({cart,total,showToast,onSuccess,user}){
+function CheckoutForm({cart,total:cartTotal,showToast,onSuccess,user}){
   const [pay,setPay]=useState('');
   const [f,setF]=useState({name:user?.name||'',phone:''});
   const [addresses,setAddresses]=useState([]);
@@ -1344,6 +1349,12 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
   const [screenshotPreview,setScreenshotPreview]=useState(null);
   const [submittingVerify,setSubmittingVerify]=useState(false);
   const [pendingOrder,setPendingOrder]=useState(null);
+  // GPS / delivery-radius state — GPS stays OPTIONAL. If the user denies or
+  // it fails, checkout still works with the manually-entered/saved address.
+  // It only auto-triggers (asks for permission) once an address is on screen.
+  const [locState,setLocState]=useState('idle'); // idle | loading | success | denied | error
+  const [deliveryInfo,setDeliveryInfo]=useState(null);
+  const total=cartTotal;
   const COUNTDOWN_SEC=600;
   const REMINDER_AFTER_SEC=120;
   const [remainingSec,setRemainingSec]=useState(COUNTDOWN_SEC);
@@ -1377,17 +1388,51 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
         if(!active)return;
         setAddresses(addrs||[]);
         const def=(addrs||[]).find(a=>a.is_default)||(addrs||[])[0];
-        if(def)setSelectedAddrId(def.id);else setShowNewForm(true);
+        // Bug fix: explicitly close the new-address form when a saved address is found.
+        // Previously only the "no address" branch touched showNewForm, so if it had
+        // been set true on an earlier run, the form stayed open even after a saved
+        // address loaded — showing both the address card and the empty form together.
+        if(def){setSelectedAddrId(def.id);setShowNewForm(false);}else setShowNewForm(true);
         setF(prev=>({name:prev.name||profile?.name||'',phone:prev.phone||profile?.phone||''}));
       }catch(err){if(active)setShowNewForm(true);}
       finally{if(active)setLoadingAddrs(false);}
     })();
     return()=>{active=false;};
   },[user]);
+
+  // ── GPS: optional, best-effort delivery-distance check ──────────────
+  // Never blocks checkout. If denied/unsupported/failed, user proceeds
+  // with their saved/manual address exactly as before.
+  const handleUseLocation=async()=>{
+    if(!window.RKLocation||!window.RKDelivery){return;}
+    setLocState('loading');
+    try{
+      const pos=await window.RKLocation.getCurrentPosition(locState==='success');
+      const info=window.RKDelivery.calculate(pos.lat,pos.lng);
+      setDeliveryInfo({...info,lat:pos.lat,lng:pos.lng});
+      setLocState('success');
+    }catch(err){
+      setLocState(err && err.code===1?'denied':'error');
+      setDeliveryInfo(null);
+    }
+  };
+
+  // Auto-trigger the GPS prompt as soon as an address is on screen (either a
+  // saved address card, or the new-address form) — mirrors the same
+  // auto-trigger pattern used on the Account → Addresses page. Fires once;
+  // if the user denies, we don't ask again automatically.
+  useEffect(()=>{
+    if(loadingAddrs)return;
+    if(!selectedAddrId&&!showNewForm)return;
+    if(locState!=='idle')return;
+    handleUseLocation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[loadingAddrs,selectedAddrId,showNewForm]);
+
   const isPhoneValid=/^[6-9]\d{9}$/.test(f.phone.trim());
   const selectedAddr=addresses.find(a=>a.id===selectedAddrId)||null;
   const saveNewAddress=async()=>{
-    if(!newAddr.line1.trim()||!newAddr.line2.trim()||!newAddr.city.trim()||!/^\d{6}$/.test(newAddr.pincode.trim())){showToast('Address, landmark, city aur 6-digit pincode zaroori hai!');return;}
+    if(!newAddr.line1.trim()||!newAddr.city.trim()||!/^\d{6}$/.test(newAddr.pincode.trim())){showToast('Address, city aur 6-digit pincode zaroori hai!');return;}
     if(!window.RKProfile||!user){showToast('Login zaroori hai!');return;}
     setSavingAddr(true);
     try{
@@ -1412,11 +1457,25 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
     if(!pay){showToast('Payment method chunein!');return;}
     if(!selectedAddr){showToast('Delivery address chunein ya add karein!');return;}
     const addressPayload={name:f.name.trim(),phone:f.phone.trim(),line1:selectedAddr.line1,line2:selectedAddr.line2||'',city:selectedAddr.city||'Jaunpur',pincode:selectedAddr.pincode||''};
+    // GPS is optional and never blocks checkout. If it resolved and the
+    // location looks out of the normal delivery range, we don't stop the
+    // order — we just flag it so the admin can verify and accept/reject.
+    let locationPayload={};
+    if(deliveryInfo){
+      const validation=window.RKDelivery.validate(deliveryInfo.lat,deliveryInfo.lng);
+      locationPayload={
+        latitude:deliveryInfo.lat,longitude:deliveryInfo.lng,distance_km:deliveryInfo.distanceKm,
+        delivery_status:deliveryInfo.tier.id,admin_review_needed:!validation.valid,
+      };
+      if(!validation.valid){
+        showToast('📍 Out of service area — your order is confirmed after admin verification.',4500);
+      }
+    }
     if(pay==='cod'){
       setPlacing(true);
       try{
         let result=null;
-        if(window.RKOrders&&user)result=await window.RKOrders.createOrder(user.uid,{cart,total,address:addressPayload,paymentMethod:pay});
+        if(window.RKOrders&&user)result=await window.RKOrders.createOrder(user.uid,{cart,total,address:addressPayload,paymentMethod:pay,...locationPayload});
         // Frontend-only fix: previously a failed/null createOrder() still showed the
         // success screen with a randomly-generated fake order number. Now we only
         // show success if the order actually saved (or if no backend hook exists at all,
@@ -1441,7 +1500,7 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
     // Bug fix #3: don't fabricate/display a fake order number before any order actually
     // exists. The QR/verification screen now shows "Pending" until createOrder() succeeds
     // inside handleSubmitVerification, avoiding the confusing temp-number swap.
-    setPendingOrder({address:addressPayload,paymentMethod:pay});
+    setPendingOrder({address:addressPayload,paymentMethod:pay,locationPayload});
     setOrderInfo({orderId:null,orderNumber:null});
     setShowVerifyForm(true);
   };
@@ -1453,7 +1512,7 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
     if(!pendingOrder){showToast('Order data missing');return;}
     setSubmittingVerify(true);
     let result=null;
-    if(window.RKOrders&&user)result=await window.RKOrders.createOrder(user.uid,{cart,total,address:pendingOrder.address,paymentMethod:pendingOrder.paymentMethod});
+    if(window.RKOrders&&user)result=await window.RKOrders.createOrder(user.uid,{cart,total,address:pendingOrder.address,paymentMethod:pendingOrder.paymentMethod,...(pendingOrder.locationPayload||{})});
     if(!result){setSubmittingVerify(false);showToast('Order create nahi hua');return;}
     const realOrderId=result.orderId;
     const realOrderNumber=result.orderNumber||('RK'+Math.floor(1000+Math.random()*9000));
@@ -1513,6 +1572,30 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
       </div>
       <div className="co-card">
         <div className="co-card-title">📍 Delivery Address</div>
+        {(selectedAddrId||showNewForm)&&(
+          <div style={{marginBottom:10}}>
+            <button type="button" className="loc-detect-btn" disabled={locState==='loading'} onClick={handleUseLocation}>
+              {locState==='loading'?'⏳ Location detect ho rahi hai…'
+                :locState==='success'?'✅ Location Detected — Tap to refresh'
+                :locState==='denied'?'🔓 Retry Location Access'
+                :locState==='error'?'⚠️ Retry Location'
+                :'📍 Use Current Location'}
+            </button>
+            {deliveryInfo&&(
+              <div className={`dr-status-card ${deliveryInfo.badgeClass}`} style={{marginTop:8}}>
+                <div className="dr-status-header">
+                  <span className="dr-status-emoji">{deliveryInfo.emoji}</span>
+                  <div className="dr-status-text">
+                    <div className="dr-status-label">{deliveryInfo.label}</div>
+                    {deliveryInfo.available
+                      ?<div className="dr-status-sub">Delivery: {deliveryInfo.charge===0?<span className="dr-free-tag">FREE</span>:<span className="dr-charge-val">₹{deliveryInfo.charge}</span>}</div>
+                      :<div className="dr-status-sub dr-status-sub--warn">Aapka location hamari normal range se bahar hai.</div>}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
         {loadingAddrs?<div style={{fontSize:'0.8rem',color:'var(--gray)',padding:'8px 0'}}>Addresses load ho rahe hain…</div>
           :<>
             {addresses.map(a=>(
@@ -1530,8 +1613,8 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
             <input id="addr-label" className="inp" placeholder="Label (Home/Office)" value={newAddr.label} onChange={e=>setNewAddr({...newAddr,label:e.target.value})}/>
             <label className="field-label" htmlFor="addr-line1">Pura pata *</label>
             <input id="addr-line1" className="inp" placeholder="Ghar ka pura pata, gali, makaan no. *" value={newAddr.line1} onChange={e=>setNewAddr({...newAddr,line1:e.target.value})} required/>
-            <label className="field-label" htmlFor="addr-line2">Landmark *</label>
-            <input id="addr-line2" className="inp" placeholder="Mohalla / Landmark *" value={newAddr.line2} onChange={e=>setNewAddr({...newAddr,line2:e.target.value})} required/>
+            <label className="field-label" htmlFor="addr-line2">Landmark</label>
+            <input id="addr-line2" className="inp" placeholder="Mohalla / Landmark (optional)" value={newAddr.line2} onChange={e=>setNewAddr({...newAddr,line2:e.target.value})}/>
             <div className="addr-form-grid">
               <div>
                 <label className="field-label" htmlFor="addr-city">City *</label>
@@ -1558,6 +1641,12 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
         </div>
       </div>
       {orderError&&<div className="order-error-banner" role="alert">⚠️ {orderError.replace(/^⚠️\s*/,'')}</div>}
+      {deliveryInfo&&!deliveryInfo.available&&(
+        <div className="order-error-banner order-error-banner--info" role="status">
+          📍 Aapka location hamari normal delivery area (8 km) se bahar lag raha hai.
+          Aap order place kar sakte hain — admin location verify karke order confirm ya cancel karega.
+        </div>
+      )}
       <button className="place-order-btn" disabled={placing} onClick={handlePlaceOrder}>
         {placing?'⏳ Order Place Ho Raha Hai...':(pay==='upi'?'📲 Order Confirm Karein':'🚚 Order Place Karo')} →
       </button>
