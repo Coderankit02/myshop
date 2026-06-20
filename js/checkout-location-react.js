@@ -73,6 +73,8 @@
           window._rkDeliveryInfo = info;
           // Patch the total display if we're adding a charge.
           _updateTotalDisplay(info);
+          // Best-effort: fill the address form fields from reverse geocoding.
+          _autoFillAddressFromLocation(info);
         },
         onError() {
           window._rkDeliveryInfo = null;
@@ -99,6 +101,59 @@
       }
     }, true /* capture phase — fires before React's handler */);
   });
+
+  /**
+   * Reverse-geocodes the detected GPS position and fills the address form
+   * fields (line1, city, pincode) if they're present and empty. If the "Naya
+   * Address Add Karo" form isn't open yet, it's opened automatically so the
+   * customer can see the filled-in fields and just confirm/edit them.
+   */
+  async function _autoFillAddressFromLocation(info) {
+    if (!window.RKDelivery?.reverseGeocode || info.lat == null || info.lng == null) return;
+
+    // If the new-address form isn't visible yet, click "Naya Address Add Karo"
+    // to open it (re-use the existing button instead of duplicating its logic).
+    let line1Input = document.getElementById('addr-line1');
+    if (!line1Input) {
+      const addNewBtn = document.querySelector('.addr-add-btn');
+      if (addNewBtn && addNewBtn.textContent.includes('Naya Address')) {
+        addNewBtn.click();
+      }
+    }
+
+    const addr = await window.RKDelivery.reverseGeocode(info.lat, info.lng);
+    if (!addr) return;
+
+    // Re-query after the form may have just opened.
+    const line1El = document.getElementById('addr-line1');
+    const cityEl  = document.getElementById('addr-city');
+    const pinEl   = document.getElementById('addr-pin');
+
+    // Only fill fields that are currently empty, so we never overwrite
+    // something the customer already typed.
+    if (line1El && !line1El.value.trim() && addr.line1) {
+      line1El.value = addr.line1;
+      line1El.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    if (cityEl && addr.city) {
+      // City has a default ('Jaunpur'), so only overwrite if detected city differs
+      // and the field still holds the default placeholder value.
+      if (!cityEl.value.trim() || cityEl.value.trim() === 'Jaunpur') {
+        cityEl.value = addr.city;
+        cityEl.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    }
+    if (pinEl && addr.pincode) {
+      if (!pinEl.value.trim() || pinEl.value.trim() === '222001') {
+        pinEl.value = addr.pincode;
+        pinEl.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    }
+
+    if (line1El && addr.line1) {
+      window.RKCheckoutLocation.showToast('📍 Address auto-fill ho gaya — check karke confirm karein', 3500);
+    }
+  }
 
   function _updateTotalDisplay(info) {
     // Find total row and add delivery charge if applicable.
