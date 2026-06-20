@@ -1126,8 +1126,8 @@ function showAddrForm(editId) {
         <input class="inp" id="af_line1" placeholder="House no., Street name" value="${a?.line1 || ''}" required/>
       </div>
       <div class="field-group">
-        <label class="field-label">Address Line 2</label>
-        <input class="inp" id="af_line2" placeholder="Mohalla, Landmark (optional)" value="${a?.line2 || ''}"/>
+        <label class="field-label">Address Line 2 (Landmark) *</label>
+        <input class="inp" id="af_line2" placeholder="Mohalla, Landmark *" value="${a?.line2 || ''}" required/>
       </div>
       <div class="form-grid">
         <div class="field-group">
@@ -1156,14 +1156,15 @@ function showAddrForm(editId) {
 
 async function saveAddr(editId) {
   const line1 = $('af_line1').value.trim();
+  const line2 = $('af_line2').value.trim();
   const city  = $('af_city').value.trim();
   const pin   = $('af_pin').value.trim();
-  if (!line1 || !city || !/^\d{6}$/.test(pin)) {
-    showToast('Address, city aur 6-digit pincode zaroori hai!');
+  if (!line1 || !line2 || !city || !/^\d{6}$/.test(pin)) {
+    showToast('Address, landmark, city aur 6-digit pincode zaroori hai!');
     return;
   }
   const isDefault = $('af_default').classList.contains('on');
-  const payload = { label: $('af_label').value || 'Home', line1, line2: $('af_line2').value, city, pincode: pin, is_default: isDefault, id: editId || undefined };
+  const payload = { label: $('af_label').value || 'Home', line1, line2, city, pincode: pin, is_default: isDefault, id: editId || undefined };
   const saved = window.RKProfile ? await window.RKProfile.saveAddress(STATE.user.id, payload) : null;
   if (saved || window.RKProfile) {
     showToast('Address save ho gaya! 📍');
