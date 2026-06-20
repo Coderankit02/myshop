@@ -398,7 +398,9 @@ const {useState,useEffect,useRef,useCallback,useLayoutEffect}=React;
 
 const SUPABASE_URL='https://pffaflasgwhydkmxwkky.supabase.co';
 const SUPABASE_ANON_KEY='sb_publishable__tFDYhkM3blZ0pIVT0YxLA_YvkKq79L';
-const supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+// Reuse an existing client if one was already created on this page (avoids
+// duplicate Supabase clients / duplicate realtime subscriptions).
+const supabase=window.sb||window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 window.sb=supabase;
 
 const goLogin=()=>{ window.location.href='login.html'; };
@@ -1443,7 +1445,8 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
     setShowVerifyForm(true);
   };
   const handleSubmitVerification=async()=>{
-    if(!utr.trim()||utr.trim().length<6){showToast('Sahi UTR / Transaction ID daalein');return;}
+    const utrClean=utr.trim();
+    if(!/^\d{12}$/.test(utrClean)){showToast('Sahi 12-digit UTR / Transaction ID daalein');return;}
     if(!screenshotFile){showToast('Payment screenshot upload karein');return;}
     if(!window.RKPayment){showToast('Verification system load nahi hua');return;}
     if(!pendingOrder){showToast('Order data missing');return;}
@@ -1455,7 +1458,7 @@ function CheckoutForm({cart,total,showToast,onSuccess,user}){
     const realOrderNumber=result.orderNumber||('RK'+Math.floor(1000+Math.random()*9000));
     const screenshotUrl=await window.RKPayment.uploadScreenshot(screenshotFile,realOrderNumber);
     if(!screenshotUrl){setSubmittingVerify(false);showToast('Screenshot upload fail hua');return;}
-    const saved=await window.RKPayment.submitVerification(user?.uid,{orderId:realOrderId,orderNumber:realOrderNumber,customerName:f.name.trim(),mobile:f.phone.trim(),utr:utr.trim(),screenshotUrl,amount:total});
+    const saved=await window.RKPayment.submitVerification(user?.uid,{orderId:realOrderId,orderNumber:realOrderNumber,customerName:f.name.trim(),mobile:f.phone.trim(),utr:utrClean,screenshotUrl,amount:total});
     setSubmittingVerify(false);
     if(saved){if(window.RKCart)window.RKCart.clearCart();onSuccess(realOrderNumber,'upi');}
     else showToast('Verification submit nahi hua');
