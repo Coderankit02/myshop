@@ -65,7 +65,7 @@ input,select,textarea{outline:none;border:none;font-family:'Inter',sans-serif;fo
 .logo-sm span{color:var(--orange);}
 .delivery-info{text-align:center;flex:1;padding:0 8px;min-width:0;}
 .delivery-min{font-size:0.7rem;color:var(--gray);text-transform:uppercase;letter-spacing:0.5px;}
-.delivery-addr{font-size:0.82rem;font-weight:700;color:var(--dark);white-space:normal;line-height:1.25;text-align:center;word-break:break-word;}
+.delivery-addr{font-size:0.72rem;font-weight:700;color:var(--dark);white-space:normal;line-height:1.2;text-align:center;word-break:break-word;}
 .header-right{display:flex;align-items:center;gap:6px;flex-shrink:0;}
 .user-pill-btn{background:var(--primary-light);color:var(--primary-dark);border-radius:12px;padding:8px 10px;font-weight:700;font-size:0.78rem;display:flex;align-items:center;gap:5px;max-width:88px;overflow:hidden;}
 .user-pill-btn span.upn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -386,7 +386,6 @@ html[data-theme="dark"] .payment-wait-hint{background:#3A2A14;border-color:#6B4A
      header here — mobile (<768) and laptop/desktop (>1023) are untouched. */
   .dh-inner{padding:12px 16px;gap:8px;}
   .dh-location{max-width:120px;padding:6px 10px;}
-  .dh-location-label{display:none;}
   .dh-nav{gap:4px;}
   .dh-nav-btn{padding:9px 9px;}
   .dh-nav-label{display:none;}
@@ -394,6 +393,9 @@ html[data-theme="dark"] .payment-wait-hint{background:#3A2A14;border-color:#6B4A
   .dh-cart-btn{padding:10px 12px;}
   .dh-user-btn{padding:10px 10px;}
   .dh-user-btn span{max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+}
+@media(max-width:434px){
+  .delivery-pin{display:none;}
 }
 @media(max-width:360px){
   .logo-sm{font-size:1.2rem;}
@@ -1152,7 +1154,7 @@ function App(){
       <div className="header">
         <div className="header-top">
           <div className="logo-sm">rinku<span>.</span></div>
-          <div className="delivery-info" onClick={()=>showToast('📍 Location change abhi available nahi hai')}><div className="delivery-min">Delivery in</div><div className="delivery-addr" style={headerLabelStyle}>📍 {headerLabel} ▾</div></div>
+          <div className="delivery-info" onClick={()=>showToast('📍 Location change abhi available nahi hai')}><div className="delivery-min">Delivery in</div><div className="delivery-addr" style={headerLabelStyle}><span className="delivery-pin">📍 </span>{headerLabel} ▾</div></div>
           <div className="header-right">
             <button className="theme-toggle-btn" aria-label="Theme badlein" onClick={toggleTheme}>{theme==='dark'?'☀️':'🌙'}</button>
             {user?<button className="user-pill-btn" onClick={()=>window.location.href='account.html'}>👤 <span className="upn">{user.name.split(' ')[0]}</span></button>
