@@ -37,6 +37,14 @@
    *   paymentMethod: 'cod'|'upi',
    *   promoCode?: string,
    *   discount?: number,
+   *   latitude?: number,
+   *   longitude?: number,
+   *   distance_km?: number,
+   *   delivery_charge?: number,
+   *   delivery_status?: 'free'|'paid'|'unavailable'|'unknown',
+   *   maps_link?: string,
+   *   maps_nav_link?: string,
+   *   location_accuracy?: number,
    * }} opts
    * @returns {{ orderId: string, orderNumber: string } | null}
    */
@@ -46,7 +54,27 @@
     if (!cart?.length) { console.error('[RKOrders] createOrder: empty cart'); return null; }
 
     const orderNumber = _genOrderNumber();
-    const finalAmount = total - discount;
+
+    // ── Smart Delivery Radius: location fields (Step 4 of integration guide) ──
+    // If a GPS fix was captured (checkout-location.js / checkout-location-react.js
+    // sets these on the options object), persist it on the order. Otherwise fall
+    // back to safe defaults so guest/no-GPS orders still insert cleanly.
+    const locationFields = opts.latitude != null ? {
+      latitude          : opts.latitude,
+      longitude         : opts.longitude,
+      distance_km       : opts.distance_km ?? null,
+      delivery_charge   : opts.delivery_charge || 0,
+      delivery_status   : opts.delivery_status || 'unknown',
+      maps_link         : opts.maps_link || null,
+      maps_nav_link     : opts.maps_nav_link || null,
+      location_accuracy : opts.location_accuracy ?? null,
+    } : {
+      delivery_charge : 0,
+      delivery_status : 'unknown',
+    };
+
+    // Delivery charge must be added on top of cart total + any discount.
+    const finalAmount = total - discount + (locationFields.delivery_charge || 0);
 
     /* ── Insert order header ── */
     const { data: order, error: oErr } = await getDB()
@@ -67,6 +95,7 @@
         delivery_line2: address.line2 || '',
         delivery_city: address.city || 'Prayagraj',
         delivery_pincode: address.pincode || '',
+        ...locationFields,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
