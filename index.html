@@ -1660,7 +1660,19 @@ ReactDOM.render(React.createElement(App),document.getElementById('root'));
 <script src="/js/delivery-radius.js"></script>
 <script src="/js/maps-utils.js"></script>
 <script src="/js/checkout-location.js"></script>
-<script src="/js/checkout-location-react.js"></script>
+<!-- checkout-location-react.js intentionally NOT loaded here anymore: its
+     Option A post-render patch ran its own independent GPS fetch + address
+     auto-fill on the checkout page, which conflicted with the GPS
+     auto-trigger and address handling now built directly into CheckoutForm
+     below. Specifically, its _autoFillAddressFromLocation() would
+     force-click the ".addr-add-btn" ("+ Naya Address Add Karo") button
+     whenever #addr-line1 wasn't in the DOM (i.e. whenever the new-address
+     form was correctly closed because a saved address was selected) —
+     reopening the empty form even though an address was already chosen.
+     checkout-location.js (RKLocation/RKDelivery/RKCheckoutLocation core)
+     is still loaded above and still used by account-location-patch.js on
+     the Account → Addresses page. -->
+
 <script src="/pwa.js?v=1" defer></script>
 <link rel="stylesheet" href="/css/ananya-ai.css">
 <script src="/js/ananya-ai.js" defer></script>
