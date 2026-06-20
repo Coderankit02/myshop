@@ -80,17 +80,39 @@
           window._rkDeliveryInfo = null;
         },
       });
+
+      // NOTE: window.RKCheckoutLocation.init() (in checkout-location.js) now
+      // auto-fires the GPS fetch itself as soon as the button mounts, so no
+      // manual trigger is needed here — this keeps the delivery-status card
+      // showing automatically the instant the address card appears.
     });
 
     observer.observe(document.body, { childList: true, subtree: true });
 
     // Patch the place-order button click to validate delivery before proceeding.
+    // FIX: location is now MANDATORY — previously `if (!info) return;` let
+    // the order go through untouched whenever GPS hadn't resolved yet
+    // (denied, errored, or simply never triggered), skipping the delivery
+    // range check entirely.
     document.body.addEventListener('click', function (e) {
       const btn = e.target.closest('.place-order-btn');
       if (!btn) return;
 
       const info = window._rkDeliveryInfo;
-      if (!info) return; // No location — allow through (user may not have used GPS).
+
+      if (!info) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        window.RKCheckoutLocation.showToast(
+          '📍 Delivery confirm karne ke liye location zaroori hai. Kripya "Use Current Location" allow karein.',
+          4500
+        );
+        // Re-prompt for location if it hasn't been resolved yet.
+        const wrap = document.getElementById('rk-co-loc-btn-wrap');
+        const retryBtn = wrap && wrap.querySelector('.rk-loc-btn');
+        if (retryBtn && !retryBtn.disabled) retryBtn.click();
+        return;
+      }
 
       if (!info.available) {
         e.preventDefault();
@@ -214,7 +236,13 @@ function CheckoutForm({ cart, total: cartTotal, showToast, onSuccess, user }) {
         if (!active) return;
         setAddresses(addrs || []);
         const def = (addrs || []).find(a => a.is_default) || (addrs || [])[0];
-        if (def) setSelectedAddrId(def.id); else setShowNewForm(true);
+        // FIX: explicitly set showNewForm in BOTH branches. Previously the
+        // "address found" branch never touched showNewForm, so if it had
+        // been set true on a prior run (e.g. no-user branch, or an error),
+        // the new-address form stayed open even after a saved address card
+        // was loaded and selected — showing both at once.
+        if (def) { setSelectedAddrId(def.id); setShowNewForm(false); }
+        else { setShowNewForm(true); }
         setF(prev => ({ name: prev.name || profile?.name || '', phone: prev.phone || profile?.phone || '' }));
       } catch (_) { if (active) setShowNewForm(true); }
       finally { if (active) setLoadingAddrs(false); }
@@ -241,6 +269,21 @@ function CheckoutForm({ cart, total: cartTotal, showToast, onSuccess, user }) {
       showToast(err.message || 'Location fetch failed', 4000);
     }
   }
+
+  // ── FIX: auto-trigger GPS as soon as an address card is shown/selected,
+  // instead of waiting for the user to tap "Use Current Location" manually.
+  // Same idea as the auto-trigger already used on the Account → Addresses
+  // page (account-location-patch.js): if we already have a cached fix, use
+  // it immediately; otherwise kick off a fresh GPS prompt right away. Only
+  // fires once per mount/selection — locState guards against refiring while
+  // a request is already in flight or has already resolved.
+  React.useEffect(() => {
+    if (loadingAddrs) return;                  // wait until addresses are loaded
+    if (!selectedAddrId && !showNewForm) return; // nothing to validate yet
+    if (locState !== 'idle') return;            // already loading/succeeded/failed
+    handleUseLocation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadingAddrs, selectedAddrId, showNewForm]);
 
   // ── Save new address ──────────────────────────────────────────────
   async function saveNewAddress() {
@@ -285,13 +328,18 @@ function CheckoutForm({ cart, total: cartTotal, showToast, onSuccess, user }) {
     const selectedAddr = addresses.find(a => a.id === selectedAddrId) || null;
     if (!selectedAddr) { showToast('Delivery address chunein ya add karein!'); return; }
 
-    // ── Second-layer delivery validation ──────────────────────────
+    // ── Delivery range check — INFORMATIONAL ONLY, not a hard gate. ──
+    // GPS is optional: agar user permission deny kare ya location na de,
+    // order phir bhi manual address ke saath place ho jaata hai. Agar GPS
+    // resolve ho gaya aur out-of-range nikla, hum order block nahi karte —
+    // bas ek flag ke saath bhej dete hain taaki admin panel mein verify
+    // karke accept/reject kiya ja sake.
+    let deliveryFlag = null;
     if (deliveryInfo) {
       const validation = window.RKDelivery.validate(deliveryInfo.lat, deliveryInfo.lng);
       if (!validation.valid) {
-        setOrderError(validation.reason);
-        showToast('❌ ' + validation.reason, 5000);
-        return;
+        deliveryFlag = 'needs_admin_review'; // out of normal delivery range
+        showToast('📍 Out of service area — your order is confirmed after admin verification.', 4500);
       }
     }
 
@@ -313,9 +361,11 @@ function CheckoutForm({ cart, total: cartTotal, showToast, onSuccess, user }) {
       delivery_status : deliveryInfo.tier.id,
       maps_link       : deliveryInfo.mapsLink,
       maps_nav_link   : deliveryInfo.mapsNavLink,
+      admin_review_needed: deliveryFlag === 'needs_admin_review',
     } : {
       delivery_charge: 0,
       delivery_status: 'unknown',
+      admin_review_needed: false, // no GPS at all — admin can still check manually from the address
     };
 
     setPlacing(true);
@@ -537,23 +587,21 @@ function CheckoutForm({ cart, total: cartTotal, showToast, onSuccess, user }) {
       {orderError && <div className="order-error-banner" role="alert">⚠️ {orderError.replace(/^⚠️\s+/, '')}</div>}
 
       {isOutOfRange && (
-        <div className="order-error-banner" role="alert">
-          ❌ Sorry, aapka location hamari delivery area se bahar hai.
-          Order place karna possible nahi hai.
+        <div className="order-error-banner order-error-banner--info" role="status">
+          📍 Aapka location hamari normal delivery area (8 km) se bahar lag raha hai.
+          Aap order place kar sakte hain — humara admin location verify karke order
+          confirm ya cancel karega aur aapko inform karega.
         </div>
       )}
 
       <button
         className="place-order-btn"
-        disabled={placing || isOutOfRange}
-        style={isOutOfRange ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+        disabled={placing}
         onClick={handlePlaceOrder}
       >
         {placing
           ? '⏳ Order Place Ho Raha Hai...'
-          : isOutOfRange
-            ? '❌ Delivery Not Available in Your Area'
-            : pay === 'upi' ? '📲 Order Confirm Karein' : '🚚 Order Place Karo'} →
+          : pay === 'upi' ? '📲 Order Confirm Karein' : '🚚 Order Place Karo'} →
       </button>
     </>
   );
