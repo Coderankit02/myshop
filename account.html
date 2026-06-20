@@ -17,6 +17,18 @@
 <link rel="stylesheet" href="/pwa.css"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<!-- FIX: apply saved/preferred theme BEFORE paint so the Account page matches
+     whatever theme the user had set on the Home page (index.html), and so there's
+     no light->dark flash on load. Purely cosmetic, runs once. -->
+<script>
+(function(){
+  try{
+    var saved=localStorage.getItem('rk_theme');
+    var theme=(saved==='dark'||saved==='light')?saved:(window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
+    document.documentElement.setAttribute('data-theme',theme);
+  }catch(e){}
+})();
+</script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 :root{
@@ -45,6 +57,7 @@ a{text-decoration:none;color:inherit;}
   position:sticky;top:0;z-index:200;
   padding:0 16px;height:58px;
   display:flex;align-items:center;justify-content:space-between;
+  gap:10px;
 }
 .topnav-left{display:flex;align-items:center;gap:10px;}
 .back-btn{
@@ -57,6 +70,15 @@ a{text-decoration:none;color:inherit;}
 .topnav-title{font-size:.95rem;font-weight:800;color:var(--dark);letter-spacing:-.3px;}
 .logo-link{font-size:1.15rem;font-weight:900;color:var(--primary);}
 .logo-link span{color:var(--orange);}
+/* FIX: theme toggle button on Account page, styled to match index.html's toggle */
+.theme-toggle-btn{
+  width:38px;height:38px;border-radius:var(--radius);
+  background:var(--primary-light);color:var(--primary-dark);
+  border:none;display:flex;align-items:center;justify-content:center;
+  font-size:1.05rem;flex-shrink:0;margin-left:auto;
+  transition:background .2s,color .2s;
+}
+.theme-toggle-btn:hover{filter:brightness(0.95);}
 .tabs-bar{
   background:#fff;
   border-bottom:1px solid var(--border);
@@ -317,7 +339,9 @@ textarea.inp{resize:none;}
 .notif-msg{font-size:.71rem;color:var(--gray);margin-top:2px;line-height:1.45;}
 .notif-time{font-size:.63rem;color:var(--muted);margin-top:4px;}
 .unread-dot{width:8px;height:8px;background:var(--primary);border-radius:50%;margin-top:6px;flex-shrink:0;}
-.read-dot{width:8px;height:8px;border-radius:50%;margin-top:6px;flex-shrink:0;}
+/* FIX: .read-dot had no background defined, making the read indicator invisible.
+   Gave it a neutral muted color so read/unread states are visually distinct. */
+.read-dot{width:8px;height:8px;background:var(--border);border-radius:50%;margin-top:6px;flex-shrink:0;}
 .rewards-hero{
   background:linear-gradient(135deg,#1E1B4B,#312E81,#4F46E5);
   border-radius:var(--radius-lg);padding:20px;
@@ -526,6 +550,61 @@ textarea.inp{resize:none;}
 .section-label{font-size:.68rem;font-weight:700;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;margin-bottom:10px;}
 .info-box{background:#F0FDF9;border:1.5px solid #A7F3D0;border-radius:var(--radius);padding:12px 14px;font-size:.74rem;color:#065F46;line-height:1.6;}
 .warn-box{background:#FFFBEB;border:1.5px solid #FDE68A;border-radius:var(--radius);padding:12px 14px;font-size:.74rem;color:#92400E;line-height:1.6;}
+
+/* ═══════════════════════════════════════════════════════════
+   FIX: DARK MODE SUPPORT
+   account.html previously had no dark theme at all, so switching
+   theme on index.html and visiting Account always showed light
+   mode — inconsistent with the rest of the app. This block mirrors
+   index.html's dark palette and overrides the surfaces below.
+   Pure CSS — no backend/data logic touched.
+═══════════════════════════════════════════════════════════ */
+html[data-theme="dark"]{
+  --primary:#2ECC82;--primary-dark:#16A34A;--primary-light:#163828;
+  --orange:#FF8A5C;--yellow:#FFCB47;--red:#FF6B6B;--blue:#5B9DF6;--purple:#A78BFA;
+  --dark:#F1F5F9;--text:#CBD5E1;--gray:#94A3B8;--muted:#64748B;--light:#1A2332;
+  --border:#2D3B4E;--white:#151B26;
+}
+html[data-theme="dark"] body{background:#0F1521;}
+html[data-theme="dark"] .topnav{background:rgba(21,27,38,0.95);border-bottom-color:rgba(45,59,78,0.8);}
+html[data-theme="dark"] .tabs-bar{background:#151B26;border-bottom-color:var(--border);}
+html[data-theme="dark"] .back-btn{background:var(--light);border-color:var(--border);}
+html[data-theme="dark"] .card{background:#151B26;border-color:rgba(45,59,78,0.6);}
+html[data-theme="dark"] .card-head{border-bottom-color:#1A2332;}
+html[data-theme="dark"] .order-row:hover,
+html[data-theme="dark"] .settings-row:hover,
+html[data-theme="dark"] .notif-row:hover{background:#1A2332;}
+html[data-theme="dark"] .notif-row.unread{background:#11241C;}
+html[data-theme="dark"] .stat-tile{background:#151B26;border-color:var(--border);}
+html[data-theme="dark"] .order-row,
+html[data-theme="dark"] .addr-row,
+html[data-theme="dark"] .wish-row,
+html[data-theme="dark"] .notif-row,
+html[data-theme="dark"] .settings-row,
+html[data-theme="dark"] .payment-row,
+html[data-theme="dark"] .how-row,
+html[data-theme="dark"] .oi-row{border-bottom-color:#1A2332;}
+html[data-theme="dark"] .order-icon-box,
+html[data-theme="dark"] .wish-emoji-box{background:var(--light);border-color:var(--border);}
+html[data-theme="dark"] .inp{background:#1A2332;color:#F1F5F9;}
+html[data-theme="dark"] .inp:focus{background:#151B26;}
+html[data-theme="dark"] .inp:read-only{background:#11161F;color:var(--gray);}
+html[data-theme="dark"] .modal-box{background:#151B26;}
+html[data-theme="dark"] .modal-head{background:#151B26;border-bottom-color:var(--border);}
+html[data-theme="dark"] .modal-close{background:#1A2332;}
+html[data-theme="dark"] .btn-secondary{background:var(--light);border-color:var(--border);color:var(--gray);}
+html[data-theme="dark"] .btn-danger{background:#2A1414;border-color:#5A1F1F;}
+html[data-theme="dark"] .info-box{background:#11241C;border-color:#1F4A36;color:#A7F3D0;}
+html[data-theme="dark"] .warn-box{background:#2A2110;border-color:#5A4A1F;color:#FDE68A;}
+html[data-theme="dark"] .bottom-nav{background:#151B26;border-top-color:var(--border);}
+html[data-theme="dark"] .qa-tile{background:var(--light);border-color:var(--border);}
+html[data-theme="dark"] .toggle{background:#3A4658;}
+html[data-theme="dark"] .skeleton{background:linear-gradient(90deg,#1A2332 25%,#243040 50%,#1A2332 75%);background-size:200% 100%;}
+html[data-theme="dark"] .theme-toggle-btn{background:var(--primary-light);color:#2ECC82;}
+html[data-theme="dark"] .tl-dot.waiting{background:var(--light);color:var(--muted);}
+html[data-theme="dark"] .pdp-thumb,
+html[data-theme="dark"] .addr-btn-edit{background:#16243A;color:#7CB4FF;}
+html[data-theme="dark"] .addr-btn-del{background:#2A1414;}
 </style>
 </head>
 <body>
@@ -536,6 +615,8 @@ textarea.inp{resize:none;}
     <button class="back-btn" onclick="window.location.href='index.html'" title="Back">←</button>
     <span class="topnav-title">My Account</span>
   </div>
+  <!-- FIX: theme toggle so Account page can switch + stay in sync with index.html -->
+  <button class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleAccountTheme()" title="Theme badlein">🌙</button>
   <a href="index.html" class="logo-link">rinku<span>.</span></a>
 </div>
 
@@ -650,6 +731,24 @@ function animCount(el, target, dur = 900) {
   const tick = () => { v += step; if (v >= target) { el.textContent = Math.round(target); return; } el.textContent = Math.round(v); requestAnimationFrame(tick); };
   tick();
 }
+
+/* ═══════════════════════════════════════════
+   THEME (FIX: dark/light mode sync with index.html)
+═══════════════════════════════════════════ */
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  try { localStorage.setItem('rk_theme', t); } catch (e) {}
+  const btn = $('themeToggleBtn');
+  if (btn) btn.textContent = t === 'dark' ? '☀️' : '🌙';
+  const m = document.querySelector('meta[name="theme-color"]');
+  if (m) m.setAttribute('content', t === 'dark' ? '#0F1521' : '#15803D');
+}
+function toggleAccountTheme() {
+  const cur = document.documentElement.getAttribute('data-theme') || 'light';
+  applyTheme(cur === 'dark' ? 'light' : 'dark');
+}
+// Sync the toggle button icon to whatever theme the pre-paint script already applied
+applyTheme(document.documentElement.getAttribute('data-theme') || 'light');
 
 /* ═══════════════════════════════════════════
    DATA LOADERS
@@ -1396,6 +1495,20 @@ function renderSettings(wrap) {
       <div class="payment-icon" style="background:#EFF6FF">📱</div>
       <div class="payment-info"><div class="payment-name">UPI / QR Code</div><div class="payment-sub">rinkukirana@upi</div></div>
       <span class="active-badge">Active</span>
+    </div>
+  </div>
+
+  <!-- THEME -->
+  <div class="card">
+    <div class="card-head"><div class="card-title"><span class="card-title-icon">🌗</span> Appearance</div></div>
+    <div class="divider"></div>
+    <div class="card-body">
+      <div class="toggle-wrap" style="margin-bottom:0;">
+        <div class="toggle ${document.documentElement.getAttribute('data-theme')==='dark'?'on':''}" id="settingsThemeToggle" onclick="toggleAccountTheme();this.classList.toggle('on')">
+          <div class="toggle-dot"></div>
+        </div>
+        <span class="toggle-label">Dark Mode</span>
+      </div>
     </div>
   </div>
 
