@@ -65,7 +65,12 @@
       .select()
       .single();
 
-    if (error) { console.error('[RKProfile] _createProfile:', error.message); return newProfile; }
+    if (error) {
+      console.error('[RKProfile] _createProfile:', error.message);
+      // Don't pretend this saved — return null so callers know to fall back
+      // gracefully instead of treating an unsaved object as persisted truth.
+      return null;
+    }
     return data;
   }
 
@@ -116,14 +121,6 @@
   async function saveAddress(userId, addr) {
     if (!userId) return null;
 
-    // If marking as default, unset others first
-    if (addr.is_default) {
-      await getDB()
-        .from('addresses')
-        .update({ is_default: false })
-        .eq('user_id', userId);
-    }
-
     const payload = {
       user_id: userId,
       label: addr.label || 'Home',
@@ -157,18 +154,58 @@
       if (error) { console.error('[RKProfile] saveAddress (insert):', error.message); return null; }
       result = data;
     }
+
+    // Only unset other addresses' default flag AFTER the new/edited one is
+    // confirmed saved — avoids ending up with zero default addresses if this
+    // step fails partway through.
+    if (addr.is_default && result) {
+      await getDB()
+        .from('addresses')
+        .update({ is_default: false })
+        .eq('user_id', userId)
+        .neq('id', result.id);
+    }
+
     return result;
   }
 
-  /** Delete an address */
+  /** Delete an address. If the deleted address was the default, auto-promote
+   *  another saved address (most recently created) to default so the
+   *  account never ends up with zero default addresses. */
   async function deleteAddress(userId, addressId) {
     if (!userId || !addressId) return;
+
+    const { data: deletedRow } = await getDB()
+      .from('addresses')
+      .select('is_default')
+      .eq('id', addressId)
+      .eq('user_id', userId)
+      .single();
+
     const { error } = await getDB()
       .from('addresses')
       .delete()
       .eq('id', addressId)
       .eq('user_id', userId);
-    if (error) console.error('[RKProfile] deleteAddress:', error.message);
+
+    if (error) { console.error('[RKProfile] deleteAddress:', error.message); return; }
+
+    if (deletedRow && deletedRow.is_default) {
+      const { data: remaining } = await getDB()
+        .from('addresses')
+        .select('id')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (remaining && remaining.length) {
+        await getDB()
+          .from('addresses')
+          .update({ is_default: true, updated_at: new Date().toISOString() })
+          .eq('id', remaining[0].id)
+          .eq('user_id', userId);
+      }
+    }
   }
 
   /** Mark an address as default */
