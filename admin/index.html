@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Admin Dashboard | Rinku Kirana Store</title>
+<meta name="theme-color" content="#15803D"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+:root{
+  --primary:#1BA672;--primary-dark:#158A5E;--primary-light:#E8F8F1;
+  --yellow:#FFB800;--red:#E63946;--blue:#3B82F6;--purple:#8B5CF6;
+  --dark:#1A1A2E;--text:#2D3748;--gray:#718096;
+  --border:#E2E8F0;
+  --page-bg:#F0F4F2;
+  --glass-bg:rgba(255,255,255,0.7);--glass-border:rgba(255,255,255,0.5);
+  --card-bg:#fff;--sidebar-bg:#11181F;--sidebar-text:#A3B1C2;
+}
+html[data-theme="dark"]{
+  --primary:#2ECC82;--primary-dark:#16A34A;--primary-light:#163828;
+  --yellow:#FFCB47;--red:#FF6B6B;--blue:#60A5FA;--purple:#A78BFA;
+  --dark:#F1F5F9;--text:#CBD5E1;--gray:#94A3B8;
+  --border:#2D3B4E;
+  --page-bg:#0B1117;
+  --glass-bg:rgba(21,27,38,0.7);--glass-border:rgba(255,255,255,0.08);
+  --card-bg:#151B26;--sidebar-bg:#080C10;--sidebar-text:#7C8CA3;
+}
+body{font-family:'Inter',sans-serif;background:var(--page-bg);color:var(--text);min-height:100vh;transition:background-color .3s,color .3s;}
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+button{cursor:pointer;border:none;font-family:'Inter',sans-serif;background:none;color:inherit;}
+input,select,textarea{outline:none;border:none;font-family:'Inter',sans-serif;font-size:14px;background:transparent;color:var(--text);}
+
+/* ───────── Layout ───────── */
+.app{display:flex;min-height:100vh;}
+.sidebar{width:248px;background:var(--sidebar-bg);color:var(--sidebar-text);flex-shrink:0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;transition:width .2s;z-index:50;}
+.sidebar.collapsed{width:74px;}
+.sb-logo{display:flex;align-items:center;gap:10px;padding:20px 18px;font-size:1.2rem;font-weight:900;color:#fff;white-space:nowrap;overflow:hidden;border-bottom:1px solid rgba(255,255,255,0.06);}
+.sb-logo span{color:var(--primary);}
+.sb-nav{flex:1;overflow-y:auto;padding:10px 10px;display:flex;flex-direction:column;gap:2px;}
+.sb-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;font-size:0.86rem;font-weight:600;white-space:nowrap;overflow:hidden;transition:background .15s,color .15s;}
+.sb-item:hover{background:rgba(255,255,255,0.05);color:#fff;}
+.sb-item.on{background:var(--primary);color:#fff;}
+.sb-icon{font-size:1.05rem;flex-shrink:0;width:20px;text-align:center;}
+.sb-toggle{padding:14px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;color:var(--sidebar-text);}
+
+.main{flex:1;min-width:0;display:flex;flex-direction:column;}
+.topbar{position:sticky;top:0;z-index:40;background:var(--card-bg);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;gap:16px;}
+.tb-title{font-size:1.15rem;font-weight:800;color:var(--dark);flex-shrink:0;}
+.tb-search{flex:1;max-width:380px;display:flex;align-items:center;gap:8px;background:var(--page-bg);border:1px solid var(--border);border-radius:10px;padding:9px 14px;}
+.tb-search input{flex:1;font-size:0.86rem;}
+.tb-right{display:flex;align-items:center;gap:10px;margin-left:auto;}
+.icon-btn{width:38px;height:38px;border-radius:10px;background:var(--page-bg);display:flex;align-items:center;justify-content:center;font-size:1rem;position:relative;}
+.icon-btn .dot{position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--red);}
+#hamburger{display:none;}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:45;}
+.admin-pill{display:flex;align-items:center;gap:8px;background:var(--primary-light);color:var(--primary-dark);padding:7px 12px;border-radius:10px;font-weight:700;font-size:0.82rem;}
+.content{padding:22px 24px 60px;}
+
+/* ───────── Cards / Grid ───────── */
+.section-title{font-size:1.3rem;font-weight:800;color:var(--dark);margin-bottom:4px;}
+.section-sub{font-size:0.86rem;color:var(--gray);margin-bottom:20px;}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:22px;}
+.stat-card{background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:8px;}
+.stat-top{display:flex;align-items:center;justify-content:space-between;}
+.stat-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;}
+.stat-val{font-size:1.5rem;font-weight:900;color:var(--dark);}
+.stat-label{font-size:0.78rem;color:var(--gray);font-weight:600;}
+.stat-trend{font-size:0.74rem;font-weight:700;padding:2px 8px;border-radius:20px;width:fit-content;}
+.trend-up{background:var(--primary-light);color:var(--primary-dark);}
+.trend-down{background:#FEE2E2;color:var(--red);}
+
+.panel-row{display:grid;grid-template-columns:1.6fr 1fr;gap:16px;margin-bottom:22px;}
+@media(max-width:900px){.panel-row{grid-template-columns:1fr;}}
+.panel{background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:20px;}
+.panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.panel-head h3{font-size:1rem;font-weight:800;color:var(--dark);}
+.tab-row{display:flex;gap:6px;}
+.tab-btn{font-size:0.76rem;font-weight:700;padding:5px 10px;border-radius:8px;color:var(--gray);}
+.tab-btn.on{background:var(--primary);color:#fff;}
+
+.bars{display:flex;align-items:flex-end;gap:10px;height:160px;}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;}
+.bar{width:100%;border-radius:6px 6px 0 0;background:linear-gradient(180deg,var(--primary),var(--primary-dark));}
+.bar-label{font-size:0.68rem;color:var(--gray);font-weight:600;}
+
+.list-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);}
+.list-row:last-child{border-bottom:none;}
+.list-avatar{width:36px;height:36px;border-radius:50%;background:var(--primary-light);color:var(--primary-dark);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.82rem;flex-shrink:0;}
+.list-main{flex:1;min-width:0;}
+.list-title{font-size:0.84rem;font-weight:700;color:var(--dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.list-sub{font-size:0.74rem;color:var(--gray);}
+.list-val{font-size:0.84rem;font-weight:800;color:var(--dark);}
+
+/* Table */
+.table-wrap{background:var(--card-bg);border:1px solid var(--border);border-radius:16px;overflow:hidden;}
+.table-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--border);gap:12px;flex-wrap:wrap;}
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;}
+.filter-chip{font-size:0.78rem;font-weight:700;padding:6px 12px;border-radius:20px;background:var(--page-bg);color:var(--gray);border:1px solid var(--border);}
+.filter-chip.on{background:var(--primary);color:#fff;border-color:var(--primary);}
+table{width:100%;border-collapse:collapse;}
+th{text-align:left;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.4px;color:var(--gray);padding:12px 20px;border-bottom:1px solid var(--border);white-space:nowrap;}
+td{padding:14px 20px;font-size:0.84rem;color:var(--text);border-bottom:1px solid var(--border);white-space:nowrap;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--page-bg);}
+.badge{font-size:0.72rem;font-weight:700;padding:4px 10px;border-radius:20px;display:inline-block;}
+.b-pending{background:#FEF3C7;color:#92400E;}
+.b-confirmed{background:#DBEAFE;color:#1E40AF;}
+.b-delivered{background:var(--primary-light);color:var(--primary-dark);}
+.b-cancelled{background:#FEE2E2;color:#991B1B;}
+.b-packed{background:#EDE9FE;color:#5B21B6;}
+.row-actions{display:flex;gap:6px;}
+.act-btn{font-size:0.74rem;font-weight:700;padding:6px 10px;border-radius:8px;background:var(--page-bg);}
+.act-btn.primary{background:var(--primary);color:#fff;}
+.act-btn.danger{background:#FEE2E2;color:var(--red);}
+
+.placeholder-card{background:var(--card-bg);border:1px dashed var(--border);border-radius:16px;padding:40px;text-align:center;color:var(--gray);}
+.placeholder-card .pc-icon{font-size:2.2rem;margin-bottom:10px;}
+.placeholder-card h4{color:var(--dark);font-size:1rem;margin-bottom:6px;}
+
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;}
+.f-group label{display:block;font-size:0.78rem;font-weight:700;color:var(--gray);margin-bottom:6px;}
+.f-group input,.f-group select,.f-group textarea{width:100%;background:var(--page-bg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:0.84rem;}
+.btn-main{background:var(--primary);color:#fff;font-weight:700;font-size:0.84rem;padding:10px 18px;border-radius:10px;}
+.btn-ghost{background:var(--page-bg);color:var(--text);font-weight:700;font-size:0.84rem;padding:10px 18px;border-radius:10px;border:1px solid var(--border);}
+
+.skel{background:linear-gradient(90deg,var(--border) 25%,var(--page-bg) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:8px;}
+@keyframes shimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--dark);color:#fff;padding:12px 20px;border-radius:12px;font-size:0.84rem;font-weight:600;z-index:999;box-shadow:0 8px 24px rgba(0,0,0,0.25);}
+
+/* ───────── Login Screen ───────── */
+#login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--page-bg);}
+.login-card{width:100%;max-width:380px;background:var(--card-bg);border:1px solid var(--border);border-radius:24px;padding:36px 28px;box-shadow:0 20px 60px rgba(0,0,0,0.12);animation:floatIn .5s cubic-bezier(.25,.46,.45,.94);}
+@keyframes floatIn{from{opacity:0;transform:translateY(16px) scale(.97);}to{opacity:1;transform:translateY(0) scale(1);}}
+.login-logo{font-size:2.2rem;text-align:center;margin-bottom:10px;}
+.login-title{font-size:1.25rem;font-weight:800;text-align:center;color:var(--dark);}
+.login-sub{font-size:0.8rem;color:var(--gray);text-align:center;margin-top:4px;margin-bottom:24px;}
+.login-error{background:#FEE2E2;color:#991B1B;font-size:0.8rem;font-weight:600;padding:10px 14px;border-radius:10px;margin-bottom:16px;display:none;}
+.login-error.show{display:block;}
+.field-group{margin-bottom:16px;}
+.field-label{display:block;font-size:0.78rem;font-weight:700;color:var(--gray);margin-bottom:6px;}
+.field-input{width:100%;background:var(--page-bg);border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;font-size:0.9rem;color:var(--text);}
+.field-input:focus{border-color:var(--primary);}
+.login-btn{width:100%;background:var(--primary);color:#fff;font-weight:800;font-size:0.92rem;padding:13px;border-radius:12px;margin-top:6px;transition:transform .1s;}
+.login-btn:active{transform:scale(.98);}
+.login-btn:disabled{opacity:0.6;cursor:not-allowed;}
+.dash-loading{min-height:100vh;display:flex;align-items:center;justify-content:center;color:var(--gray);font-weight:600;}
+
+@media(max-width:768px){
+  .sidebar{position:fixed;left:-260px;height:100vh;}
+  .sidebar.mobile-open{left:0;}
+  .stat-grid{grid-template-columns:repeat(2,1fr);}
+  .tb-title{display:none;}
+  #hamburger{display:flex!important;}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useMemo}=React;
+
+/* ═════════ SUPABASE AUTH (same project/config as admin.html) ═════════ */
+const SUPABASE_URL = 'https://pffaflasgwhydkmxwkky.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable__tFDYhkM3blZ0pIVT0YxLA_YvkKq79L';
+var supabase = window.rkAdmin || window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+window.rkAdmin = supabase;
+
+/* ═════════ Login Screen — same 3-check pattern as admin.html:
+   1) password verify (Supabase Auth)  2) role==='admin'  3) is_active===true ═════════ */
+function LoginScreen({onSuccess}){
+  const [email,setEmail]=useState('');
+  const [password,setPassword]=useState('');
+  const [error,setError]=useState('');
+  const [loading,setLoading]=useState(false);
+
+  async function handleLogin(e){
+    e.preventDefault();
+    setError('');
+    if(!email||!password){setError('Email aur password dono zaroori hai');return;}
+    setLoading(true);
+
+    const {data,error:authErr}=await supabase.auth.signInWithPassword({email,password});
+    if(authErr){
+      setError('❌ Email ya password galat hai');
+      setLoading(false);
+      return;
+    }
+    if(data.user.app_metadata?.role!=='admin'){
+      await supabase.auth.signOut();
+      setError('⛔ Ye account admin nahi hai');
+      setLoading(false);
+      return;
+    }
+    if(!data.user.app_metadata?.is_active){
+      await supabase.auth.signOut();
+      setError('⛔ Ye admin account deactivate hai');
+      setLoading(false);
+      return;
+    }
+    setLoading(false);
+    onSuccess(data.user);
+  }
+
+  return(
+    <div id="login-screen">
+      <form className="login-card" onSubmit={handleLogin}>
+        <div className="login-logo">🔐</div>
+        <div className="login-title">Admin Dashboard</div>
+        <div className="login-sub">Rinku Kirana — Unified Admin Panel</div>
+        {error&&<div className="login-error show">{error}</div>}
+        <div className="field-group">
+          <label className="field-label">Email</label>
+          <input className="field-input" type="email" placeholder="admin@example.com" autoComplete="username"
+            value={email} onChange={e=>setEmail(e.target.value)}/>
+        </div>
+        <div className="field-group">
+          <label className="field-label">Password</label>
+          <input className="field-input" type="password" placeholder="••••••••" autoComplete="current-password"
+            value={password} onChange={e=>setPassword(e.target.value)}/>
+        </div>
+        <button className="login-btn" type="submit" disabled={loading}>{loading?'⏳ Checking...':'🔑 Login'}</button>
+      </form>
+    </div>
+  );
+}
+
+/* ═════════ MOCK DATA (replace with Supabase queries later) ═════════ */
+const NAV=[
+  {id:'dashboard',icon:'📊',label:'Dashboard'},
+  {id:'orders',icon:'🧾',label:'Orders'},
+  {id:'products',icon:'🛒',label:'Products'},
+  {id:'categories',icon:'🗂️',label:'Categories'},
+  {id:'customers',icon:'👥',label:'Customers'},
+  {id:'inventory',icon:'📦',label:'Inventory'},
+  {id:'payments',icon:'💳',label:'Payments'},
+  {id:'delivery',icon:'🚴',label:'Delivery'},
+  {id:'support',icon:'🎧',label:'Support'},
+  {id:'ai',icon:'🤖',label:'Ananya AI'},
+  {id:'coupons',icon:'🏷️',label:'Coupons & Offers'},
+  {id:'notifications',icon:'🔔',label:'Notifications'},
+  {id:'reports',icon:'📈',label:'Reports'},
+  {id:'settings',icon:'⚙️',label:'Settings'},
+];
+
+const ORDERS=[
+  {id:'#RK1042',cust:'Anjali Sharma',items:5,total:842,status:'Pending',payment:'Pending Verification',date:'21 Jun, 10:42 AM'},
+  {id:'#RK1041',cust:'Vikram Singh',items:2,total:215,status:'Confirmed',payment:'Verified',date:'21 Jun, 10:10 AM'},
+  {id:'#RK1040',cust:'Pooja Mehta',items:8,total:1340,status:'Out For Delivery',payment:'Verified',date:'21 Jun, 9:48 AM'},
+  {id:'#RK1039',cust:'Rahul Verma',items:3,total:410,status:'Delivered',payment:'Verified',date:'21 Jun, 9:02 AM'},
+  {id:'#RK1038',cust:'Sneha Gupta',items:1,total:60,status:'Cancelled',payment:'Refunded',date:'20 Jun, 8:30 PM'},
+  {id:'#RK1037',cust:'Karan Joshi',items:6,total:990,status:'Packed',payment:'Verified',date:'20 Jun, 7:55 PM'},
+];
+
+const PRODUCTS=[
+  {name:'Amul Toned Milk 1L',cat:'Dairy',price:62,stock:120,status:'Active'},
+  {name:'Tata Salt 1kg',cat:'Grocery',price:25,stock:8,status:'Low Stock'},
+  {name:'Britannia Bread',cat:'Bakery',price:45,stock:0,status:'Out of Stock'},
+  {name:'Fortune Sunflower Oil 1L',cat:'Grocery',price:148,stock:64,status:'Active'},
+  {name:'Maggi Noodles 2-min',cat:'Snacks',price:14,stock:300,status:'Active'},
+];
+
+const CUSTOMERS=[
+  {name:'Anjali Sharma',phone:'98765 43210',orders:14,spend:8420,joined:'Mar 2025'},
+  {name:'Vikram Singh',phone:'91234 56780',orders:6,spend:2310,joined:'Jan 2026'},
+  {name:'Pooja Mehta',phone:'99887 76655',orders:22,spend:15600,joined:'Aug 2024'},
+];
+
+const TICKETS=[
+  {id:'#T204',cust:'Rahul Verma',issue:'Order delayed by 2 hours',priority:'High',status:'Open'},
+  {id:'#T203',cust:'Sneha Gupta',issue:'Refund not received',priority:'High',status:'In Progress'},
+  {id:'#T202',cust:'Karan Joshi',issue:'Wrong item delivered',priority:'Medium',status:'Resolved'},
+];
+
+const WEEK_BARS=[40,65,52,80,46,90,70];
+const WEEK_LABELS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+const STATUS_BADGE={
+  Pending:'b-pending',Confirmed:'b-confirmed',Delivered:'b-delivered',
+  Cancelled:'b-cancelled',Packed:'b-packed','Out For Delivery':'b-confirmed'
+};
+
+/* ═════════ Small reusable bits ═════════ */
+function StatCard({icon,color,label,val,trend,up}){
+  return(
+    <div className="stat-card">
+      <div className="stat-top">
+        <div className="stat-icon" style={{background:color+'22',color:color}}>{icon}</div>
+        {trend&&<span className={`stat-trend ${up?'trend-up':'trend-down'}`}>{up?'▲':'▼'} {trend}</span>}
+      </div>
+      <div className="stat-val">{val}</div>
+      <div className="stat-label">{label}</div>
+    </div>
+  );
+}
+
+function Skel({w,h}){return <div className="skel" style={{width:w||'100%',height:h||14}}/>;}
+
+function PlaceholderCard({icon,title,sub}){
+  return(
+    <div className="placeholder-card">
+      <div className="pc-icon">{icon}</div>
+      <h4>{title}</h4>
+      <p>{sub}</p>
+    </div>
+  );
+}
+
+function Topbar({title,onMenu,onSearch,theme,toggleTheme,notifCount,onLogout,userEmail}){
+  return(
+    <div className="topbar">
+      <button className="icon-btn" onClick={onMenu} id="hamburger">☰</button>
+      <div className="tb-title">{title}</div>
+      <div className="tb-search"><span>🔍</span><input placeholder="Search orders, products, customers..." onChange={onSearch}/></div>
+      <div className="tb-right">
+        <button className="icon-btn" onClick={toggleTheme}>{theme==='dark'?'☀️':'🌙'}</button>
+        <button className="icon-btn">🔔{notifCount>0&&<span className="dot"/>}</button>
+        <div className="admin-pill" onClick={onLogout} style={{cursor:'pointer'}} title={userEmail}>👤 Admin · 🚪 Logout</div>
+      </div>
+    </div>
+  );
+}
+
+/* ═════════ Section: Dashboard Overview ═════════ */
+function DashboardOverview(){
+  const [loading,setLoading]=useState(true);
+  useEffect(()=>{const t=setTimeout(()=>setLoading(false),500);return()=>clearTimeout(t);},[]);
+  return(
+    <div>
+      <div className="section-title">Dashboard Overview</div>
+      <div className="section-sub">Aaj ka business snapshot — 21 June 2026</div>
+
+      <div className="stat-grid">
+        {loading?Array.from({length:8}).map((_,i)=><div className="stat-card" key={i}><Skel h={70}/></div>):<>
+        <StatCard icon="🧾" color="#1BA672" label="Today's Orders" val="38" trend="12%" up/>
+        <StatCard icon="💰" color="#FFB800" label="Today's Revenue" val="₹18,420" trend="8%" up/>
+        <StatCard icon="📅" color="#3B82F6" label="Weekly Revenue" val="₹1,12,640" trend="5%" up/>
+        <StatCard icon="📆" color="#8B5CF6" label="Monthly Revenue" val="₹4,82,300" trend="2%" up/>
+        <StatCard icon="⏳" color="#FFB800" label="Pending Orders" val="6"/>
+        <StatCard icon="✅" color="#1BA672" label="Delivered Orders" val="29"/>
+        <StatCard icon="❌" color="#E63946" label="Cancelled Orders" val="1" trend="3%" />
+        <StatCard icon="👥" color="#3B82F6" label="Total Customers" val="1,284" trend="4%" up/>
+        </>}
+      </div>
+
+      <div className="panel-row">
+        <div className="panel">
+          <div className="panel-head"><h3>Revenue — Last 7 Days</h3>
+            <div className="tab-row"><span className="tab-btn on">Week</span><span className="tab-btn">Month</span></div>
+          </div>
+          <div className="bars">
+            {WEEK_BARS.map((v,i)=>(
+              <div className="bar-col" key={i}>
+                <div className="bar" style={{height:v+'%'}}/>
+                <div className="bar-label">{WEEK_LABELS[i]}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="panel">
+          <div className="panel-head"><h3>Top Selling Products</h3></div>
+          {PRODUCTS.slice(0,4).map((p,i)=>(
+            <div className="list-row" key={i}>
+              <div className="list-avatar">{p.name[0]}</div>
+              <div className="list-main"><div className="list-title">{p.name}</div><div className="list-sub">{p.cat}</div></div>
+              <div className="list-val">₹{p.price}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="panel-row">
+        <div className="panel">
+          <div className="panel-head"><h3>Recent Orders</h3></div>
+          {ORDERS.slice(0,5).map((o,i)=>(
+            <div className="list-row" key={i}>
+              <div className="list-avatar">{o.cust[0]}</div>
+              <div className="list-main"><div className="list-title">{o.id} · {o.cust}</div><div className="list-sub">{o.date}</div></div>
+              <span className={`badge ${STATUS_BADGE[o.status]}`}>{o.status}</span>
+            </div>
+          ))}
+        </div>
+        <div className="panel">
+          <div className="panel-head"><h3>Top Categories</h3></div>
+          {['Dairy','Grocery','Snacks','Bakery'].map((c,i)=>(
+            <div className="list-row" key={i}>
+              <div className="list-main"><div className="list-title">{c}</div></div>
+              <div className="list-val">{[42,35,18,12][i]}%</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═════════ Section: Orders ═════════ */
+function OrdersSection(){
+  const [filter,setFilter]=useState('All');
+  const statuses=['All','Pending','Confirmed','Packed','Out For Delivery','Delivered','Cancelled'];
+  const filtered=filter==='All'?ORDERS:ORDERS.filter(o=>o.status===filter);
+  return(
+    <div>
+      <div className="section-title">Orders Management</div>
+      <div className="section-sub">Saare orders ek jagah — search, filter aur action lein</div>
+      <div className="table-wrap">
+        <div className="table-head">
+          <div className="filter-row">
+            {statuses.map(s=>(
+              <span key={s} className={`filter-chip ${filter===s?'on':''}`} onClick={()=>setFilter(s)}>{s}</span>
+            ))}
+          </div>
+          <button className="btn-main">⬇ Export CSV</button>
+        </div>
+        <div style={{overflowX:'auto'}}>
+        <table>
+          <thead><tr><th>Order ID</th><th>Customer</th><th>Items</th><th>Total</th><th>Payment</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
+          <tbody>
+            {filtered.map((o,i)=>(
+              <tr key={i}>
+                <td style={{fontWeight:700}}>{o.id}</td>
+                <td>{o.cust}</td>
+                <td>{o.items}</td>
+                <td>₹{o.total}</td>
+                <td>{o.payment}</td>
+                <td><span className={`badge ${STATUS_BADGE[o.status]}`}>{o.status}</span></td>
+                <td>{o.date}</td>
+                <td><div className="row-actions">
+                  <button className="act-btn primary">View</button>
+                  <button className="act-btn">Update</button>
+                </div></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═════════ Section: Products ═════════ */
+function ProductsSection(){
+  return(
+    <div>
+      <div className="section-title">Products Management</div>
+      <div className="section-sub">Inventory me products add/edit karein</div>
+      <div className="table-wrap">
+        <div className="table-head">
+          <div className="filter-row">
+            <span className="filter-chip on">All</span><span className="filter-chip">Featured</span>
+            <span className="filter-chip">Trending</span><span className="filter-chip">Low Stock</span>
+          </div>
+          <button className="btn-main">+ Add Product</button>
+        </div>
+        <div style={{overflowX:'auto'}}>
+        <table>
+          <thead><tr><th>Product</th><th>Category</th><th>Price</th><th>Stock</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody>
+            {PRODUCTS.map((p,i)=>(
+              <tr key={i}>
+                <td style={{fontWeight:700}}>{p.name}</td>
+                <td>{p.cat}</td>
+                <td>₹{p.price}</td>
+                <td>{p.stock}</td>
+                <td><span className={`badge ${p.status==='Active'?'b-delivered':p.status==='Low Stock'?'b-pending':'b-cancelled'}`}>{p.status}</span></td>
+                <td><div className="row-actions">
+                  <button className="act-btn">Edit</button>
+                  <button className="act-btn danger">Delete</button>
+                </div></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═════════ Section: Categories ═════════ */
+function CategoriesSection(){
+  const cats=['Dairy','Grocery','Snacks','Bakery','Fruits & Veg','Personal Care'];
+  return(
+    <div>
+      <div className="section-title">Categories Management</div>
+      <div className="section-sub">Categories add, reorder ya edit karein</div>
+      <div className="stat-grid">
+        {cats.map((c,i)=>(
+          <div className="stat-card" key={i}>
+            <div className="stat-top"><div className="stat-icon" style={{background:'var(--primary-light)',color:'var(--primary-dark)'}}>🗂️</div>
+              <button className="act-btn">Edit</button></div>
+            <div className="stat-val" style={{fontSize:'1rem'}}>{c}</div>
+            <div className="stat-label">{[24,40,18,9,30,15][i]} products</div>
+          </div>
+        ))}
+        <div className="stat-card" style={{alignItems:'center',justifyContent:'center',border:'1.5px dashed var(--border)'}}>
+          <button className="btn-ghost">+ Add Category</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═════════ Section: Customers ═════════ */
+function CustomersSection(){
+  return(
+    <div>
+      <div className="section-title">Customers Management</div>
+      <div className="section-sub">Customer profiles aur unki order history dekhein</div>
+      <div className="table-wrap">
+        <div className="table-head"><div className="filter-row"><span className="filter-chip on">All</span><span className="filter-chip">Active</span><span className="filter-chip">Blocked</span></div></div>
+        <div style={{overflowX:'auto'}}>
+        <table>
+          <thead><tr><th>Name</th><th>Phone</th><th>Orders</th><th>Total Spend</th><th>Joined</th><th>Actions</th></tr></thead>
+          <tbody>
+            {CUSTOMERS.map((c,i)=>(
+              <tr key={i}>
+                <td style={{fontWeight:700}}>{c.name}</td>
+                <td>{c.phone}</td>
+                <td>{c.orders}</td>
+                <td>₹{c.spend.toLocaleString('en-IN')}</td>
+                <td>{c.joined}</td>
+                <td><div className="row-actions">
+                  <button className="act-btn primary">View</button>
+                  <button className="act-btn danger">Block</button>
+                </div></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═════════ Section: Inventory ═════════ */
+function InventorySection(){
+  return(
+    <div>
+      <div className="section-title">Inventory Management</div>
+      <div className="section-sub">Stock levels aur movement track karein</div>
+      <div className="stat-grid">
+        <StatCard icon="📦" color="#3B82F6" label="Total SKUs" val="412"/>
+        <StatCard icon="⚠️" color="#FFB800" label="Low Stock" val="14"/>
+        <StatCard icon="🚫" color="#E63946" label="Out of Stock" val="5"/>
+        <StatCard icon="🔄" color="#1BA672" label="Restocked Today" val="9"/>
+      </div>
+      <div className="table-wrap">
+        <div className="table-head"><h3 style={{fontSize:'0.96rem',fontWeight:800}}>Stock Alerts</h3></div>
+        <div style={{overflowX:'auto'}}>
+        <table>
+          <thead><tr><th>Product</th><th>Current Stock</th><th>Threshold</th><th>Status</th></tr></thead>
+          <tbody>
+            {PRODUCTS.filter(p=>p.stock<150).map((p,i)=>(
+              <tr key={i}><td style={{fontWeight:700}}>{p.name}</td><td>{p.stock}</td><td>20</td>
+                <td><span className={`badge ${p.stock===0?'b-cancelled':'b-pending'}`}>{p.stock===0?'Out of Stock':'Low Stock'}</span></td></tr>
+            ))}
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═════════ Section: Payments ═════════ */
+function PaymentsSection(){
+  const [list,setList]=useState([]);
+  const [filter,setFilter]=useState('all');
+  const [search,setSearch]=useState('');
+  const [loading,setLoading]=useState(true);
+  const [active,setActive]=useState(null);
+  const [rejecting,setRejecting]=useState(false);
+  const [reason,setReason]=useState('');
+  const [busy,setBusy]=useState(false);
+  const [stats,setStats]=useState({pending:0,paid:0,rejected:0});
+
+  async function load(){
+    setLoading(true);
+    let q=supabase.from('payment_verifications').select('*').order('created_at',{ascending:false}).limit(200);
+    if(filter!=='all') q=q.eq('status',filter);
+    if(search.trim()){
+      const s=search.trim();
+      q=q.or(`utr.ilike.%${s}%,order_number.ilike.%${s}%,mobile.ilike.%${s}%,customer_name.ilike.%${s}%`);
+    }
+    const {data,error}=await q;
+    if(!error&&data) setList(data); else setList([]);
+    setLoading(false);
+  }
+  async function loadStats(){
+    const {data}=await supabase.from('payment_verifications').select('status').limit(1000);
+    const c={pending:0,paid:0,rejected:0};
+    (data||[]).forEach(r=>{if(c[r.status]!==undefined)c[r.status]++;});
+    setStats(c);
+  }
+  useEffect(()=>{load();loadStats();},[filter]);
+  useEffect(()=>{const t=setTimeout(load,350);return()=>clearTimeout(t);},[search]);
+
+  async function approve(item){
+    setBusy(true);
+    const {error:e1}=await supabase.from('payment_verifications').update({status:'paid',updated_at:new Date().toISOString()}).eq('id',item.id);
+    if(!e1) await supabase.from('orders').update({status:'confirmed',payment_status:'paid',updated_at:new Date().toISOString()}).eq('id',item.order_id);
+    setBusy(false);setActive(null);load();loadStats();
+  }
+  async function reject(item){
+    setBusy(true);
+    await supabase.from('payment_verifications').update({status:'rejected',admin_note:reason,updated_at:new Date().toISOString()}).eq('id',item.id);
+    setBusy(false);setActive(null);setRejecting(false);setReason('');load();loadStats();
+  }
+
+  return(
+    <div>
+      <div className="section-title">Payments Management</div>
+      <div className="section-sub">Static QR payment verification queue — live Supabase data</div>
+      <div className="stat-grid">
+        <StatCard icon="⏳" color="#FFB800" label="Pending" val={stats.pending}/>
+        <StatCard icon="✅" color="#1BA672" label="Paid / Verified" val={stats.paid}/>
+        <StatCard icon="🚫" color="#E63946" label="Rejected" val={stats.rejected}/>
+        <StatCard icon="💰" color="#3B82F6" label="Total Requests" val={stats.pending+stats.paid+stats.rejected}/>
+      </div>
+      <div className="table-wrap">
+        <div className="table-head">
+          <div className="filter-row">
+            {['all','pending','paid','rejected'].map(s=>(
+              <span key={s} className={`filter-chip ${filter===s?'on':''}`} onClick={()=>setFilter(s)}>{s[0].toUpperCase()+s.slice(1)}</span>
+            ))}
+          </div>
+          <div className="tb-search" style={{maxWidth:240}}><span>🔍</span><input placeholder="UTR, Order ID, Name..." value={search} onChange={e=>setSearch(e.target.value)}/></div>
+        </div>
+        <div style={{overflowX:'auto'}}>
+        <table>
+          <thead><tr><th>Order</th><th>Customer</th><th>Amount</th><th>UTR</th><th>Submitted</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody>
+            {loading?<tr><td colSpan="7"><Skel h={20}/></td></tr>:
+            list.length===0?<tr><td colSpan="7" style={{textAlign:'center',color:'var(--gray)'}}>Koi payment request nahi mili</td></tr>:
+            list.map(item=>(
+              <tr key={item.id}>
+                <td style={{fontWeight:700}}>#{item.order_number||'—'}</td>
+                <td>{item.customer_name}</td>
+                <td>₹{item.amount??'—'}</td>
+                <td>{item.utr}</td>
+                <td>{new Date(item.created_at).toLocaleString('en-IN')}</td>
+                <td><span className={`badge ${item.status==='paid'?'b-delivered':item.status==='rejected'?'b-cancelled':'b-pending'}`}>{item.status}</span></td>
+                <td><button className="act-btn primary" onClick={()=>{setActive(item);setRejecting(false);setReason('');}}>View</button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        </div>
+      </div>
+
+      {active&&(
+        <div className="overlay" style={{display:'flex',alignItems:'center',justifyContent:'center',zIndex:300}} onClick={()=>setActive(null)}>
+          <div className="panel" style={{maxWidth:420,width:'92%',maxHeight:'85vh',overflowY:'auto'}} onClick={e=>e.stopPropagation()}>
+            <div className="panel-head"><h3>Payment Request</h3><button className="icon-btn" onClick={()=>setActive(null)}>✕</button></div>
+            {active.screenshot_url?
+              <img src={active.screenshot_url} style={{width:'100%',borderRadius:12,marginBottom:14}}/>:
+              <div style={{padding:24,textAlign:'center',color:'var(--gray)',marginBottom:14}}>Screenshot upload nahi hua</div>}
+            <div className="list-row"><div className="list-main"><div className="list-sub">Customer</div></div><div className="list-val">{active.customer_name}</div></div>
+            <div className="list-row"><div className="list-main"><div className="list-sub">Mobile</div></div><div className="list-val">{active.mobile}</div></div>
+            <div className="list-row"><div className="list-main"><div className="list-sub">Order ID</div></div><div className="list-val">{active.order_number||'—'}</div></div>
+            <div className="list-row"><div className="list-main"><div className="list-sub">UTR</div></div><div className="list-val">{active.utr}</div></div>
+            <div className="list-row"><div className="list-main"><div className="list-sub">Amount</div></div><div className="list-val">₹{active.amount??'—'}</div></div>
+            {active.status==='pending'?<>
+              {!rejecting?
+                <div style={{display:'flex',gap:10,marginTop:16}}>
+                  <button className="btn-main" disabled={busy} onClick={()=>approve(active)}>✅ Approve</button>
+                  <button className="btn-ghost" disabled={busy} onClick={()=>setRejecting(true)}>❌ Reject</button>
+                </div>:
+                <div style={{marginTop:14}}>
+                  <textarea className="f-group" style={{width:'100%',background:'var(--page-bg)',border:'1px solid var(--border)',borderRadius:10,padding:10,fontSize:'0.84rem'}} rows="2" placeholder="Reject karne ki wajah (optional)" value={reason} onChange={e=>setReason(e.target.value)}/>
+                  <button className="btn-main" style={{marginTop:10,background:'var(--red)'}} disabled={busy} onClick={()=>reject(active)}>Reject Confirm Karein</button>
+                </div>}
+            </>:<div style={{marginTop:14,fontWeight:700,color:active.status==='paid'?'var(--primary)':'var(--red)'}}>
+              {active.status==='paid'?'✅ Approved — Order Confirmed':`❌ Rejected ${active.admin_note?'— '+active.admin_note:''}`}
+            </div>}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═════════ Section: Delivery ═════════ */
+function DeliverySection(){
+  return(
+    <div>
+      <div className="section-title">Delivery Management</div>
+      <div className="section-sub">Existing delivery-radius system se integrated</div>
+      <div className="stat-grid">
+        <StatCard icon="🚴" color="#1BA672" label="Out For Delivery" val="6"/>
+        <StatCard icon="📍" color="#3B82F6" label="Avg Distance" val="3.2 km"/>
+        <StatCard icon="🆓" color="#FFB800" label="Free Deliveries Today" val="21"/>
+        <StatCard icon="⏱️" color="#8B5CF6" label="Avg Delivery Time" val="38 min"/>
+      </div>
+      <div className="table-wrap">
+        <div className="table-head"><h3 style={{fontSize:'0.96rem',fontWeight:800}}>Active Deliveries</h3></div>
+        <div style={{overflowX:'auto'}}>
+        <table>
+          <thead><tr><th>Order ID</th><th>Customer</th><th>Distance</th><th>Charge</th><th>Status</th><th>Map</th></tr></thead>
+          <tbody>
+            <tr><td style={{fontWeight:700}}>#RK1040</td><td>Pooja Mehta</td><td>2.4 km</td><td>FREE</td>
+              <td><span className="badge b-confirmed">Out For Delivery</span></td><td><span className="act-btn">🗺️ Open</span></td></tr>
+            <tr><td style={{fontWeight:700}}>#RK1037</td><td>Karan Joshi</td><td>5.1 km</td><td>₹20</td>
+              <td><span className="badge b-packed">Picked Up</span></td><td><span className="act-btn">🗺️ Open</span></td></tr>
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═════════ Section: Support ═════════ */
+function SupportSection(){
+  const [sessions,setSessions]=useState([]);
+  const [filter,setFilter]=useState('open');
+  const [loading,setLoading]=useState(true);
+  const [active,setActive]=useState(null);
+  const [messages,setMessages]=useState([]);
+  const [reply,setReply]=useState('');
+  const [sending,setSending]=useState(false);
+
+  async function loadSessions(){
+    setLoading(true);
+    const {data,error}=await supabase.from('ananya_chat_sessions').select('*').order('updated_at',{ascending:false}).limit(200);
+    setSessions(!error&&data?data:[]);
+    setLoading(false);
+  }
+  useEffect(()=>{loadSessions();},[]);
+
+  const filtered=sessions.filter(s=>{
+    if(filter==='all')return true;
+    if(filter==='unread')return s.unread>0;
+    return (s.status||'open')===filter;
+  });
+
+  async function openSession(s){
+    setActive(s);setMessages([]);
+    const {data}=await supabase.from('ananya_chat_messages').select('*').eq('session_id',s.id).order('created_at',{ascending:true}).limit(200);
+    setMessages(data||[]);
+    if(s.unread>0) await supabase.from('ananya_chat_sessions').update({unread:0}).eq('id',s.id);
+    loadSessions();
+  }
+
+  async function sendReply(){
+    const text=reply.trim();
+    if(!text||!active)return;
+    setReply('');setSending(true);
+    const msg={session_id:active.id,role:'admin',content:text,created_at:new Date().toISOString()};
+    setMessages(m=>[...m,msg]);
+    await supabase.from('ananya_chat_messages').insert(msg);
+    await supabase.from('ananya_chat_sessions').update({last_message:text,updated_at:new Date().toISOString(),status:'open'}).eq('id',active.id);
+    setSending(false);loadSessions();
+  }
+
+  async function resolve(id){
+    await supabase.from('ananya_chat_sessions').update({status:'resolved'}).eq('id',id);
+    if(active?.id===id) setActive(a=>({...a,status:'resolved'}));
+    loadSessions();
+  }
+
+  return(
+    <div>
+      <div className="section-title">Support Management</div>
+      <div className="section-sub">Ananya AI chat conversations — live Supabase data</div>
+      <div className="panel-row">
+        <div className="panel" style={{padding:0,overflow:'hidden'}}>
+          <div className="table-head"><div className="filter-row">
+            {['open','escalated','resolved','unread','all'].map(f=>(
+              <span key={f} className={`filter-chip ${filter===f?'on':''}`} onClick={()=>setFilter(f)}>{f[0].toUpperCase()+f.slice(1)}</span>
+            ))}
+          </div></div>
+          <div style={{maxHeight:480,overflowY:'auto'}}>
+            {loading?<div style={{padding:20}}><Skel h={60}/></div>:
+            filtered.length===0?<div style={{padding:30,textAlign:'center',color:'var(--gray)'}}>Koi conversation nahi mili</div>:
+            filtered.map(s=>(
+              <div className="list-row" key={s.id} style={{padding:'12px 20px',cursor:'pointer',background:active?.id===s.id?'var(--page-bg)':'transparent'}} onClick={()=>openSession(s)}>
+                <div className="list-avatar">👤</div>
+                <div className="list-main">
+                  <div className="list-title">{s.display_name||'Guest User'}</div>
+                  <div className="list-sub" style={{whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{s.last_message||'No messages yet'}</div>
+                </div>
+                <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:4}}>
+                  <span className={`badge ${s.status==='resolved'?'b-delivered':s.status==='escalated'?'b-cancelled':'b-confirmed'}`}>{s.status||'open'}</span>
+                  {s.unread>0&&<span className="badge b-pending">{s.unread} new</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="panel" style={{display:'flex',flexDirection:'column',height:540}}>
+          {!active?<div style={{margin:'auto',color:'var(--gray)',textAlign:'center'}}>👈 Koi conversation select karein</div>:<>
+            <div className="panel-head">
+              <h3>{active.display_name||'Guest User'}</h3>
+              <button className="act-btn primary" onClick={()=>resolve(active.id)}>✅ Resolve</button>
+            </div>
+            <div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column',gap:10,padding:'4px 2px'}}>
+              {messages.length===0?<div style={{margin:'auto',color:'var(--gray)'}}>Koi messages nahi</div>:
+              messages.map((m,i)=>(
+                <div key={i} style={{alignSelf:m.role==='user'?'flex-start':'flex-end',maxWidth:'78%'}}>
+                  <div style={{background:m.role==='user'?'var(--page-bg)':m.role==='admin'?'var(--primary)':'var(--primary-light)',color:m.role==='admin'?'#fff':'var(--text)',padding:'9px 13px',borderRadius:14,fontSize:'0.84rem'}}>{m.content}</div>
+                  <div style={{fontSize:'0.66rem',color:'var(--gray)',marginTop:3,textAlign:m.role==='user'?'left':'right'}}>{new Date(m.created_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{display:'flex',gap:8,marginTop:10,borderTop:'1px solid var(--border)',paddingTop:10}}>
+              <input style={{flex:1,background:'var(--page-bg)',border:'1px solid var(--border)',borderRadius:10,padding:'10px 14px',fontSize:'0.84rem'}}
+                placeholder="Reply as admin..." value={reply} onChange={e=>setReply(e.target.value)}
+                onKeyDown={e=>{if(e.key==='Enter')sendReply();}}/>
+              <button className="btn-main" disabled={sending} onClick={sendReply}>➤</button>
+            </div>
+          </>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═════════ Section: Ananya AI ═════════ */
+function AISection(){
+  return(
+    <div>
+      <div className="section-title">Ananya AI Management</div>
+      <div className="section-sub">AI assistant ka usage aur feedback monitor karein</div>
+      <div className="stat-grid">
+        <StatCard icon="🤖" color="#8B5CF6" label="AI Status" val="Enabled"/>
+        <StatCard icon="💬" color="#3B82F6" label="Conversations Today" val="186"/>
+        <StatCard icon="🔢" color="#FFB800" label="Tokens Used Today" val="42.3K"/>
+        <StatCard icon="👍" color="#1BA672" label="Positive Feedback" val="92%"/>
+      </div>
+      <div className="panel">
+        <div className="panel-head"><h3>Quick Controls</h3></div>
+        <div style={{display:'flex',gap:12,flexWrap:'wrap'}}>
+          <button className="btn-main">Disable AI Assistant</button>
+          <button className="btn-ghost">View Conversation Logs</button>
+          <button className="btn-ghost">Export Feedback Report</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═════════ Section: Coupons ═════════ */
+function CouponsSection(){
+  const coupons=[
+    {code:'WELCOME50',type:'₹50 OFF',min:'₹299',used:'142/500',expiry:'30 Jun 2026'},
+    {code:'SAVE15',type:'15% OFF',min:'₹500',used:'88/—',expiry:'15 Jul 2026'},
+  ];
+  return(
+    <div>
+      <div className="section-title">Coupons & Offers</div>
+      <div className="section-sub">Discount codes create aur manage karein</div>
+      <div className="table-wrap">
+        <div className="table-head"><h3 style={{fontSize:'0.96rem',fontWeight:800}}>Active Coupons</h3><button className="btn-main">+ Create Coupon</button></div>
+        <div style={{overflowX:'auto'}}>
+        <table>
+          <thead><tr><th>Code</th><th>Discount</th><th>Min Order</th><th>Usage</th><th>Expiry</th><th>Actions</th></tr></thead>
+          <tbody>
+            {coupons.map((c,i)=>(
+              <tr key={i}><td style={{fontWeight:700}}>{c.code}</td><td>{c.type}</td><td>{c.min}</td><td>{c.used}</td><td>{c.expiry}</td>
+                <td><div className="row-actions"><button className="act-btn">Edit</button><button className="act-btn danger">Delete</button></div></td></tr>
+            ))}
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═════════ Section: Notifications ═════════ */
+function NotificationsSection(){
+  return(
+    <div>
+      <div className="section-title">Push Notifications</div>
+      <div className="section-sub">Customers ko offers aur updates bhejein</div>
+      <div className="panel" style={{marginBottom:18}}>
+        <div className="panel-head"><h3>Send New Notification</h3></div>
+        <div className="form-grid">
+          <div className="f-group"><label>Title</label><input placeholder="e.g. Sabzi par 20% OFF!"/></div>
+          <div className="f-group"><label>Target Audience</label><select><option>All Users</option><option>Selected Users</option><option>Customer Group</option></select></div>
+          <div className="f-group" style={{gridColumn:'1/-1'}}><label>Message</label><textarea rows="3" placeholder="Notification message..."/></div>
+        </div>
+        <div style={{marginTop:14}}><button className="btn-main">Send Notification</button></div>
+      </div>
+      <PlaceholderCard icon="🔔" title="Sent History" sub="Pichle notifications ka record yahan dikhega"/>
+    </div>
+  );
+}
+
+/* ═════════ Section: Reports ═════════ */
+function ReportsSection(){
+  const reports=['Sales Report','Product Report','Customer Report','Inventory Report','Payment Report'];
+  return(
+    <div>
+      <div className="section-title">Reports & Analytics</div>
+      <div className="section-sub">Detailed reports generate aur export karein</div>
+      <div className="stat-grid">
+        {reports.map((r,i)=>(
+          <div className="stat-card" key={i}>
+            <div className="stat-icon" style={{background:'var(--primary-light)',color:'var(--primary-dark)'}}>📈</div>
+            <div className="stat-val" style={{fontSize:'0.96rem'}}>{r}</div>
+            <div style={{display:'flex',gap:8,marginTop:4}}>
+              <button className="act-btn">CSV</button><button className="act-btn">Excel</button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ═════════ Section: Settings ═════════ */
+function SettingsSection(){
+  return(
+    <div>
+      <div className="section-title">Settings</div>
+      <div className="section-sub">Shop details aur configuration manage karein</div>
+      <div className="panel">
+        <div className="panel-head"><h3>Shop Information</h3></div>
+        <div className="form-grid">
+          <div className="f-group"><label>Shop Name</label><input defaultValue="Rinku Kirana Store"/></div>
+          <div className="f-group"><label>Contact Number</label><input defaultValue="+91 98765 43210"/></div>
+          <div className="f-group"><label>WhatsApp Number</label><input defaultValue="+91 98765 43210"/></div>
+          <div className="f-group"><label>UPI ID</label><input defaultValue="rinkukirana@upi"/></div>
+          <div className="f-group"><label>Delivery Radius (km)</label><input defaultValue="8"/></div>
+          <div className="f-group"><label>Delivery Charge (₹)</label><input defaultValue="20"/></div>
+          <div className="f-group"><label>Store Opening Time</label><input type="time" defaultValue="07:00"/></div>
+          <div className="f-group"><label>Store Closing Time</label><input type="time" defaultValue="22:00"/></div>
+        </div>
+        <div style={{marginTop:18,display:'flex',gap:10}}>
+          <button className="btn-main">Save Changes</button>
+          <button className="btn-ghost">Reset</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═════════ App Shell ═════════ */
+function App(){
+  const [page,setPage]=useState('dashboard');
+  const [collapsed,setCollapsed]=useState(false);
+  const [mobileOpen,setMobileOpen]=useState(false);
+  const [authUser,setAuthUser]=useState(null);
+  const [authChecked,setAuthChecked]=useState(false);
+  const [theme,setTheme]=useState(()=>{
+    try{const s=localStorage.getItem('rk_admin_theme');return s==='dark'||s==='light'?s:'light';}catch(e){return 'light';}
+  });
+
+  /* ── Restore session on load (same 3-check as admin.html) ── */
+  useEffect(()=>{
+    (async()=>{
+      const {data:{session}}=await supabase.auth.getSession();
+      if(session?.user && session.user.app_metadata?.role==='admin' && session.user.app_metadata?.is_active){
+        setAuthUser(session.user);
+      }
+      setAuthChecked(true);
+    })();
+    const {data:listener}=supabase.auth.onAuthStateChange((event,session)=>{
+      if(event==='SIGNED_OUT') setAuthUser(null);
+    });
+    return()=>{listener?.subscription?.unsubscribe();};
+  },[]);
+
+  async function handleLogout(){
+    await supabase.auth.signOut();
+    setAuthUser(null);
+  }
+
+  useEffect(()=>{
+    document.documentElement.setAttribute('data-theme',theme);
+    try{localStorage.setItem('rk_admin_theme',theme);}catch(e){}
+  },[theme]);
+
+  if(!authChecked){
+    return <div className="dash-loading">Loading...</div>;
+  }
+  if(!authUser){
+    return <LoginScreen onSuccess={setAuthUser}/>;
+  }
+
+  const titleMap=Object.fromEntries(NAV.map(n=>[n.id,n.label]));
+
+  const renderPage=()=>{
+    switch(page){
+      case 'dashboard': return <DashboardOverview/>;
+      case 'orders': return <OrdersSection/>;
+      case 'products': return <ProductsSection/>;
+      case 'categories': return <CategoriesSection/>;
+      case 'customers': return <CustomersSection/>;
+      case 'inventory': return <InventorySection/>;
+      case 'payments': return <PaymentsSection/>;
+      case 'delivery': return <DeliverySection/>;
+      case 'support': return <SupportSection/>;
+      case 'ai': return <AISection/>;
+      case 'coupons': return <CouponsSection/>;
+      case 'notifications': return <NotificationsSection/>;
+      case 'reports': return <ReportsSection/>;
+      case 'settings': return <SettingsSection/>;
+      default: return <DashboardOverview/>;
+    }
+  };
+
+  return(
+    <div className="app">
+      <div className={`sidebar ${collapsed?'collapsed':''} ${mobileOpen?'mobile-open':''}`}>
+        <div className="sb-logo" onClick={()=>setPage('dashboard')}>🏪 {!collapsed&&<>rinku<span>.admin</span></>}</div>
+        <div className="sb-nav">
+          {NAV.map(n=>(
+            <div key={n.id} className={`sb-item ${page===n.id?'on':''}`} onClick={()=>{setPage(n.id);setMobileOpen(false);}}>
+              <span className="sb-icon">{n.icon}</span>{!collapsed&&<span>{n.label}</span>}
+            </div>
+          ))}
+        </div>
+        <div className="sb-toggle" onClick={()=>setCollapsed(!collapsed)}>{collapsed?'»':'« Collapse'}</div>
+      </div>
+
+      <div className="overlay" style={{display:mobileOpen?'block':'none'}} onClick={()=>setMobileOpen(false)}/>
+      <div className="main">
+        <Topbar title={titleMap[page]} theme={theme}
+          toggleTheme={()=>setTheme(theme==='dark'?'light':'dark')}
+          onMenu={()=>setMobileOpen(!mobileOpen)} notifCount={3}
+          onSearch={()=>{}} onLogout={handleLogout} userEmail={authUser.email}/>
+        <div className="content">
+          {renderPage()}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
