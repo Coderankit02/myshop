@@ -609,6 +609,27 @@
 }
 
 /* ── Typing indicator ── */
+.ananya-retry-row {
+  display: flex;
+  justify-content: center;
+  margin: 4px 0 10px;
+}
+.ananya-retry-btn {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--ananya-primary, #25D366);
+  background: transparent;
+  color: var(--ananya-primary, #25D366);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.ananya-retry-btn:hover {
+  background: var(--ananya-primary, #25D366);
+  color: #fff;
+}
+
 .ananya-typing {
   display: flex;
   align-items: flex-end;
