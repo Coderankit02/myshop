@@ -160,6 +160,7 @@
     messages:      [],
     sessionId:     null,
     userId:        null,
+    accessToken:   null,
     isTyping:      false,
     unread:        0,
     supabase:      null,
@@ -200,6 +201,7 @@
           session = res?.data?.session || null;
         } catch (e) { /* auth optional */ }
         if (session?.user) state.userId = session.user.id;
+        if (session?.access_token) state.accessToken = session.access_token;
       }
     } catch (e) { /* supabase optional */ }
   }
@@ -334,7 +336,7 @@
         body: JSON.stringify({
           message: text,
           sessionId: state.sessionId,
-          userId: state.userId,
+          accessToken: state.accessToken,
           history,
         }),
         signal: controller.signal,
