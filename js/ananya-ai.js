@@ -1,8 +1,9 @@
 /*!
  * ANANYA AI - Smart Shopping Assistant
  * Rinku Kirana Store
- * Version: 3.1 PREMIUM — WhatsApp-style Chat + Realtime Admin Replies
- * UI redesigned. Business logic untouched except realtime fix.
+ * Version: 4.0 — Gemini AI + Supabase Product Search Backend
+ * UI untouched. Local intents stay instant; unmatched queries now route
+ * through /api/chat (Gemini, with Supabase product lookups first).
  */
 (function () {
   'use strict';
@@ -165,6 +166,8 @@
     initialized:   false,
     historyLoaded: false,
     realtimeChannel: null,
+    pendingController: null,
+    lastFailedText: null,
   };
 
   /* ══════════════════════════════════════════
@@ -293,10 +296,69 @@
         return intent.reply(CONFIG);
       }
     }
+    return null; // no confident local match — caller should ask the AI backend
+  }
+
+  function getOfflineFallbackReply(userMsg) {
+    const msg = userMsg.toLowerCase().trim();
     if (/ky[ao]|kaise|kab|kahan|kitna|kaun/.test(msg)) {
       return `Hmm, mujhe exactly samajh nahi aaya 🤔\n\nKya aap in topics mein se kuch pooch rahe hain?\n\n🕐 Timings  🚚 Delivery  💳 Payment\n↩️ Returns  📞 Contact  🎁 Offers\n\nYa seedha WhatsApp karein — hum help karenge! 😊`;
     }
     return `Mujhe is sawaal ka exact jawab abhi nahi pata 😊\n\nMain in topics mein help kar sakti hoon:\n🕐 Store Timings\n🚚 Delivery Info\n💳 Payment Methods\n↩️ Return Policy\n🎁 Offers & Discounts\n📞 Contact Us\n\nYa seedha hamare WhatsApp par poochein:\n📲 +91 63931 96765`;
+  }
+
+  /* ══════════════════════════════════════════
+     BACKEND AI — /api/chat (Gemini + Supabase)
+     Only called when no local intent matches,
+     so store-policy FAQs stay instant & free —
+     this keeps Gemini usage to the queries that
+     actually need it (products, open-ended Qs).
+  ══════════════════════════════════════════ */
+  async function fetchBackendReply(text) {
+    if (state.pendingController) {
+      try { state.pendingController.abort(); } catch (e) {}
+    }
+    const controller = new AbortController();
+    state.pendingController = controller;
+    const timeoutId = setTimeout(() => controller.abort(), 20000);
+
+    try {
+      const history = state.messages.slice(-12).map(m => ({
+        role: m.role === 'user' ? 'user' : 'assistant',
+        content: m.text,
+      }));
+
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: text,
+          sessionId: state.sessionId,
+          userId: state.userId,
+          history,
+        }),
+        signal: controller.signal,
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok && !data?.reply) {
+        throw new Error('Backend error: ' + res.status);
+      }
+
+      return { ok: true, reply: data.reply || getOfflineFallbackReply(text) };
+    } catch (err) {
+      const isAbort = err && err.name === 'AbortError';
+      return {
+        ok: false,
+        reply: isAbort
+          ? 'Jawab dene mein thoda zyada time lag raha hai ⏳\n\nKripya dobara try karein.'
+          : 'Sorry, abhi connect nahi ho pa raha 🙏\n\nKripya thodi der mein dobara try karein, ya WhatsApp par poochein.',
+      };
+    } finally {
+      clearTimeout(timeoutId);
+      if (state.pendingController === controller) state.pendingController = null;
+    }
   }
 
   /* ══════════════════════════════════════════
@@ -399,9 +461,12 @@
   async function sendMessage(text) {
     text = (text || '').trim();
     if (!text || state.isTyping) return;
+    if (text.length > 800) text = text.slice(0, 800);
 
     const input = document.getElementById('ananya-input');
     if (input) { input.value = ''; input.style.height = 'auto'; }
+
+    document.querySelector('.ananya-retry-row')?.remove();
 
     appendMessage('user', text);
     saveMessage('user', text);
@@ -409,19 +474,52 @@
     state.isTyping = true;
     showTyping();
 
-    await new Promise(r => setTimeout(r, 700 + Math.random() * 700));
+    let reply;
+    let failed = false;
 
-    const reply = getSmartReply(text);
+    const localReply = getSmartReply(text);
+    if (localReply) {
+      await new Promise(r => setTimeout(r, 500 + Math.random() * 400));
+      reply = localReply;
+    } else {
+      const result = await fetchBackendReply(text);
+      reply = result.reply;
+      failed = !result.ok;
+    }
+
     removeTyping();
     state.isTyping = false;
 
     appendMessage('bot', reply);
     saveMessage('assistant', reply);
 
+    if (failed) {
+      state.lastFailedText = text;
+      showRetryRow();
+    }
+
     if (state.messages.filter(m => m.role === 'user').length >= 3
         && !document.querySelector('.ananya-whatsapp-banner-inline')) {
       showWhatsappBanner();
     }
+  }
+
+  function showRetryRow() {
+    const container = document.getElementById('ananya-msgs');
+    if (!container) return;
+    const row = document.createElement('div');
+    row.className = 'ananya-retry-row';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'ananya-retry-btn';
+    btn.textContent = '🔄 Retry';
+    btn.addEventListener('click', () => {
+      row.remove();
+      if (state.lastFailedText) sendMessage(state.lastFailedText);
+    });
+    row.appendChild(btn);
+    container.appendChild(row);
+    container.scrollTop = container.scrollHeight;
   }
 
   function showWhatsappBanner() {
