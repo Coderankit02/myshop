@@ -224,6 +224,7 @@
   width: 390px;
   max-width: calc(100vw - 32px);
   height: 620px;
+  max-height: calc(100vh - 130px);
   max-height: calc(100dvh - 130px);
   background: var(--an-bg);
   border-radius: var(--an-r-xl);
@@ -964,8 +965,12 @@
     left: 0;
     width: 100%;
     max-width: 100%;
+    height: 100vh;
     height: 100dvh;
+    height: var(--ananya-vh, 100dvh);
+    max-height: 100vh;
     max-height: 100dvh;
+    max-height: var(--ananya-vh, 100dvh);
     border-radius: 0;
     border: none;
   }
