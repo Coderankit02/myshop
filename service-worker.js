@@ -27,7 +27,7 @@
 
 // BUG FIX (Info #13): Version string ab comments mein clearly marked hai.
 // Har deploy par yahan ka number badhao agar OPTION C use kar rahe ho.
-const CACHE_VERSION = "v6"; // ← deploy par ye badhao (ya build script se auto-inject karo)
+const CACHE_VERSION = "v7"; // ← deploy par ye badhao (ya build script se auto-inject karo)
 const CACHE_NAME = `rk-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = "/offline.html";
 
@@ -35,6 +35,8 @@ const PRECACHE_URLS = [
   "/offline.html",
   "/manifest.json",
   "/auth.css",
+  "/pwa.css",
+  "/icons/app-logo.png",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
 ];
