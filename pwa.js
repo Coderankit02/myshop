@@ -232,6 +232,8 @@
     },
     isStandalone: isStandalone,
   };
+  // alias for index.html compatibility
+  window.RKPwa = window.RKPWA;
 
   /* ========== BOOT ========== */
   window.addEventListener("load", function () {
