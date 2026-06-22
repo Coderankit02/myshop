@@ -4,9 +4,16 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>Rinku Kirana - Grocery Delivery</title>
+<!-- Fast-connect to third-party origins so font/CDN requests start sooner, without blocking the splash paint -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<!-- Splash logo: fetch immediately at high priority so it's never blurry/late on first paint -->
+<link rel="preload" href="/icons/app-logo.png" as="image">
   <link rel="stylesheet" href="/css/delivery-radius.css"/>
 <link rel="manifest" href="/manifest.json"/>
-<meta name="theme-color" content="#15803D"/>
+<meta name="theme-color" content="#3ABF5E" id="rk-theme-color"/>
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
@@ -26,10 +33,11 @@
 <script src="/js/profile.js" defer></script>
 <script src="/js/orders.js" defer></script>
 <script src="/js/payment.js" defer></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- defer added: these no longer block the splash from painting first -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -1943,8 +1951,10 @@ ReactDOM.render(React.createElement(App),document.getElementById('root'));
     return;
   }
 
-  // 6-step animation total ~4s, minimum 4s dikhao
-  var minTime = 4000;
+  // 6-step animation ki real total length ~3.8s hai (loader bar 2.4s+1.4s par khatam).
+  // Isi se match karo — na zyada na kam, taaki fast load par bhi animation poora
+  // dikhe aur slow load ho to bhi extra wait na ho.
+  var minTime = 3800;
   var startTime = Date.now();
 
   function hideSplash(){
@@ -1952,6 +1962,11 @@ ReactDOM.render(React.createElement(App),document.getElementById('root'));
     var delay = Math.max(0, minTime - elapsed);
     setTimeout(function(){
       splash.classList.add('rk-splash-hide');
+      // OS splash ke liye set kiya gaya green theme-color, ab asli app
+      // brand color par switch — taaki status bar splash ke baad app ke
+      // rang se match kare.
+      var tc = document.getElementById('rk-theme-color');
+      if(tc) tc.setAttribute('content', '#15803D');
       setTimeout(function(){
         if(splash.parentNode) splash.parentNode.removeChild(splash);
       }, 650);
