@@ -182,6 +182,28 @@
   window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change', applyTheme);
 
   /* ══════════════════════════════════════════
+     MOBILE KEYBOARD / VIEWPORT FIX
+     dvh does not shrink when the on-screen keyboard opens, so on
+     mobile the widget kept its full height while the visible area
+     shrank — pushing the input box + send button behind the
+     keyboard. We track the real visible height with the
+     visualViewport API (falls back gracefully where unsupported)
+     and write it to a CSS var the mobile media query consumes.
+  ══════════════════════════════════════════ */
+  function setupViewportFix() {
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const setHeight = () => {
+      document.documentElement.style.setProperty('--ananya-vh', vv.height + 'px');
+    };
+
+    setHeight();
+    vv.addEventListener('resize', setHeight);
+    vv.addEventListener('scroll', setHeight);
+  }
+
+  /* ══════════════════════════════════════════
      SUPABASE
   ══════════════════════════════════════════ */
   async function initSupabase() {
@@ -786,6 +808,7 @@
     buildWidget();
     bindEvents();
     applyTheme();
+    setupViewportFix();
 
     await loadSupabaseLib();
     await initSupabase();
