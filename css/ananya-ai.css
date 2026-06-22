@@ -85,7 +85,7 @@
   position: fixed;
   bottom: 24px;
   right: 24px;
-  z-index: 999998;
+  z-index: 1000005;
   width: 62px;
   height: 62px;
   border-radius: var(--an-r-full);
@@ -181,7 +181,7 @@
   position: fixed;
   bottom: 35px;
   right: 96px;
-  z-index: 999997;
+  z-index: 1000004;
   background: var(--an-bg, #fff);
   color: var(--an-text, #1A1A2E);
   font-family: 'Inter', sans-serif;
@@ -220,7 +220,7 @@
   position: fixed;
   bottom: 100px;
   right: 24px;
-  z-index: 999999;
+  z-index: 1000006;
   width: 390px;
   max-width: calc(100vw - 32px);
   height: 620px;
@@ -973,6 +973,15 @@
     max-height: var(--ananya-vh, 100dvh);
     border-radius: 0;
     border: none;
+    /* widget ke andar content bottom nav se upar rahe */
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* input area kabhi bottom nav ke peeche na chhupi rahe */
+  #ananya-widget .ananya-input-area {
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    flex-shrink: 0;
   }
 
   #ananya-trigger {
