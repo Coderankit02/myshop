@@ -1938,10 +1938,10 @@ ReactDOM.render(React.createElement(App),document.getElementById('root'));
     || window.navigator.standalone === true
     || document.referrer.includes('android-app://');
 
- // if(!isStandalone){
-  //  splash.parentNode && splash.parentNode.removeChild(splash);
-  //  return;
-  //}
+   if(!isStandalone){
+   splash.parentNode && splash.parentNode.removeChild(splash);
+    return;
+  }
 
   // 6-step animation total ~4s, minimum 4s dikhao
   var minTime = 4000;
