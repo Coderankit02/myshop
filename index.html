@@ -467,8 +467,9 @@ function useCategories(){
   const [cats,setCats]=useState([]);
   const [loading,setLoading]=useState(true);
   const fetch=useCallback(async()=>{
-    const {data}=await supabase.from('categories').select('*').eq('is_active',true).order('sort_order');
-    setCats(data||[]);setLoading(false);
+    const {data}=await supabase.from('categories').select('*,category_images(id,image_url,is_default,sort_order)').eq('is_active',true).order('sort_order');
+    const enrichedCats=(data||[]).map(c=>{const imgs=(c.category_images||[]).slice().sort((a,b)=>a.sort_order-b.sort_order);const defImg=imgs.find(i=>i.is_default)||imgs[0];return{...c,display_image:defImg?.image_url||c.image_url||null};});
+    setCats(enrichedCats);setLoading(false);
   },[]);
   useEffect(()=>{
     fetch();
@@ -502,7 +503,7 @@ function useProducts(options={}){
   const fetch=useCallback(async()=>{
     setLoading(true);
     let q=supabase.from('products')
-      .select('*,categories(id,name,slug),product_images(id,image_url,sort_order)',{count:'exact'})
+      .select('*,categories(id,name,slug),product_images(id,image_url,is_default,sort_order)',{count:'exact'})
       .eq('is_active',true).order('created_at',{ascending:false});
     if(categoryId&&categoryId!=='all') q=q.eq('category_id',categoryId);
     if(featured) q=q.eq('is_featured',true);
@@ -515,7 +516,7 @@ function useProducts(options={}){
       ...p,
       discount:calcDiscount(p.selling_price,p.original_price),
       images:(p.product_images||[]).sort((a,b)=>a.sort_order-b.sort_order),
-      primary_image:(p.product_images||[]).sort((a,b)=>a.sort_order-b.sort_order)[0]?.image_url||null,
+      primary_image:(()=>{const imgs=(p.product_images||[]).slice().sort((a,b)=>a.sort_order-b.sort_order);return(imgs.find(i=>i.is_default)||imgs[0])?.image_url||null;})(),
     }));
     setProducts(enriched);setTotal(count||0);setLoading(false);
   },[categoryId,featured,search,page,pageSize]);
@@ -644,30 +645,59 @@ const BannerCardM=({b,active,onClick})=>{
 
 // ── Product Detail Page ───────────────────────────────────
 function ProductDetail({product,cart,addToCart,updQty,onBack}){
-  const [selImg,setSelImg]=useState(0);
+  const [selImg,setSelImg]=useState(()=>{
+    // Start on default image
+    const imgs=product.images||[];
+    const defIdx=imgs.findIndex(i=>i.is_default);
+    return defIdx>=0?defIdx:0;
+  });
   const inC=cart.find(i=>i.id===product.id);
   const disc=product.discount;
   const oos=product.stock_quantity<=0;
   const atMax=inC&&typeof product.stock_quantity==='number'&&inC.qty>=product.stock_quantity;
   const [imgErr,setImgErr]=useState({});
+  const touchStartX=useRef(null);
+  const touchStartY=useRef(null);
 
   const images=product.images||[];
   const mainSrc=images[selImg]?.image_url||null;
 
+  function handleTouchStart(e){
+    touchStartX.current=e.touches[0].clientX;
+    touchStartY.current=e.touches[0].clientY;
+  }
+  function handleTouchEnd(e){
+    if(touchStartX.current===null)return;
+    const dx=e.changedTouches[0].clientX-touchStartX.current;
+    const dy=e.changedTouches[0].clientY-touchStartY.current;
+    if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>40){
+      if(dx<0&&selImg<images.length-1){setSelImg(s=>s+1);setImgErr({});}
+      else if(dx>0&&selImg>0){setSelImg(s=>s-1);setImgErr({});}
+    }
+    touchStartX.current=null;touchStartY.current=null;
+  }
+
   return(
     <div className="product-detail-page">
       <button className="pdp-back" onClick={onBack}>← Wapas Jao</button>
-      <div className="pdp-gallery">
+      <div className="pdp-gallery" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} style={{cursor:images.length>1?'grab':'default'}}>
         {mainSrc&&!imgErr[selImg]
-          ?<img className="pdp-main-img" src={mainSrc} alt={product.name} onError={()=>setImgErr(p=>({...p,[selImg]:true}))}/>
+          ?<img className="pdp-main-img" src={mainSrc} alt={product.name} onError={()=>setImgErr(p=>({...p,[selImg]:true}))} draggable={false}/>
           :<div className="pdp-main-placeholder">🛒</div>
         }
         {images.length>1&&(
-          <div className="pdp-thumbs">
-            {images.map((img,i)=>(
-              <img key={img.id} className={`pdp-thumb ${selImg===i?'on':''}`} src={img.image_url} alt={`${product.name} ${i+1}`}
-                onClick={()=>{setSelImg(i);setImgErr({});}} onError={()=>setImgErr(p=>({...p,[i]:true}))}/>
-            ))}
+          <div style={{position:'relative'}}>
+            <div className="pdp-thumbs">
+              {images.map((img,i)=>(
+                <img key={img.id||i} className={`pdp-thumb ${selImg===i?'on':''}`} src={img.image_url} alt={`${product.name} ${i+1}`}
+                  onClick={()=>{setSelImg(i);setImgErr({});}} onError={()=>setImgErr(p=>({...p,[i]:true}))}/>
+              ))}
+            </div>
+            <div style={{display:'flex',justifyContent:'center',gap:6,paddingBottom:10}}>
+              {images.map((_,i)=>(
+                <span key={i} onClick={()=>{setSelImg(i);setImgErr({});}} style={{width:i===selImg?18:7,height:7,borderRadius:4,background:i===selImg?'var(--primary)':'var(--border)',display:'inline-block',cursor:'pointer',transition:'all .2s'}}/>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -1009,8 +1039,8 @@ function App(){
         :<div className="desktop-cat-grid">
           {allCats.map(c=>(
             <div key={c.id} className={`desktop-cat-item ${activeCatId===c.id?'on':''}`} onClick={()=>{setActiveCatId(c.id);setPage('shop');setShopPage(1);setSearch('');}}>
-              {c.image_url
-                ?<img src={c.image_url} alt={c.name}/>
+              {(c.display_image||c.image_url)
+                ?<img src={c.display_image||c.image_url} alt={c.name}/>
                 :<div className="cat-emoji-box">{catEmoji(c)}</div>
               }
               <span>{c.name}</span>
@@ -1027,8 +1057,8 @@ function App(){
       <div className="sidebar-title">Categories</div>
       {allCats.map(c=>(
         <div key={c.id} className={`sidebar-cat ${activeCatId===c.id?'on':''}`} onClick={()=>{setActiveCatId(c.id);setShopPage(1);setSearch('');}}>
-          {c.image_url
-            ?<img src={c.image_url} alt={c.name} className="sidebar-cat-img"/>
+          {(c.display_image||c.image_url)
+            ?<img src={c.display_image||c.image_url} alt={c.name} className="sidebar-cat-img"/>
             :<div className="sidebar-cat-emoji">{catEmoji(c)}</div>
           }
           <span>{c.name}</span>
@@ -1045,7 +1075,7 @@ function App(){
         :allCats.map(c=>(
           <div key={c.id} className={`cat-chip ${activeCatId===c.id?'on':''}`} onClick={()=>onClick(c.id)}>
             <div className="cat-chip-img-box" style={{background:'var(--primary-light)'}}>
-              {c.image_url?<img src={c.image_url} alt={c.name}/>:<span className="cat-emoji">{catEmoji(c)}</span>}
+              {(c.display_image||c.image_url)?<img src={c.display_image||c.image_url} alt={c.name}/>:<span className="cat-emoji">{catEmoji(c)}</span>}
             </div>
             <div className="cat-chip-name">{c.name}</div>
           </div>
