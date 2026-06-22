@@ -144,6 +144,14 @@
     );
     banner.id = "rkPwaInstallBanner";
     document.body.appendChild(banner);
+
+    // Mobile par actual header ki height le kar banner ki top position set karo
+    var mobileHeader = document.querySelector(".header");
+    if (mobileHeader && window.innerWidth < 768) {
+      var h = mobileHeader.offsetHeight;
+      banner.style.top = (h + 6) + "px";
+    }
+
     requestAnimationFrame(function () {
       banner.classList.add("rk-pwa-show");
     });
