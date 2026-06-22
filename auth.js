@@ -1,42 +1,56 @@
 /* ============================================
-   RINKU KIRANA — AUTH.JS  (FIXED VERSION)
+   RINKU KIRANA — AUTH.JS
    Supabase Auth Logic (Shared) — Safe Singleton
+
+   BUG FIX (Critical #1): Supabase keys ab hardcoded nahi hain.
+   Keys window.__RK_CONFIG__ se load hoti hain jo index.html mein
+   ek <script> tag ke zariye inject ki jaati hai.
+
+   Deployment setup:
+     index.html / account.html mein sabse upar ye script add karein:
+       <script>
+         window.__RK_CONFIG__ = {
+           supabaseUrl: "https://xxxx.supabase.co",
+           supabaseAnonKey: "sb_publishable__your_key"
+         };
+       </script>
+     Ye values Vercel/Netlify environment variables se inject ki ja sakti hain
+     build step ya edge functions ke zariye.
+     Git history mein ye values tab bhi nahi aayengi.
    ============================================ */
 (function () {
   "use strict";
 
-  // ── Guard: agar script kisi reason se dobara execute ho
-  // (stale cache / duplicate <script> tag waghera), to dobara
-  // setup na ho. Sab kuch IIFE ke andar hai isliye `const`
-  // kabhi global scope me clash nahi karega.
-  if (window.__RK_AUTH_INITIALIZED__) {
-    return;
-  }
+  if (window.__RK_AUTH_INITIALIZED__) return;
   window.__RK_AUTH_INITIALIZED__ = true;
 
-  // ── SUPABASE CONFIG ───────────────────────────
-  var SUPABASE_URL = "https://pffaflasgwhydkmxwkky.supabase.co";
-  var SUPABASE_ANON_KEY = "sb_publishable__tFDYhkM3blZ0pIVT0YxLA_YvkKq79L";
-  // Note: "sb_publishable_" is Supabase's current key prefix (replaces the
-  // old JWT anon key). The random portion after it just happens to start
-  // with "_" — that's normal, not a typo. Confirm against Settings > API
-  // if you ever see auth calls fail with an invalid-key error.
+  // ── SUPABASE CONFIG (env-injected) ───────────
+  var cfg = window.__RK_CONFIG__ || {};
+  var SUPABASE_URL     = cfg.supabaseUrl     || "";
+  var SUPABASE_ANON_KEY = cfg.supabaseAnonKey || "";
+
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    console.error(
+      "[RKAuth] window.__RK_CONFIG__ set nahi hai.\n" +
+      "index.html mein sabse pehle ye script add karein:\n" +
+      "<script>window.__RK_CONFIG__={supabaseUrl:'https://xxxx.supabase.co'," +
+      "supabaseAnonKey:'sb_publishable__...'}<\/script>"
+    );
+    return;
+  }
 
   if (!window.supabase || !window.supabase.createClient) {
     console.error(
       "[RKAuth] @supabase/supabase-js load nahi hui. Check karein ki " +
-        "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2 script " +
-        "auth.js se PEHLE load ho rahi hai."
+      "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2 script " +
+      "auth.js se PEHLE load ho rahi hai."
     );
     return;
   }
 
   var createClient = window.supabase.createClient;
 
-  // Singleton client
-  window.rkSupabase =
-    window.rkSupabase || createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
+  window.rkSupabase = window.rkSupabase || createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   var supabase = window.rkSupabase;
 
   // ── SESSION HELPERS ───────────────────────────
@@ -59,9 +73,7 @@
       avatar: meta.avatar_url || null,
       savedAt: Date.now(),
     };
-    try {
-      localStorage.setItem("rk_user", JSON.stringify(profile));
-    } catch (e) {}
+    try { localStorage.setItem("rk_user", JSON.stringify(profile)); } catch (e) {}
     return profile;
   }
 
@@ -69,14 +81,10 @@
     try {
       var raw = localStorage.getItem("rk_user");
       return raw ? JSON.parse(raw) : null;
-    } catch (e) {
-      return null;
-    }
+    } catch (e) { return null; }
   }
 
-  function clearUserLocal() {
-    localStorage.removeItem("rk_user");
-  }
+  function clearUserLocal() { localStorage.removeItem("rk_user"); }
 
   // ── UI HELPERS ────────────────────────────────
   function showMsg(el, type, html) {
@@ -85,25 +93,17 @@
     el.innerHTML =
       '<span class="msg-icon">' +
       (type === "error" ? "⚠️" : "✅") +
-      "</span><span>" +
-      html +
-      "</span>";
+      "</span><span>" + html + "</span>";
     el.style.display = "flex";
     el.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 
-  function hideMsg(el) {
-    if (el) el.style.display = "none";
-  }
+  function hideMsg(el) { if (el) el.style.display = "none"; }
 
   function setLoading(btn, loading, label) {
     if (!btn) return;
     btn.disabled = loading;
-    if (loading) {
-      btn.innerHTML = '<span class="spinner"></span> Ek second…';
-    } else {
-      btn.innerHTML = label;
-    }
+    btn.innerHTML = loading ? '<span class="spinner"></span> Ek second…' : label;
   }
 
   function togglePass(inputId, btnEl) {
@@ -117,10 +117,10 @@
   // ── PASSWORD STRENGTH ─────────────────────────
   function getStrength(pw) {
     var score = 0;
-    if (pw.length >= 6) score++;
+    if (pw.length >= 6)  score++;
     if (pw.length >= 10) score++;
-    if (/[A-Z]/.test(pw)) score++;
-    if (/[0-9]/.test(pw)) score++;
+    if (/[A-Z]/.test(pw))        score++;
+    if (/[0-9]/.test(pw))        score++;
     if (/[^A-Za-z0-9]/.test(pw)) score++;
     return score;
   }
@@ -128,9 +128,9 @@
   function updateStrengthUI(pw, segs, label) {
     if (!segs || !label) return;
     var score = getStrength(pw);
-    var colors = ["#E2E8F0", "#E63946", "#FF6B35", "#FFB800", "#1BA672", "#0EA86A"];
-    var labels = ["", "Bahut kamzor", "Kamzor", "Theek hai", "Achha", "Bahut achha"];
-    var labelColors = ["", "#E63946", "#FF6B35", "#FFB800", "#1BA672", "#0EA86A"];
+    var colors      = ["#E2E8F0","#E63946","#FF6B35","#FFB800","#1BA672","#0EA86A"];
+    var labels      = ["","Bahut kamzor","Kamzor","Theek hai","Achha","Bahut achha"];
+    var labelColors = ["","#E63946","#FF6B35","#FFB800","#1BA672","#0EA86A"];
     segs.forEach(function (s, i) {
       s.style.background = i < score ? colors[score] : "#E2E8F0";
     });
@@ -138,20 +138,12 @@
     label.style.color = labelColors[score] || "#94A3B8";
   }
 
-  // ── SUPABASE AUTH FUNCTIONS ───────────────────
-
+  // ── AUTH FUNCTIONS ────────────────────────────
   async function doSignup(opts) {
-    var name = opts.name,
-      email = opts.email,
-      password = opts.password;
-
     var res = await supabase.auth.signUp({
-      email: email,
-      password: password,
+      email: opts.email, password: opts.password,
       options: {
-        data: { name: name.trim() },
-        // ✅ confirmation email redirects to email-verified.html —
-        // kept exactly as-is, signup flow is untouched.
+        data: { name: opts.name.trim() },
         emailRedirectTo: window.location.origin + "/email-verified.html",
       },
     });
@@ -159,36 +151,20 @@
   }
 
   async function doLogin(opts) {
-    var email = opts.email,
-      password = opts.password,
-      remember = opts.remember;
-
-    var res = await supabase.auth.signInWithPassword({ email: email, password: password });
+    var res = await supabase.auth.signInWithPassword({ email: opts.email, password: opts.password });
     if (!res.error && res.data.user) {
       var profile = saveUserLocal(res.data.user);
-      if (!remember) {
-        profile.sessionOnly = true;
-        localStorage.setItem("rk_user", JSON.stringify(profile));
-      }
+      if (!opts.remember) { profile.sessionOnly = true; localStorage.setItem("rk_user", JSON.stringify(profile)); }
     }
     return { data: res.data, error: res.error };
   }
 
   async function doForgotPassword(email) {
-    // ✅ FIX: pehle "/login.html" tha — Supabase recovery link login.html
-    // par hi land karta tha, jahan ek already-existing session jaisa
-    // dikhta tha aur naya-password form kabhi nahi dikhta tha (yehi
-    // "auto-login" bug tha). Ab dedicated reset-password.html par jaata
-    // hai, jo recovery session ko explicitly detect karke password update
-    // form dikhata hai aur update ke baad session clear karta hai.
     var redirectUrl = window.location.origin + "/reset-password.html";
-    var res = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: redirectUrl,
-    });
+    var res = await supabase.auth.resetPasswordForEmail(email, { redirectTo: redirectUrl });
     return { error: res.error };
   }
 
-  // Friendly error messages
   function friendlyError(err) {
     if (!err) return "";
     var msg = err.message || "";
@@ -209,23 +185,12 @@
     return msg || "Kuch error hua. Dobara try karein.";
   }
 
-  // ── EXPORT (GLOBAL) ───────────────────────────
+  // ── EXPOSE ────────────────────────────────────
   window.RKAuth = {
-    supabase: supabase,
-    getSession: getSession,
-    redirectIfLoggedIn: redirectIfLoggedIn,
-    saveUserLocal: saveUserLocal,
-    getUserLocal: getUserLocal,
-    clearUserLocal: clearUserLocal,
-    showMsg: showMsg,
-    hideMsg: hideMsg,
-    setLoading: setLoading,
-    togglePass: togglePass,
-    getStrength: getStrength,
-    updateStrengthUI: updateStrengthUI,
-    doSignup: doSignup,
-    doLogin: doLogin,
-    doForgotPassword: doForgotPassword,
-    friendlyError: friendlyError,
+    supabase, getSession, redirectIfLoggedIn,
+    saveUserLocal, getUserLocal, clearUserLocal,
+    showMsg, hideMsg, setLoading, togglePass,
+    getStrength, updateStrengthUI,
+    doSignup, doLogin, doForgotPassword, friendlyError,
   };
 })();
