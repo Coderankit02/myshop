@@ -25,8 +25,9 @@ button, a, .rk-pwa-touch {
 /* ── Install banner ──────────────────────────── */
 .rk-pwa-install-banner {
   position: fixed;
-  left: 12px; right: 12px; bottom: 12px;
-  z-index: 9999;
+  left: 12px; right: 12px;
+  bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  z-index: 1000001;
   background: #111827;
   color: #fff;
   border-radius: 16px;
@@ -38,6 +39,18 @@ button, a, .rk-pwa-touch {
   transform: translateY(120%);
   transition: transform 0.32s cubic-bezier(.22,1,.36,1);
   font-family: inherit;
+}
+@media (min-width: 768px) {
+  .rk-pwa-install-banner {
+    bottom: 24px;
+    max-width: 480px;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%) translateY(120%);
+  }
+  .rk-pwa-install-banner.rk-pwa-show {
+    transform: translateX(-50%) translateY(0);
+  }
 }
 .rk-pwa-install-banner.rk-pwa-show { transform: translateY(0); }
 .rk-pwa-install-icon {
@@ -60,7 +73,7 @@ button, a, .rk-pwa-touch {
 .rk-pwa-update-banner {
   position: fixed;
   top: 0; left: 0; right: 0;
-  z-index: 9999;
+  z-index: 1000002;
   background: var(--rk-pwa-primary);
   color: #fff;
   padding: 11px 16px;
@@ -76,7 +89,7 @@ button, a, .rk-pwa-touch {
 
 /* ── iOS "Add to Home Screen" instructions sheet ─ */
 .rk-pwa-ios-sheet {
-  position: fixed; inset: 0; z-index: 10000;
+  position: fixed; inset: 0; z-index: 1000003;
   background: rgba(0,0,0,0.55);
   display:flex; align-items:flex-end; justify-content:center;
   opacity:0; pointer-events:none; transition: opacity 0.25s ease;
