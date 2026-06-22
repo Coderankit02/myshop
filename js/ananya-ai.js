@@ -730,6 +730,13 @@
     state.unread = 0;
     updateBadge();
 
+    // Mobile: bottom nav ko hide karo taaki input box show ho
+    if (window.innerWidth <= 480) {
+      var bnav = document.querySelector('.bottom-nav');
+      if (bnav) bnav.style.display = 'none';
+      document.body.style.overflow = 'hidden';
+    }
+
     if (!state.historyLoaded) {
       state.historyLoaded = true;
       loadInitialConversation();
@@ -743,6 +750,13 @@
     document.getElementById('ananya-widget').classList.remove('ananya-open');
     document.getElementById('ananya-trigger').classList.remove('ananya-trigger-hidden');
     document.getElementById('ananya-trigger').setAttribute('aria-expanded', 'false');
+
+    // Mobile: bottom nav wapas dikhao
+    if (window.innerWidth <= 480) {
+      var bnav = document.querySelector('.bottom-nav');
+      if (bnav) bnav.style.display = '';
+      document.body.style.overflow = '';
+    }
   }
 
   function toggleWidget() { state.isOpen ? closeWidget() : openWidget(); }
