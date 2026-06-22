@@ -543,14 +543,15 @@ function useSearch(query,active){
     timer.current=setTimeout(async()=>{
       setLoading(true);
       const {data}=await supabase.from('products')
-        .select('*,categories(name),product_images(image_url,sort_order)')
+        .select('*,categories(name),product_images(id,image_url,is_default,sort_order)')
         .eq('is_active',true)
         .or(`name.ilike.%${query.trim()}%,description.ilike.%${query.trim()}%`)
         .limit(40);
       setResults((data||[]).map(p=>({
         ...p,
         discount:calcDiscount(p.selling_price,p.original_price),
-        primary_image:(p.product_images||[]).sort((a,b)=>a.sort_order-b.sort_order)[0]?.image_url||null,
+        images:(p.product_images||[]).slice().sort((a,b)=>a.sort_order-b.sort_order),
+        primary_image:(()=>{const imgs=(p.product_images||[]).slice().sort((a,b)=>a.sort_order-b.sort_order);return(imgs.find(i=>i.is_default)||imgs[0])?.image_url||null;})(),
       })));
       setLoading(false);
     },350);
@@ -658,10 +659,12 @@ function ProductDetail({product,cart,addToCart,updQty,onBack}){
   const [imgErr,setImgErr]=useState({});
   const touchStartX=useRef(null);
   const touchStartY=useRef(null);
+  const isDragging=useRef(false);
 
   const images=product.images||[];
   const mainSrc=images[selImg]?.image_url||null;
 
+  // Touch (mobile)
   function handleTouchStart(e){
     touchStartX.current=e.touches[0].clientX;
     touchStartY.current=e.touches[0].clientY;
@@ -676,16 +679,40 @@ function ProductDetail({product,cart,addToCart,updQty,onBack}){
     }
     touchStartX.current=null;touchStartY.current=null;
   }
+  // Mouse (laptop/desktop)
+  function handleMouseDown(e){
+    touchStartX.current=e.clientX;
+    touchStartY.current=e.clientY;
+    isDragging.current=true;
+  }
+  function handleMouseUp(e){
+    if(!isDragging.current)return;
+    isDragging.current=false;
+    if(touchStartX.current===null)return;
+    const dx=e.clientX-touchStartX.current;
+    const dy=e.clientY-touchStartY.current;
+    if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>40){
+      if(dx<0&&selImg<images.length-1){setSelImg(s=>s+1);setImgErr({});}
+      else if(dx>0&&selImg>0){setSelImg(s=>s-1);setImgErr({});}
+    }
+    touchStartX.current=null;touchStartY.current=null;
+  }
+  function handleMouseLeave(){
+    isDragging.current=false;
+    touchStartX.current=null;touchStartY.current=null;
+  }
 
   return(
     <div className="product-detail-page">
       <button className="pdp-back" onClick={onBack}>← Wapas Jao</button>
-      <div className="pdp-gallery" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} style={{cursor:images.length>1?'grab':'default'}}>
+      <div className="pdp-gallery" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} style={{userSelect:'none',position:'relative'}}>
         {mainSrc&&!imgErr[selImg]
           ?<img className="pdp-main-img" src={mainSrc} alt={product.name} onError={()=>setImgErr(p=>({...p,[selImg]:true}))} draggable={false}/>
           :<div className="pdp-main-placeholder">🛒</div>
         }
-        {images.length>1&&(
+        {images.length>1&&(<>
+          <button onClick={()=>{if(selImg>0){setSelImg(s=>s-1);setImgErr({});}}} style={{position:'absolute',top:'50%',left:8,transform:'translateY(-50%)',width:36,height:36,borderRadius:'50%',background:'rgba(0,0,0,0.45)',color:'#fff',fontSize:'1.1rem',display:'flex',alignItems:'center',justifyContent:'center',opacity:selImg===0?0.25:1,cursor:selImg===0?'default':'pointer',border:'none',zIndex:5}}>‹</button>
+          <button onClick={()=>{if(selImg<images.length-1){setSelImg(s=>s+1);setImgErr({});}}} style={{position:'absolute',top:'50%',right:8,transform:'translateY(-50%)',width:36,height:36,borderRadius:'50%',background:'rgba(0,0,0,0.45)',color:'#fff',fontSize:'1.1rem',display:'flex',alignItems:'center',justifyContent:'center',opacity:selImg===images.length-1?0.25:1,cursor:selImg===images.length-1?'default':'pointer',border:'none',zIndex:5}}>›</button>
           <div style={{position:'relative'}}>
             <div className="pdp-thumbs">
               {images.map((img,i)=>(
@@ -699,7 +726,7 @@ function ProductDetail({product,cart,addToCart,updQty,onBack}){
               ))}
             </div>
           </div>
-        )}
+        </>)}
       </div>
       <div className="pdp-info">
         {product.categories&&<div className="pdp-cat-label">{product.categories.name}</div>}
