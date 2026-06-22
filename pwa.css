@@ -81,6 +81,20 @@ button, a, .rk-pwa-touch {
 .rk-pwa-install-text { flex:1; min-width:0; }
 .rk-pwa-install-title { font-size:0.82rem; font-weight:700; margin:0 0 1px; }
 .rk-pwa-install-sub { font-size:0.70rem; color:#9CA3AF; margin:0; }
+
+/* Dark mode: banner white background, black text */
+html[data-theme="dark"] .rk-pwa-install-banner {
+  background: #FFFFFF;
+  color: #111827;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.5);
+}
+html[data-theme="dark"] .rk-pwa-install-sub { color: #6B7280; }
+html[data-theme="dark"] .rk-pwa-btn-ghost { color: #6B7280; }
+@media (prefers-color-scheme: dark) {
+  .rk-pwa-install-banner { background: #FFFFFF; color: #111827; box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
+  .rk-pwa-install-sub { color: #6B7280; }
+  .rk-pwa-btn-ghost { color: #6B7280; }
+}
 .rk-pwa-install-actions { display:flex; gap:8px; flex-shrink:0; }
 .rk-pwa-btn {
   border:none; border-radius:8px; padding:6px 11px; font-size:0.76rem; font-weight:700;
