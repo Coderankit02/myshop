@@ -2,8 +2,22 @@
   "name": "rinku-kirana-store",
   "version": "1.0.0",
   "private": true,
-  "description": "Rinku Kirana & General Store — static frontend + Ananya AI serverless backend",
+  "description": "Rinku Kirana & General Store — Vite MPA frontend + Ananya AI serverless backend",
   "engines": {
     "node": ">=18"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.108.2",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^5.4.11"
   }
 }
