@@ -1,0 +1,32 @@
+[33mcommit 377b5d2ee44b57675995ab49a4fbc28c834269ab[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: Ankit Gupta <ankitji808080@gmail.com>
+Date:   Tue Jun 23 14:41:40 2026 +0530
+
+    Add gitignore and remove node_modules
+
+ .env.example                            |   20 [31m-[m
+ .gitignore                              |    1 [32m+[m
+ account.html                            | 1567 [32m+[m[31m------------------------------[m
+ email-verified.html                     |  424 [32m++[m[31m-------[m
+ forgot-password.html                    |  199 [32m+[m[31m---[m
+ login.html                              |  220 [32m+[m[31m----[m
+ package-lock.json                       |   45 [32m+[m[31m-[m
+ public/css/account.css                  |  268 [32m++++++[m
+ public/{ => css}/auth.css               |    9 [32m+[m
+ public/css/email-verified.css           |   31 [32m+[m
+ public/icons/favicon.ico                |  Bin [31m0[m -> [32m2109[m bytes
+ reset-password.html                     |  299 [32m+[m[31m-----[m
+ signup.html                             |  308 [32m+[m[31m-----[m
+ src/lib/supabaseClient.js               |   16 [32m+[m[31m-[m
+ src/pages/account/AccountPage.jsx       |  751 [32m+++++++++++++++[m
+ src/pages/account/account-main.jsx      |    3 [32m+[m
+ src/pages/auth/AuthLayout.jsx           |   55 [32m++[m
+ src/pages/auth/ForgotPasswordPage.jsx   |  112 [32m+++[m
+ src/pages/auth/LoginPage.jsx            |  139 [32m+++[m
+ src/pages/auth/ResetPasswordPage.jsx    |  204 [32m++++[m
+ src/pages/auth/SignupPage.jsx           |  245 [32m+++++[m
+ src/pages/auth/forgot-password-main.jsx |    3 [32m+[m
+ src/pages/auth/login-main.jsx           |    3 [32m+[m
+ src/pages/auth/reset-password-main.jsx  |    3 [32m+[m
+ src/pages/auth/signup-main.jsx          |    3 [32m+[m
+ 25 files changed, 2024 insertions(+), 2904 deletions(-)

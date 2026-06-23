@@ -172,7 +172,7 @@ input,select,textarea{outline:none;border:none;font-family:'Inter',sans-serif;fo
 .banner-dots{display:flex;justify-content:center;gap:6px;margin-top:8px;}
 .bdot{width:6px;height:6px;border-radius:50%;background:#CBD5E0;transition:all 0.3s;cursor:pointer;}
 .bdot.on{width:18px;border-radius:3px;background:var(--primary);}
-.cats-row{display:flex;overflow-x:auto;padding:6px 12px;scrollbar-width:none;}
+.cats-row{display:flex;overflow-x:auto;padding:6px 12px;scrollbar-width:none;will-change:scroll-position;transform:translateZ(0);isolation:isolate;}
 .cats-row::-webkit-scrollbar{display:none;}
 .cat-chip{flex-shrink:0;display:flex;flex-direction:column;align-items:stretch;gap:0;padding:0;cursor:pointer;border-radius:14px;transition:all 0.2s;width:76px;border:1.5px solid var(--border);overflow:hidden;background:#F7FAFC;}
 .cat-chip.on{border-color:var(--primary);background:var(--primary-light);}

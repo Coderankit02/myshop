@@ -9,6 +9,25 @@ import { ProductDetail } from './components/ProductDetail';
 import { CheckoutForm } from './components/CheckoutForm';
 import { BannerCardM } from './components/BannerCardM';
 
+// ── Mobile Category Row (outside App to prevent remount on every render) ──
+function MobileCatRow({cats,catsLoading,activeCatId,catEmoji,onClick}){
+  return(
+    <div className="cats-row">
+      {catsLoading
+        ?[...Array(6)].map((_,i)=><SkelCat key={i}/>)
+        :cats.map(c=>(
+          <div key={c.id} className={`cat-chip ${activeCatId===c.id?'on':''}`} onClick={()=>onClick(c.id)}>
+            <div className="cat-chip-img-box" style={{background:'var(--primary-light)'}}>
+              {(c.display_image||c.image_url)?<img src={c.display_image||c.image_url} alt={c.name}/>:<span className="cat-emoji">{catEmoji(c)}</span>}
+            </div>
+            <div className="cat-chip-name">{c.name}</div>
+          </div>
+        ))
+      }
+    </div>
+  );
+}
+
 // ── Main App ──────────────────────────────────────────────
 export default function App(){
   const [page,setPage]=useState('home');
@@ -340,22 +359,7 @@ export default function App(){
     </div>
   );
 
-  // ── Mobile Category Row ───────────────────────────────
-  const MobileCatRow=({onClick})=>(
-    <div className="cats-row">
-      {catsLoading
-        ?[...Array(6)].map((_,i)=><SkelCat key={i}/>)
-        :allCats.map(c=>(
-          <div key={c.id} className={`cat-chip ${activeCatId===c.id?'on':''}`} onClick={()=>onClick(c.id)}>
-            <div className="cat-chip-img-box" style={{background:'var(--primary-light)'}}>
-              {(c.display_image||c.image_url)?<img src={c.display_image||c.image_url} alt={c.name}/>:<span className="cat-emoji">{catEmoji(c)}</span>}
-            </div>
-            <div className="cat-chip-name">{c.name}</div>
-          </div>
-        ))
-      }
-    </div>
-  );
+  // MobileCatRow — App ke bahar move kar diya (scroll reset fix)
 
   // ── Footer ────────────────────────────────────────────
   const Footer=({mobile=false})=>(
@@ -531,7 +535,7 @@ export default function App(){
               {/* Shop by category */}
               <div style={{background:'var(--card-bg)',marginBottom:8,paddingBottom:4}}>
                 <div style={{padding:'12px 16px 0',fontWeight:800,fontSize:'0.92rem'}}>Shop by Category</div>
-                <MobileCatRow onClick={id=>{setActiveCatId(id);setPage('shop');setShopPage(1);setSearch('');}}/>
+                <MobileCatRow cats={allCats} catsLoading={catsLoading} activeCatId={activeCatId} catEmoji={catEmoji} onClick={id=>{setActiveCatId(id);setPage('shop');setShopPage(1);setSearch('');}}/>
               </div>
               {/* Featured */}
               {(featLoading||featuredProds.length>0)&&(
@@ -583,7 +587,7 @@ export default function App(){
             <div className="d-view"><DesktopShop/></div>
             <div className="m-view">
               <div style={{background:'var(--card-bg)',marginBottom:8}}>
-                <MobileCatRow onClick={id=>{setActiveCatId(id);setShopPage(1);setSearch('');}}/>
+                <MobileCatRow cats={allCats} catsLoading={catsLoading} activeCatId={activeCatId} catEmoji={catEmoji} onClick={id=>{setActiveCatId(id);setShopPage(1);setSearch('');}}/>
               </div>
               <div style={{background:'var(--card-bg)',padding:'10px 0 4px'}}>
                 {((shopLoading&&search.trim().length<2)||(searchLoading&&search.trim().length>1))
