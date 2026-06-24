@@ -266,8 +266,8 @@ export default function App(){
   },[shopProds,featuredProds,sectionProds]);
 
   const addToCart=p=>{
-    if(window.RKCart)window.RKCart.addToCart({id:p.id,name:p.name,price:p.selling_price,unit:p.unit_value,image:p.primary_image});
-    else setCart(prev=>{const ex=prev.find(i=>i.id===p.id);return ex?prev.map(i=>i.id===p.id?{...i,qty:i.qty+1}:i):[...prev,{id:p.id,name:p.name,price:p.selling_price,unit:p.unit_value,image:p.primary_image,qty:1}];});
+    if(window.RKCart)window.RKCart.addToCart({id:p.id,name:p.name,price:p.selling_price,unit:p.unit_value,image:p.primary_image,e:p.emoji||null,cat:p.categories?.name||null,old:p.original_price||null});
+    else setCart(prev=>{const ex=prev.find(i=>i.id===p.id);return ex?prev.map(i=>i.id===p.id?{...i,qty:i.qty+1}:i):[...prev,{id:p.id,name:p.name,price:p.selling_price,unit:p.unit_value,image:p.primary_image,e:p.emoji||null,cat:p.categories?.name||null,old:p.original_price||null,qty:1}];});
     showToast(`${p.name} cart mein add hua! 🛒`);
   };
 
