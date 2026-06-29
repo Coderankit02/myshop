@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabaseClient';
+import { uploadToCloudinary } from '../../lib/cloudinary';
 
 /* ─── helpers ─────────────────────────────── */
 const fmt      = n => '₹' + Number(n).toLocaleString('en-IN');
@@ -378,11 +379,9 @@ function ProfileTab({ state, setState, showToast }) {
     let avatar_url = p.avatar_url||null;
     if (file) {
       try {
-        const ext=file.name.split('.').pop();
-        const path=`avatars/${state.user.id}.${ext}`;
-        const {error:upErr}=await supabase.storage.from('avatars').upload(path,file,{upsert:true});
-        if (upErr) showToast('⚠️ Photo upload fail: '+upErr.message);
-        else { const {data:u}=supabase.storage.from('avatars').getPublicUrl(path); avatar_url=u.publicUrl+'?t='+Date.now(); }
+        const { url, error: upErr } = await uploadToCloudinary(file, `myshop/avatars/${state.user.id}`);
+        if (upErr || !url) showToast('⚠️ Photo upload fail');
+        else avatar_url = url;
       } catch(err) { showToast('⚠️ Photo upload error'); }
     }
     let updated=null;
