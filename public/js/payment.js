@@ -1,6 +1,6 @@
 /**
  * payment.js — Rinku Kirana
- * UPI Payment Verification (Supabase)
+ * UPI Payment Verification
  * ─────────────────────────────────────────────────────────────
  * Public API (window.RKPayment):
  *   uploadScreenshot(file, orderNumber)        → publicUrl | null
@@ -15,29 +15,32 @@
   'use strict';
 
   const getDB = () => window.sb;
-  const BUCKET = 'payment-screenshots';
+
+  // ── Cloudinary Config ──────────────────────────────────────
+  const CLOUD_NAME    = 'delf8iyzt';
+  const UPLOAD_PRESET = 'myshop_preset';
 
   /* ══════════════════════════════════════════════════════════
-     SCREENSHOT UPLOAD
+     SCREENSHOT UPLOAD — Cloudinary
   ══════════════════════════════════════════════════════════ */
   async function uploadScreenshot(file, orderNumber) {
     if (!file) return null;
     try {
-      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
-      const safeName = `${orderNumber || 'order'}_${Date.now()}.${ext}`;
-      const path = `${orderNumber || 'misc'}/${safeName}`;
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', UPLOAD_PRESET);
+      formData.append('folder', `myshop/payment-screenshots/${orderNumber || 'misc'}`);
 
-      const { error } = await getDB()
-        .storage
-        .from(BUCKET)
-        .upload(path, file, { cacheControl: '3600', upsert: false });
-
-      if (error) { console.error('[RKPayment] uploadScreenshot:', error.message); return null; }
-
-      const { data } = getDB().storage.from(BUCKET).getPublicUrl(path);
-      return data?.publicUrl || null;
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+        { method: 'POST', body: formData }
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (data.secure_url) return data.secure_url;
+      throw new Error(data.error?.message || 'Upload fail ho gaya');
     } catch (err) {
-      console.error('[RKPayment] uploadScreenshot (exception):', err);
+      console.error('[RKPayment] uploadScreenshot (Cloudinary):', err);
       return null;
     }
   }
@@ -45,10 +48,6 @@
   /* ══════════════════════════════════════════════════════════
      SUBMIT VERIFICATION (customer side)
   ══════════════════════════════════════════════════════════ */
-  /**
-   * @param {string} userId
-   * @param {{orderId, orderNumber, customerName, mobile, utr, screenshotUrl, amount}} opts
-   */
   async function submitVerification(userId, opts) {
     const { orderId, orderNumber, customerName, mobile, utr, screenshotUrl, amount } = opts;
 
@@ -75,7 +74,7 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     STATUS LOOKUP (customer side — e.g. order tracking page)
+     STATUS LOOKUP (customer side)
   ══════════════════════════════════════════════════════════ */
   async function getVerificationStatus(orderId) {
     if (!orderId) return null;
@@ -94,9 +93,6 @@
   /* ══════════════════════════════════════════════════════════
      ADMIN: LIST / SEARCH
   ══════════════════════════════════════════════════════════ */
-  /**
-   * @param {{status?: 'all'|'pending'|'paid'|'rejected', search?: string, limit?: number}} filters
-   */
   async function loadVerifications(filters = {}) {
     const { status = 'all', search = '', limit = 100 } = filters;
     let q = getDB()
