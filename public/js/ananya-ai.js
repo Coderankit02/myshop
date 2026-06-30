@@ -236,9 +236,27 @@
     }
     if (state.supabase) {
       try {
+        // BUG FIX (Medium #11): pehle display_name kabhi set nahi hota tha jab
+        // session banta tha, isliye logged-in customer bhi admin ke Support/Ai
+        // page par hamesha "Guest User" dikhta tha. Ab agar user logged in hai,
+        // unka naam (profiles.name, ya auth metadata full_name, ya email) bhejte hain.
+        let displayName = null;
+        if (state.userId) {
+          try {
+            const { data: profile } = await state.supabase.from('profiles').select('name,full_name').eq('id', state.userId).maybeSingle();
+            displayName = profile?.name || profile?.full_name || null;
+          } catch (e) { /* profiles table optional */ }
+          if (!displayName) {
+            try {
+              const { data: userRes } = await state.supabase.auth.getUser();
+              displayName = userRes?.user?.user_metadata?.full_name || userRes?.user?.email || null;
+            } catch (e) { /* auth optional */ }
+          }
+        }
         await state.supabase.from('ananya_chat_sessions').upsert({
           id: state.sessionId,
           user_id: state.userId || null,
+          display_name: displayName || 'Guest User',
           page_url: window.location.pathname,
           updated_at: new Date().toISOString(),
         }, { onConflict: 'id' });
@@ -815,9 +833,47 @@
   /* ══════════════════════════════════════════
      INIT
   ══════════════════════════════════════════ */
+  // BUG FIX (Critical #2): Admin Ai.jsx page ka "Disable AI Assistant" toggle
+  // shop_settings.ai_enabled set karta tha, par customer site ka chatbot widget
+  // ise kabhi check hi nahi karta tha — disable karne par bhi chatbot chalta rehta tha.
+  // Ab init() shuru hone se pehle ye flag check karte hain. Agar table/column missing
+  // ho (migration na chali ho) to fail-open karte hain — widget normally dikhega.
+  async function isAiEnabled() {
+    try {
+      const SB = window.sb || window.supabase || window.supabaseJs;
+      if (!SB) return true;
+      const { data, error } = await SB.from('shop_settings').select('ai_enabled').eq('id', 1).maybeSingle();
+      if (error || !data) return true; // fail open
+      return data.ai_enabled !== false;
+    } catch (e) {
+      return true; // fail open
+    }
+  }
+
+  // BUG FIX (related to Critical #1): store timings/contact hardcoded the yahan —
+  // admin Settings mein "Store Opening/Closing Time" badalne ka koi asar nahi padta tha.
+  // Best-effort sync: agar shop_settings row mil jaye to CONFIG.storeInfo update kar dete hain.
+  async function syncShopInfo() {
+    try {
+      const SB = window.sb || window.supabase || window.supabaseJs;
+      if (!SB) return;
+      const { data } = await SB.from('shop_settings').select('shop_name,contact,whatsapp,open_time,close_time').eq('id', 1).maybeSingle();
+      if (!data) return;
+      if (data.open_time && data.close_time) {
+        CONFIG.storeInfo.timings = `Daily: ${data.open_time} – ${data.close_time}`;
+      }
+      if (data.shop_name) CONFIG.storeName = data.shop_name;
+      if (data.phone || data.contact) CONFIG.storeInfo.phone = data.contact || CONFIG.storeInfo.phone;
+      if (data.whatsapp) { CONFIG.whatsappNumber = data.whatsapp.replace(/\D/g, ''); CONFIG.storeInfo.whatsapp = data.whatsapp; }
+    } catch (e) { /* best-effort only */ }
+  }
+
   async function init() {
     if (state.initialized) return;
+    const enabled = await isAiEnabled();
+    if (!enabled) { return; } // admin ne assistant band kiya hua hai — widget mount hi mat karo
     state.initialized = true;
+    await syncShopInfo();
 
     buildWidget();
     bindEvents();

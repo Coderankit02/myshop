@@ -106,15 +106,22 @@ export default function App(){
     const topCats=cats.slice(0,6);
     topCats.forEach(async(c)=>{
       const {data}=await supabase.from('products')
-        .select('*,product_images(image_url,sort_order)')
+        .select('*,product_images(image_url,is_default,sort_order)')
         .eq('category_id',c.id).eq('is_active',true)
         .order('is_featured',{ascending:false})
         .limit(8);
-      setSectionProds(p=>({...p,[c.id]:(data||[]).map(pr=>({
-        ...pr,
-        discount:calcDiscount(pr.selling_price,pr.original_price),
-        primary_image:(pr.product_images||[]).sort((a,b)=>a.sort_order-b.sort_order)[0]?.image_url||null,
-      }))}));
+      setSectionProds(p=>({...p,[c.id]:(data||[]).map(pr=>{
+        // BUG FIX: pehle yahan sirf sort_order ke hisaab se pehli image le li jaati thi,
+        // admin ka "⭐ Default" (is_default) flag ignore ho jaata tha. Ab dataHooks.js
+        // jaisa hi logic — is_default wali image ko priority milti hai.
+        const imgs=(pr.product_images||[]).slice().sort((a,b)=>a.sort_order-b.sort_order);
+        const defImg=imgs.find(i=>i.is_default)||imgs[0];
+        return{
+          ...pr,
+          discount:calcDiscount(pr.selling_price,pr.original_price),
+          primary_image:defImg?.image_url||null,
+        };
+      })}));
     });
   },[cats]);
 
@@ -298,6 +305,26 @@ export default function App(){
   // "All" virtual category
   const allCats=[{id:'all',name:'All',image_url:null,icon_emoji:'🛍️',slug:'all'},...cats];
 
+  // BUG FIX: admin ke Banners page mein "Link URL" field save hota tha, par customer
+  // site par banner click hamesha generic "shop" page kholta tha — link_url kabhi
+  // padha hi nahi jaata tha. Ab is_url ko resolve karte hain:
+  //  • "/category/<slug>"  → us category ke products dikhao
+  //  • pura URL (http/https) → naye tab mein wahi page kholo
+  //  • blank ya unresolved  → fallback: generic shop page
+  const handleBannerClick=useCallback((b)=>{
+    const link=(b?.link_url||'').trim();
+    if(!link){setPage('shop');setShopPage(1);return;}
+    if(/^https?:\/\//i.test(link)){window.open(link,'_blank','noopener');return;}
+    const catMatch=link.match(/^\/?category\/([\w-]+)\/?$/i);
+    if(catMatch){
+      const key=catMatch[1];
+      const found=cats.find(c=>c.slug===key||String(c.id)===key);
+      if(found){setActiveCatId(found.id);setPage('shop');setShopPage(1);setSearch('');return;}
+    }
+    // Unrecognised path — safe fallback so the click never feels broken
+    setPage('shop');setShopPage(1);
+  },[cats]);
+
   // ── Desktop Banner Row ────────────────────────────────
   const DesktopBannerRow=()=>{
     if(bannersLoading)return(<div className="desktop-banner-row">{[0,1,2].map(i=><SkelBanner key={i}/>)}</div>);
@@ -306,13 +333,13 @@ export default function App(){
     return(
       <div className="desktop-banner-row">
         {shown.map((b,i)=>(
-          <div key={b.id} className="banner-card-d" style={{background:b.bg_gradient||'linear-gradient(135deg,#064E3B,#047857)'}} onClick={()=>setPage('shop')}>
+          <div key={b.id} className="banner-card-d" style={{background:b.bg_gradient||'linear-gradient(135deg,#064E3B,#047857)'}} onClick={()=>handleBannerClick(b)}>
             {b.image_url&&<img src={b.image_url} alt={b.title} className="banner-card-d-img"/>}
             <div style={{flex:1,position:'relative',zIndex:1}}>
               <div className="banner-tag">SPECIAL OFFER</div>
               <div className="banner-title" style={{color:'#fff'}}>{b.title}</div>
               <div className="banner-sub" style={{color:'rgba(255,255,255,0.8)'}}>{b.subtitle}</div>
-              <button className="banner-btn-sm" onClick={()=>setPage('shop')}>{b.button_text||'Shop Now'} →</button>
+              <button className="banner-btn-sm" onClick={(e)=>{e.stopPropagation();handleBannerClick(b);}}>{b.button_text||'Shop Now'} →</button>
             </div>
             {/* Fix #5: hide decorative emoji when a real banner image is present */}
             {!b.image_url&&<div className="banner-emoji-d">🛒</div>}
@@ -522,7 +549,7 @@ export default function App(){
                 <div className="banner-wrap" ref={bannerWrapRef}>
                   {bannersLoading
                     ?<SkelBanner/>
-                    :banners.map((b,i)=><BannerCardM key={b.id} b={b} active={i===bannerIdx} onClick={()=>setPage('shop')}/>)
+                    :banners.map((b,i)=><BannerCardM key={b.id} b={b} active={i===bannerIdx} onClick={()=>handleBannerClick(b)}/>)
                   }
                 </div>
                 {banners.length>1&&<div className="banner-dots">{banners.map((_,i)=><div key={i} className={`bdot ${i===bannerIdx?'on':''}`} onClick={()=>setBannerIdx(i)}/>)}</div>}

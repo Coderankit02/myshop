@@ -40,23 +40,45 @@
   }
 
   // BUG FIX (Medium #10): Increment coupon used_count after successful order.
+  // BUG FIX (security tightening): pehle yahan seedha .from('coupons').update(...)
+  // call hota tha, jiske liye DB mein ek broad "customer update" RLS policy
+  // chahiye thi — jisse customer technically coupon ki koi bhi column (jaise
+  // discount_value) edit kar sakta tha. Ab sirf ek tightly-scoped Postgres
+  // function (increment_coupon_usage) call karte hain RPC se, jo sirf
+  // used_count +1 karta hai aur kuch nahi chhedta. Is function ke liye
+  // supabase/admin-wiring-migration.sql run hona zaroori hai.
   async function _incrementCouponUsage(promoCode) {
     if (!promoCode) return;
     try {
-      // Supabase doesn't have increment shorthand — fetch current count, then update.
-      const { data } = await getDB()
-        .from('coupons')
-        .select('id,used_count')
-        .eq('code', promoCode)
-        .eq('is_active', true)
-        .maybeSingle();
-      if (!data) return;
-      await getDB()
-        .from('coupons')
-        .update({ used_count: (data.used_count || 0) + 1, updated_at: new Date().toISOString() })
-        .eq('id', data.id);
+      const { error } = await getDB().rpc('increment_coupon_usage', { p_code: promoCode });
+      if (error) console.error('[RKOrders] _incrementCouponUsage (rpc):', error.message);
     } catch (e) {
       console.error('[RKOrders] _incrementCouponUsage:', e.message);
+    }
+  }
+
+  // BUG FIX (Critical #4): Order place hone par stock_quantity kabhi kam nahi hota tha,
+  // isliye Inventory page hamesha manually update karni padti thi aur overselling
+  // (2 customers ek hi aakhri item order kar saken) ho sakta tha. Ab har order item ke
+  // liye stock_quantity ko qty se ghata dete hain (0 se neeche kabhi nahi jaane dete).
+  async function _decrementStock(cartItems) {
+    for (const item of cartItems) {
+      if (!item?.id || !item?.qty) continue;
+      try {
+        const { data: prod, error: fetchErr } = await getDB()
+          .from('products')
+          .select('id,stock_quantity')
+          .eq('id', item.id)
+          .single();
+        if (fetchErr || !prod) continue;
+        const newQty = Math.max(0, (prod.stock_quantity || 0) - item.qty);
+        await getDB()
+          .from('products')
+          .update({ stock_quantity: newQty, updated_at: new Date().toISOString() })
+          .eq('id', item.id);
+      } catch (e) {
+        console.error('[RKOrders] _decrementStock:', item.id, e.message);
+      }
     }
   }
 
@@ -147,6 +169,9 @@
 
     const { error: iErr } = await getDB().from('order_items').insert(items);
     if (iErr) { console.error('[RKOrders] createOrder (items):', iErr.message); }
+
+    // BUG FIX (Critical #4): order confirm hote hi stock kam karo.
+    _decrementStock(cart); // fire-and-forget; don't block order confirmation for the customer
 
     // BUG FIX (Medium #10): Coupon use count badhao.
     if (promoCode) {

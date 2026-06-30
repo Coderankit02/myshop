@@ -71,25 +71,36 @@
     TIERS,
 
     /**
-     * Core calculation.
-     * Returns a delivery-info object for the given coordinates.
-     *
-     * @param {number} lat
-     * @param {number} lng
-     * @returns {{
-     *   distanceKm     : number,        // rounded to 1 decimal
-     *   distanceRaw    : number,        // exact float
-     *   charge         : number,        // ₹
-     *   available      : boolean,
-     *   tier           : Object,        // full tier config
-     *   label          : string,
-     *   emoji          : string,
-     *   eta            : string|null,
-     *   badgeClass     : string,
-     *   mapsLink       : string,
-     *   mapsNavLink    : string,
-     * }}
+     * BUG FIX (Critical #1): pehle delivery radius (8km) aur delivery charge (₹30)
+     * hamesha hardcoded the — admin Settings page mein "Delivery Radius" aur
+     * "Delivery Charge" badalne ka koi asar customer site par nahi padta tha.
+     * Ab shop_settings table se ye dono values load karke "paid" tier ko
+     * dynamically configure karte hain. Free tier (0-5km) wahi default rehta
+     * hai jab tak admin ka radius usse chhota na ho.
      */
+    ready: null,
+    async _loadFromShopSettings() {
+      try {
+        const sb = window.sb || window.supabase;
+        if (!sb) return;
+        const { data } = await sb.from('shop_settings').select('delivery_radius,delivery_charge').eq('id', 1).maybeSingle();
+        if (!data) return;
+        const radius = Number(data.delivery_radius);
+        const charge = Number(data.delivery_charge);
+        const paidTier = TIERS.find(t => t.id === 'paid');
+        const freeTier = TIERS.find(t => t.id === 'free');
+        if (radius > 0 && paidTier) {
+          paidTier.maxKm = radius;
+          if (freeTier) freeTier.maxKm = Math.min(freeTier.maxKm, radius);
+        }
+        if (!Number.isNaN(charge) && charge >= 0 && paidTier) {
+          paidTier.charge = charge;
+        }
+      } catch (err) {
+        console.error('[RKDelivery] shop_settings load failed, using defaults:', err);
+      }
+    },
+
     calculate(lat, lng) {
       const raw  = _haversine(SHOP.lat, SHOP.lng, lat, lng);
       const dist = Math.round(raw * 10) / 10;
@@ -245,5 +256,6 @@
   };
 
   window.RKDelivery = DeliveryRadius;
+  DeliveryRadius.ready = DeliveryRadius._loadFromShopSettings();
 
 })(window);

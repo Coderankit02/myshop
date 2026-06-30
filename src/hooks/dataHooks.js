@@ -71,6 +71,69 @@ export function useProducts(options={}){
   return{products,loading,total,totalPages:Math.ceil(total/pageSize),refetch:fetch};
 }
 
+// BUG FIX (Critical #1): Admin Settings page (UPI ID, shop name, contact, timings)
+// pehle sirf DB mein save hota tha — customer site kabhi padhta hi nahi tha
+// (UPI ID checkout mein hardcoded thi). Ye hook live shop_settings row deta hai,
+// jise CheckoutForm aur baaki jagah use kiya ja sakta hai.
+const SHOP_SETTINGS_DEFAULTS = {
+  shop_name: 'Rinku Kirana Store',
+  contact: '',
+  whatsapp: '',
+  upi_id: 'Q025544077@ybl', // fallback agar admin ne settings save na ki ho
+  delivery_radius: 8,
+  delivery_charge: 30,
+  open_time: '08:00',
+  close_time: '21:00',
+};
+export function useShopSettings(){
+  const [settings,setSettings]=useState(SHOP_SETTINGS_DEFAULTS);
+  const [loading,setLoading]=useState(true);
+  const fetch=useCallback(async()=>{
+    const {data}=await supabase.from('shop_settings').select('*').eq('id',1).maybeSingle();
+    if(data){
+      setSettings({
+        shop_name:data.shop_name||SHOP_SETTINGS_DEFAULTS.shop_name,
+        contact:data.contact||'',
+        whatsapp:data.whatsapp||'',
+        upi_id:data.upi_id||SHOP_SETTINGS_DEFAULTS.upi_id,
+        delivery_radius:data.delivery_radius??SHOP_SETTINGS_DEFAULTS.delivery_radius,
+        delivery_charge:data.delivery_charge??SHOP_SETTINGS_DEFAULTS.delivery_charge,
+        open_time:data.open_time||SHOP_SETTINGS_DEFAULTS.open_time,
+        close_time:data.close_time||SHOP_SETTINGS_DEFAULTS.close_time,
+      });
+    }
+    setLoading(false);
+  },[]);
+  useEffect(()=>{
+    fetch();
+    const ch=supabase.channel('shop-settings-rt').on('postgres_changes',{event:'*',schema:'public',table:'shop_settings'},fetch).subscribe();
+    return()=>supabase.removeChannel(ch);
+  },[fetch]);
+  return{settings,loading};
+}
+
+// BUG FIX (Critical #3): Coupon validation hook — customer checkout mein pehle
+// koi coupon code input hi nahi tha. Ye hook ek code ko coupons table ke against
+// validate karta hai (active, expiry, min_order, usage_limit) aur discount value deta hai.
+export function useCouponValidator(){
+  const [checking,setChecking]=useState(false);
+  const validate=useCallback(async(code,orderTotal)=>{
+    const clean=(code||'').trim().toUpperCase();
+    if(!clean) return{valid:false,reason:'Coupon code daalein'};
+    setChecking(true);
+    const {data,error}=await supabase.from('coupons').select('*').eq('code',clean).eq('is_active',true).maybeSingle();
+    setChecking(false);
+    if(error||!data) return{valid:false,reason:'Coupon code valid nahi hai'};
+    if(data.expiry_date&&new Date(data.expiry_date)<new Date(new Date().toDateString())) return{valid:false,reason:'Coupon expire ho chuka hai'};
+    if(data.usage_limit!=null&&(data.used_count||0)>=data.usage_limit) return{valid:false,reason:'Coupon ki usage limit khatam ho gayi'};
+    if(data.min_order&&orderTotal<data.min_order) return{valid:false,reason:`Minimum order ₹${data.min_order} hona chahiye`};
+    const discount=data.discount_type==='percent'?Math.round(orderTotal*(data.discount_value/100)):data.discount_value;
+    const finalDiscount=Math.min(discount,orderTotal);
+    return{valid:true,code:data.code,discount:finalDiscount,coupon:data};
+  },[]);
+  return{validate,checking};
+}
+
 export function useSearch(query,active){
   const [results,setResults]=useState([]);
   const [loading,setLoading]=useState(false);

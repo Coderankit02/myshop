@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { UpiPayCard } from './UpiPayCard';
+import { useShopSettings, useCouponValidator } from '../hooks/dataHooks';
 
 /* ══════════════════════════════════════════════════════════
    CheckoutForm
@@ -52,7 +53,26 @@ export function CheckoutForm({cart,total:cartTotal,showToast,onSuccess,user,onLo
   },[showVerifyForm]);
   const fmtTime=s=>{const m=Math.floor(s/60);const ss=String(s%60).padStart(2,'0');return`${m}:${ss}`;};
   const showWaitHint=remainingSec<=COUNTDOWN_SEC-REMINDER_AFTER_SEC;
-  const UPI_ID='Q025544077@ybl';
+  // BUG FIX (Critical #1): UPI ID ab admin ki Settings se live aati hai, hardcoded nahi.
+  const {settings:shopSettings}=useShopSettings();
+  const UPI_ID=shopSettings.upi_id;
+  // BUG FIX (Critical #3): Coupon code input — pehle checkout mein ye field tha hi nahi,
+  // isliye admin ke banaye coupons kabhi customer use nahi kar paata tha.
+  const {validate:validateCoupon,checking:couponChecking}=useCouponValidator();
+  const [couponCode,setCouponCode]=useState('');
+  const [appliedCoupon,setAppliedCoupon]=useState(null); // {code,discount}
+  const [couponError,setCouponError]=useState('');
+  const discount=appliedCoupon?.discount||0;
+  const handleApplyCoupon=async()=>{
+    setCouponError('');
+    const result=await validateCoupon(couponCode,cartTotal);
+    if(!result.valid){setCouponError(result.reason);setAppliedCoupon(null);return;}
+    setAppliedCoupon({code:result.code,discount:result.discount});
+    showToast(`✅ Coupon applied — ₹${result.discount} OFF`);
+  };
+  const handleRemoveCoupon=()=>{setAppliedCoupon(null);setCouponCode('');setCouponError('');};
+  const deliveryCharge=(deliveryInfo&&deliveryInfo.available)?deliveryInfo.charge:0;
+  const finalAmount=Math.max(0,total-discount+deliveryCharge);
   useEffect(()=>{
     let active=true;
     (async()=>{
@@ -81,6 +101,9 @@ export function CheckoutForm({cart,total:cartTotal,showToast,onSuccess,user,onLo
     if(!window.RKLocation||!window.RKDelivery){return;}
     setLocState('loading');
     try{
+      // BUG FIX: admin ke Settings page se delivery radius/charge load hone ka wait
+      // karte hain taaki hamesha latest values use ho, hardcoded values nahi.
+      if(window.RKDelivery.ready)await window.RKDelivery.ready;
       const pos=await window.RKLocation.getCurrentPosition(locState==='success');
       const info=window.RKDelivery.calculate(pos.lat,pos.lng);
       setDeliveryInfo({...info,lat:pos.lat,lng:pos.lng});
@@ -152,7 +175,7 @@ export function CheckoutForm({cart,total:cartTotal,showToast,onSuccess,user,onLo
       setPlacing(true);
       try{
         let result=null;
-        if(window.RKOrders&&user)result=await window.RKOrders.createOrder(user.uid,{cart,total,address:addressPayload,paymentMethod:pay,...locationPayload});
+        if(window.RKOrders&&user)result=await window.RKOrders.createOrder(user.uid,{cart,total,address:addressPayload,paymentMethod:pay,promoCode:appliedCoupon?.code||null,discount,...locationPayload});
         // Frontend-only fix: previously a failed/null createOrder() still showed the
         // success screen with a randomly-generated fake order number. Now we only
         // show success if the order actually saved (or if no backend hook exists at all,
@@ -189,13 +212,13 @@ export function CheckoutForm({cart,total:cartTotal,showToast,onSuccess,user,onLo
     if(!pendingOrder){showToast('Order data missing');return;}
     setSubmittingVerify(true);
     let result=null;
-    if(window.RKOrders&&user)result=await window.RKOrders.createOrder(user.uid,{cart,total,address:pendingOrder.address,paymentMethod:pendingOrder.paymentMethod,...(pendingOrder.locationPayload||{})});
+    if(window.RKOrders&&user)result=await window.RKOrders.createOrder(user.uid,{cart,total,address:pendingOrder.address,paymentMethod:pendingOrder.paymentMethod,promoCode:appliedCoupon?.code||null,discount,...(pendingOrder.locationPayload||{})});
     if(!result){setSubmittingVerify(false);showToast('Order create nahi hua');return;}
     const realOrderId=result.orderId;
     const realOrderNumber=result.orderNumber||('RK'+Math.floor(1000+Math.random()*9000));
     const screenshotUrl=await window.RKPayment.uploadScreenshot(screenshotFile,realOrderNumber);
     if(!screenshotUrl){setSubmittingVerify(false);showToast('Screenshot upload fail hua');return;}
-    const saved=await window.RKPayment.submitVerification(user?.uid,{orderId:realOrderId,orderNumber:realOrderNumber,customerName:f.name.trim(),mobile:f.phone.trim(),utr:utrClean,screenshotUrl,amount:total});
+    const saved=await window.RKPayment.submitVerification(user?.uid,{orderId:realOrderId,orderNumber:realOrderNumber,customerName:f.name.trim(),mobile:f.phone.trim(),utr:utrClean,screenshotUrl,amount:finalAmount});
     setSubmittingVerify(false);
     if(saved){if(window.RKCart)window.RKCart.clearCart();onSuccess(realOrderNumber,'upi');}
     else showToast('Verification submit nahi hua');
@@ -210,8 +233,8 @@ export function CheckoutForm({cart,total:cartTotal,showToast,onSuccess,user,onLo
         </div>
         <div className="qr-fs-body">
           <div className="qr-fs-amt-label">{orderInfo?.orderNumber?`Order #${orderInfo.orderNumber}`:'Order pending — verification ke baad confirm hoga'}</div>
-          <div className="qr-fs-amt">₹{total}</div>
-          <UpiPayCard total={total} upiId={UPI_ID}/>
+          <div className="qr-fs-amt">₹{finalAmount}</div>
+          <UpiPayCard total={finalAmount} upiId={UPI_ID}/>
           {showWaitHint&&<div className="payment-wait-hint"><span>⏰</span><span>QR dobara scan karein ya UPI ID <b>{UPI_ID}</b> par manually pay karein</span></div>}
           <div className="co-card" style={{width:'100%',marginTop:14}}>
             <div className="co-card-title">🧾 Payment Verification</div>
@@ -237,7 +260,27 @@ export function CheckoutForm({cart,total:cartTotal,showToast,onSuccess,user,onLo
         <div className="co-card-title">📋 Order Summary</div>
         {cart.slice(0,4).map(i=><div key={i.id} className="osi"><span>{i.name} ×{i.qty}</span><span><b>₹{(i.price*i.qty).toFixed(0)}</b></span></div>)}
         {cart.length>4&&<div style={{fontSize:'0.72rem',color:'var(--gray)'}}>+{cart.length-4} more items</div>}
-        <div style={{borderTop:'1px solid var(--border)',marginTop:8,paddingTop:8,display:'flex',justifyContent:'space-between',fontWeight:800,fontSize:'0.9rem'}}><span>Total</span><span style={{color:'var(--primary)'}}>₹{total.toFixed(0)}</span></div>
+        {/* BUG FIX (Critical #3): coupon code input — admin ke banaye coupons ab yahan se apply ho sakte hain */}
+        <div style={{marginTop:10,paddingTop:8,borderTop:'1px dashed var(--border)'}}>
+          {!appliedCoupon?(
+            <div style={{display:'flex',gap:8}}>
+              <input className="inp" style={{flex:1}} placeholder="Coupon code (e.g. WELCOME50)" value={couponCode} onChange={e=>{setCouponCode(e.target.value.toUpperCase());setCouponError('');}}/>
+              <button type="button" className="addr-add-btn" style={{width:'auto',padding:'0 14px'}} disabled={couponChecking||!couponCode.trim()} onClick={handleApplyCoupon}>{couponChecking?'...':'Apply'}</button>
+            </div>
+          ):(
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',background:'var(--light)',borderRadius:8,padding:'8px 12px'}}>
+              <span>🎟️ <b>{appliedCoupon.code}</b> applied — ₹{appliedCoupon.discount} OFF</span>
+              <button type="button" onClick={handleRemoveCoupon} style={{background:'none',border:'none',color:'var(--gray)',cursor:'pointer'}}>✕</button>
+            </div>
+          )}
+          {couponError&&<div className="phone-error" style={{marginTop:4}}>⚠️ {couponError}</div>}
+        </div>
+        <div style={{marginTop:8,fontSize:'0.82rem',color:'var(--gray)'}}>
+          <div style={{display:'flex',justifyContent:'space-between'}}><span>Subtotal</span><span>₹{total.toFixed(0)}</span></div>
+          {discount>0&&<div style={{display:'flex',justifyContent:'space-between',color:'var(--primary)'}}><span>Coupon Discount</span><span>−₹{discount.toFixed(0)}</span></div>}
+          {deliveryCharge>0&&<div style={{display:'flex',justifyContent:'space-between'}}><span>Delivery Charge</span><span>₹{deliveryCharge.toFixed(0)}</span></div>}
+        </div>
+        <div style={{borderTop:'1px solid var(--border)',marginTop:8,paddingTop:8,display:'flex',justifyContent:'space-between',fontWeight:800,fontSize:'0.9rem'}}><span>Total</span><span style={{color:'var(--primary)'}}>₹{finalAmount.toFixed(0)}</span></div>
       </div>
       <div className="co-card">
         <div className="co-card-title">🙋 Contact Details</div>
