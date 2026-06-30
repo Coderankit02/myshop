@@ -434,6 +434,14 @@ html[data-theme="dark"] .dr-status-card {
   border-color: rgba(255, 255, 255, 0.08);
 }
 
+html[data-theme="dark"] .dr-status-sub--warn {
+  color: #FFCB47;
+}
+
+html[data-theme="dark"] .dr-charge-val {
+  color: #60A5FA;
+}
+
 html[data-theme="dark"] .dr-badge--free {
   background: linear-gradient(135deg, #11241C 0%, #1A3A2A 100%);
   border-color: rgba(46, 204, 130, 0.25);
