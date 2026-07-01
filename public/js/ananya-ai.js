@@ -266,8 +266,8 @@
         let avatarUrl = null;
         if (state.userId) {
           try {
-            const { data: profile } = await state.supabase.from('profiles').select('name,full_name,avatar_url').eq('id', state.userId).maybeSingle();
-            displayName = profile?.name || profile?.full_name || null;
+            const { data: profile } = await state.supabase.from('profiles').select('name,avatar_url').eq('id', state.userId).maybeSingle();
+            displayName = profile?.name || null;
             avatarUrl = profile?.avatar_url || null;
           } catch (e) { /* profiles table optional */ }
           if (!displayName) {
