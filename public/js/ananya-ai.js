@@ -208,15 +208,33 @@
   ══════════════════════════════════════════ */
   async function initSupabase() {
     try {
-      const SB = window.supabase || window.supabaseJs;
-      if (SB && CONFIG.supabaseUrl !== 'YOUR_SUPABASE_URL') {
-        // Distinct storageKey so this client never collides with the admin
-        // panel's client (or any other Supabase client) running in the
-        // same browser context — that collision was the source of the
-        // "Multiple GoTrueClient instances" console warning.
-        state.supabase = SB.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey, {
-          auth: { storageKey: 'ananya-widget-auth' }
-        });
+      // BUG FIX: pehle ye widget hamesha ek NAYA, isolated Supabase client
+      // banata tha (apne alag storageKey 'ananya-widget-auth' ke saath).
+      // Ek naye client ko site ke real login session ke baare mein KABHI pata
+      // nahi chal sakta — wo session toh window.sb (src/lib/supabaseClient.js)
+      // ki storage mein hota hai. Isi wajah se state.userId hamesha null
+      // rehta tha aur logged-in customer bhi admin panel mein "Guest User"
+      // dikhta tha — sirf naye visitors ke liye nahi, HAR customer ke liye.
+      //
+      // Fix: site ka already-authenticated shared client (window.sb, jise
+      // src/lib/supabaseClient.js banata/expose karta hai) reuse karo — isse
+      // (a) real login session turant mil jaata hai, aur (b) "Multiple
+      // GoTrueClient instances" warning bhi nahi aati kyunki ye same
+      // instance hai, koi duplicate nahi.
+      if (window.sb) {
+        state.supabase = window.sb;
+      } else {
+        // Fallback: React app load nahi hua is page par (e.g. offline.html)
+        // — apna khud ka client banao agar CDN library available hai.
+        const SB = window.supabase || window.supabaseJs;
+        if (SB && typeof SB.createClient === 'function' && CONFIG.supabaseUrl !== 'YOUR_SUPABASE_URL') {
+          state.supabase = SB.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey, {
+            auth: { storageKey: 'ananya-widget-auth' }
+          });
+        }
+      }
+
+      if (state.supabase) {
         let session = null;
         try {
           const res = await state.supabase.auth.getSession();
@@ -275,10 +293,26 @@
       });
     } catch (e) { /* optional */ }
     try {
-      await state.supabase.from('ananya_chat_sessions').update({
+      const sessionPatch = {
         last_message: text.slice(0, 100),
         updated_at: new Date().toISOString(),
-      }).eq('id', state.sessionId);
+      };
+      // BUG FIX: `unread` column session banate waqt sirf 0 par set hota tha
+      // aur kabhi increment nahi hota tha, isliye admin panel ka "Unread"
+      // filter/badge kabhi kaam hi nahi karta tha. Ab customer ('user' role)
+      // ka message aane par unread ko +1 karte hain (admin ke reply / open
+      // karne par Support.jsx already ise 0 par reset kar deta hai).
+      if (role === 'user') {
+        try {
+          const { data: current } = await state.supabase
+            .from('ananya_chat_sessions')
+            .select('unread')
+            .eq('id', state.sessionId)
+            .maybeSingle();
+          sessionPatch.unread = (current?.unread || 0) + 1;
+        } catch (e) { /* best-effort */ }
+      }
+      await state.supabase.from('ananya_chat_sessions').update(sessionPatch).eq('id', state.sessionId);
     } catch (e) { /* optional */ }
   }
 
