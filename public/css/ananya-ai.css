@@ -701,6 +701,111 @@
   margin-bottom: 2px;
 }
 
+/* ── User message row: bubble + own DP ── */
+.ananya-msg-user-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  justify-content: flex-end;
+  max-width: 100%;
+}
+
+.ananya-msg-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  min-width: 0;
+}
+
+.ananya-msg-avatar.user-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--an-r-full);
+  background: linear-gradient(135deg, var(--an-primary, #1BA672), var(--an-accent, #FFB800));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+  overflow: hidden;
+  margin-bottom: 2px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+.ananya-msg-avatar.user-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ── Login gate — chat sirf logged-in users ke liye ── */
+.ananya-login-gate {
+  display: none;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 8px;
+  padding: 32px 26px;
+  background: var(--an-bg);
+}
+
+#ananya-widget.ananya-guest .ananya-login-gate {
+  display: flex;
+}
+
+#ananya-widget.ananya-guest .ananya-messages,
+#ananya-widget.ananya-guest .ananya-input-area {
+  display: none;
+}
+
+.ananya-login-gate-icon {
+  font-size: 38px;
+  line-height: 1;
+}
+
+.ananya-login-gate-title {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--an-text);
+  font-family: 'Inter', sans-serif;
+}
+
+.ananya-login-gate-sub {
+  font-size: 12.5px;
+  color: var(--an-text-2);
+  max-width: 240px;
+  line-height: 1.5;
+  font-family: 'Inter', sans-serif;
+}
+
+.ananya-login-gate-btn {
+  margin-top: 6px;
+  background: linear-gradient(135deg, var(--an-primary, #1BA672), var(--an-primary-dark, #158A5E));
+  color: #fff;
+  border: none;
+  padding: 12px 24px;
+  border-radius: var(--an-r-full);
+  font-weight: 700;
+  font-size: 13.5px;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(27,166,114,0.35);
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.ananya-login-gate-btn:hover {
+  transform: translateY(-1px);
+  opacity: 0.94;
+}
+
+.ananya-login-gate-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
 /* ── Sender name (bot only) ── */
 .ananya-msg.bot .ananya-sender-name {
   font-size: 12px;

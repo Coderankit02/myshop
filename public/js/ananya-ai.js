@@ -169,6 +169,10 @@
     realtimeChannel: null,
     pendingController: null,
     lastFailedText: null,
+    // FEATURE: login-required chat — user ka naam/photo (profile se) yahan
+    // cache hote hain taaki har apne message ke saath dikhaya ja sake.
+    userName:      null,
+    userAvatar:    null,
   };
 
   /* ══════════════════════════════════════════
@@ -259,10 +263,12 @@
         // page par hamesha "Guest User" dikhta tha. Ab agar user logged in hai,
         // unka naam (profiles.name, ya auth metadata full_name, ya email) bhejte hain.
         let displayName = null;
+        let avatarUrl = null;
         if (state.userId) {
           try {
-            const { data: profile } = await state.supabase.from('profiles').select('name,full_name').eq('id', state.userId).maybeSingle();
+            const { data: profile } = await state.supabase.from('profiles').select('name,full_name,avatar_url').eq('id', state.userId).maybeSingle();
             displayName = profile?.name || profile?.full_name || null;
+            avatarUrl = profile?.avatar_url || null;
           } catch (e) { /* profiles table optional */ }
           if (!displayName) {
             try {
@@ -271,6 +277,10 @@
             } catch (e) { /* auth optional */ }
           }
         }
+        // Cache locally so appendMessage() can show the user's own DP next
+        // to every message they send in this widget session.
+        state.userName = displayName || null;
+        state.userAvatar = avatarUrl || null;
         await state.supabase.from('ananya_chat_sessions').upsert({
           id: state.sessionId,
           user_id: state.userId || null,
@@ -446,6 +456,29 @@
     });
   }
 
+  // FEATURE: har user message ke saath uska DP dikhana — logged-in
+  // customer ka profile photo (ya naam ka pehla letter, fallback ke roop
+  // mein) modern chat apps (Intercom/Crisp) jaisa hi feel deta hai.
+  function userInitial() {
+    const src = state.userName || '';
+    const ch = src.trim().charAt(0);
+    return ch ? ch.toUpperCase() : '🙂';
+  }
+
+  function buildUserAvatarEl() {
+    const av = document.createElement('div');
+    av.className = 'ananya-msg-avatar user-avatar';
+    if (state.userAvatar) {
+      const img = document.createElement('img');
+      img.src = state.userAvatar;
+      img.alt = state.userName || 'You';
+      av.appendChild(img);
+    } else {
+      av.textContent = userInitial();
+    }
+    return av;
+  }
+
   function appendMessage(role, text, opts) {
     opts = opts || {};
     const container = document.getElementById('ananya-msgs');
@@ -461,11 +494,14 @@
       msgDiv.appendChild(nameEl);
     }
 
+    const content = document.createElement('div');
+    content.className = 'ananya-msg-content';
+
     const bubble = document.createElement('div');
     bubble.className = 'ananya-bubble';
     bubble.style.whiteSpace = 'pre-wrap';
     bubble.textContent = text;
-    msgDiv.appendChild(bubble);
+    content.appendChild(bubble);
 
     const meta = document.createElement('div');
     meta.className = 'ananya-msg-meta';
@@ -486,7 +522,19 @@
       }, 1200);
     }
 
-    msgDiv.appendChild(meta);
+    content.appendChild(meta);
+
+    if (role === 'user') {
+      // Row layout: bubble+meta on the left, the user's own DP on the right.
+      const row = document.createElement('div');
+      row.className = 'ananya-msg-user-row';
+      row.appendChild(content);
+      row.appendChild(buildUserAvatarEl());
+      msgDiv.appendChild(row);
+    } else {
+      msgDiv.appendChild(content);
+    }
+
     container.appendChild(msgDiv);
     container.scrollTop = container.scrollHeight;
 
@@ -537,6 +585,9 @@
   async function sendMessage(text) {
     text = (text || '').trim();
     if (!text || state.isTyping) return;
+    // FEATURE: guests bina login ke chat nahi kar sakte — UI already gate
+    // dikhata hai, ye sirf extra safety hai (direct AnanyaAI.send() calls ke liye).
+    if (!state.userId) { applyAuthGate(); return; }
     if (text.length > 800) text = text.slice(0, 800);
 
     const input = document.getElementById('ananya-input');
@@ -679,6 +730,12 @@
 
       <div class="ananya-panel active" data-panel="chat" role="tabpanel">
         <div class="ananya-messages" id="ananya-msgs"></div>
+        <div class="ananya-login-gate" id="ananya-login-gate">
+          <div class="ananya-login-gate-icon">🔒</div>
+          <div class="ananya-login-gate-title">Chat karne ke liye login karein</div>
+          <div class="ananya-login-gate-sub">Apne naam aur photo ke saath baat karein — bina login chat available nahi hai.</div>
+          <button type="button" class="ananya-login-gate-btn" id="ananya-login-gate-btn">👤 Login / Signup</button>
+        </div>
         <div class="ananya-input-area">
           <div class="ananya-input-row">
             <textarea
@@ -723,11 +780,28 @@
   }
 
   /* ══════════════════════════════════════════
+     LOGIN GATE — chat sirf logged-in users ke
+     liye. FAQ/Store Info tabs guests ke liye
+     bhi khule rehte hain.
+  ══════════════════════════════════════════ */
+  function applyAuthGate() {
+    const widget = document.getElementById('ananya-widget');
+    if (!widget) return;
+    widget.classList.toggle('ananya-guest', !state.userId);
+  }
+
+  function goToLoginFromWidget() {
+    try { localStorage.setItem('ananya-reopen', '1'); } catch (e) { /* storage optional */ }
+    window.location.href = 'login.html';
+  }
+
+  /* ══════════════════════════════════════════
      EVENTS
   ══════════════════════════════════════════ */
   function bindEvents() {
     document.getElementById('ananya-trigger').addEventListener('click', toggleWidget);
     document.getElementById('ananya-close-btn').addEventListener('click', closeWidget);
+    document.getElementById('ananya-login-gate-btn')?.addEventListener('click', goToLoginFromWidget);
 
     document.addEventListener('click', e => {
       const w = document.getElementById('ananya-widget');
@@ -789,7 +863,8 @@
       document.body.style.overflow = 'hidden';
     }
 
-    if (!state.historyLoaded) {
+    // Guests dekhte hain sirf login-gate (koi history load karne ki zaroorat nahi).
+    if (!state.historyLoaded && state.userId) {
       state.historyLoaded = true;
       loadInitialConversation();
     }
@@ -913,11 +988,28 @@
     bindEvents();
     applyTheme();
     setupViewportFix();
+    // Optimistic default: assume guest until the real auth check below
+    // resolves, so the chat panel never briefly flashes unguarded.
+    applyAuthGate();
 
     await loadSupabaseLib();
     await initSupabase();
-    await getOrCreateSession();
-    subscribeToAdminReplies();
+    if (state.userId) {
+      await getOrCreateSession();
+      subscribeToAdminReplies();
+    }
+    applyAuthGate();
+
+    // Agar user login karke wapas laut aaya hai (login gate ke "Login" button
+    // se), aur ab logged in hai, to chat widget khud-ba-khud khol dete hain.
+    if (state.userId) {
+      try {
+        if (localStorage.getItem('ananya-reopen')) {
+          localStorage.removeItem('ananya-reopen');
+          setTimeout(() => { if (!state.isOpen) openWidget(); }, 400);
+        }
+      } catch (e) { /* storage optional */ }
+    }
 
     setTimeout(() => {
       if (!state.isOpen) {
