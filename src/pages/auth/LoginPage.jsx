@@ -11,9 +11,13 @@ export default function LoginPage() {
   const [error, setError]       = useState('');
   const [success, setSuccess]   = useState('');
 
+  // V4.1: support page redirects here with ?next=support.html so the user lands
+  // back on the chat after logging in (default stays index.html).
+  const next = new URLSearchParams(window.location.search).get('next') || 'index.html';
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) window.location.href = 'index.html';
+      if (session) window.location.href = next;
     });
   }, []);
 
@@ -47,7 +51,7 @@ export default function LoginPage() {
     }
     setSuccess(`Welcome back, <b>${data.user?.user_metadata?.name || email.split('@')[0]}</b>! 🎉 Redirect ho rahe hain…`);
     setLoading(false);
-    setTimeout(() => { window.location.href = 'index.html'; }, 1200);
+    setTimeout(() => { window.location.href = next; }, 1200);
   }
 
   return (

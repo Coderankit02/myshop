@@ -33,15 +33,13 @@
 <script src="/js/profile.js" defer></script>
 <script src="/js/orders.js" defer></script>
 <script src="/js/payment.js" defer></script>
-<!-- defer added: these no longer block the splash from painting first -->
-<!-- Restored: the Ananya AI widget (public/js/ananya-ai.js) is a vanilla script
-     that only checks window.supabase / window.supabaseJs to detect a logged-in
-     user's session. The React app below uses its own npm-bundled Supabase
-     client, but that bundle is module-scoped and never exposes window.supabase.
-     Without this CDN script, Ananya AI on the home page could not see who was
-     logged in. This matches account.html/login.html/signup.html, which already
-     load this same script for the same reason. -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+<!-- defer added: these no longer block the splash from painting first
+     NOTE (V4.1): the Ananya AI widget + its supabase CDN are NO LONGER loaded
+     here — the floating round chat button was removed from the main page.
+     Support is now accessed from the dedicated support.html page (which loads
+     ananya-ai.js + the CDN itself), like modern shopping sites. The React app
+     bundles its own @supabase/supabase-js client via src/lib/supabaseClient.js,
+     so no CDN is needed on this page anymore. -->
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -498,8 +496,6 @@ html[data-theme="dark"] .payment-wait-hint{background:#3A2A14;border-color:#6B4A
      the Account → Addresses page. -->
 
 <script src="/pwa.js?v=1" defer></script>
-<link rel="stylesheet" href="/css/ananya-ai.css">
-<script src="/js/ananya-ai.js" defer></script>
 
 
 </body>

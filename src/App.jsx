@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react';
-import { Search, MapPin, ChevronDown, ShoppingCart, User, Sun, Moon, Download, Home, ShoppingBag, SlidersHorizontal, X, Zap, Leaf, BadgePercent, ShieldCheck, Package, Headphones, Send } from 'lucide-react';
+import { Search, MapPin, ChevronDown, ShoppingCart, User, Download, Home, ShoppingBag, SlidersHorizontal, X, Zap, Leaf, BadgePercent, ShieldCheck, Package, Headphones, Send, MessageCircle } from 'lucide-react';
 import { supabase } from './lib/supabaseClient';
 import { TICKER, calcDiscount, catEmoji } from './lib/helpers';
 import { useCategories, useBanners, useProducts, useSearch, useHomeSections } from './hooks/dataHooks';
@@ -473,7 +473,9 @@ export default function App(){
   },[user]);
 
   const showToast=msg=>{setToast(msg);setTimeout(()=>setToast(''),2200);};
-  const toggleTheme=()=>setTheme(t=>t==='dark'?'light':'dark');
+  // V4.1: dark-mode toggle moved to Account → Settings → Appearance (see
+  // AccountPage.jsx SettingsTab). The main page keeps the saved theme applied
+  // via the useEffect above, but no longer shows the header switch.
 
   // Build a quick id → product lookup across everything we've already fetched, so the
   // cart drawer (and anywhere else) can resolve a live stock_quantity for stock-guarding.
@@ -691,6 +693,10 @@ export default function App(){
       </div>
       <div>📞 Call/WhatsApp: 6393196765</div>
       <div>⏰ Subah 7am – Raat 10pm</div>
+      <a href="support.html"
+        style={{display:'inline-flex',alignItems:'center',gap:7,color:'#fff',background:'rgba(255,255,255,0.16)',padding:'9px 20px',borderRadius:50,fontWeight:700,fontSize:'.78rem',textDecoration:'none',marginTop:10,transition:'transform .15s'}}>
+        <MessageCircle size={15}/> Help &amp; Support — Ananya AI
+      </a>
       <div style={{marginTop:8,opacity:0.7}}>© {new Date().getFullYear()} RK Grocery Mart — हर घर की पसंद</div>
     </div>
   );
@@ -855,9 +861,10 @@ export default function App(){
             <div className="min-w-0 flex-shrink-0">
               <button onClick={()=>setPage('home')} className="flex items-center gap-2 text-left" style={{background:'none'}}>
                 <img src="/icons/rk-logo.svg" alt="RK Grocery Mart" className="w-9 h-9 md:w-10 md:h-10 rounded-xl flex-shrink-0"/>
-                <span className="hidden sm:flex flex-col min-w-0">
-                  <span className="text-base md:text-lg font-extrabold font-poppins leading-none truncate" style={{color:'var(--dark)'}}>RK Grocery Mart</span>
-                  <span className="text-[9px] md:text-[10px] font-poppins font-medium mt-0.5 truncate" style={{color:'var(--primary)'}}>हर घर की पसंद</span>
+                {/* V4.1: brand title + tagline now visible on mobile too (was hidden sm:flex) */}
+                <span className="flex flex-col min-w-0">
+                  <span className="text-[13px] sm:text-base md:text-lg font-extrabold font-poppins leading-none truncate" style={{color:'var(--dark)'}}>RK Grocery Mart</span>
+                  <span className="text-[8px] sm:text-[9px] md:text-[10px] font-poppins font-medium mt-0.5 truncate" style={{color:'var(--primary)'}}>हर घर की पसंद</span>
                 </span>
               </button>
               <button className="flex items-center gap-1 mt-0.5 max-w-[150px] sm:max-w-[220px]" style={{background:'none'}}
@@ -883,11 +890,6 @@ export default function App(){
 
             {/* Right actions */}
             <div className="flex items-center gap-2 flex-shrink-0">
-              <button className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:'var(--primary-light)'}}
-                aria-label="Theme badlein" onClick={toggleTheme}>
-                {theme==='dark'?<Sun size={18} style={{color:'var(--primary-dark)'}}/>:<Moon size={18} style={{color:'var(--primary-dark)'}}/>}
-              </button>
-
               {!isPWA&&(
                 <button onClick={()=>window.RKPwa&&window.RKPwa.promptInstall()}
                   className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold font-poppins whitespace-nowrap"

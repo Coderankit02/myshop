@@ -620,6 +620,7 @@ function SettingsTab({ switchTab }) {
     {icon:'📍',bg:'#F5F3FF',label:'Manage Addresses',  sub:'Delivery addresses',             fn:()=>switchTab('addresses')},
     {icon:'⭐',bg:'#FFFBEB',label:'Rewards & Referral',sub:'Points aur cashback',            fn:()=>switchTab('rewards')},
     {icon:'📦',bg:'#F0FDF4',label:'Order History',     sub:'Purane orders dekhein',          fn:()=>switchTab('orders')},
+    {icon:'💬',bg:'#ECFDF5',label:'Help & Support',    sub:'Ananya AI — 24x7 assistant',      fn:()=>window.location.href='support.html'},
     {icon:'📱',bg:'#F8FAFC',label:'App Version',       sub:'v1.0.0 • RK Grocery Mart',        fn:null},
   ];
 

@@ -672,18 +672,12 @@
      BUILD HTML WIDGET
   ══════════════════════════════════════════ */
   function buildWidget() {
-    const trigger = document.createElement('button');
-    trigger.id = 'ananya-trigger';
-    trigger.setAttribute('aria-label', 'Open Ananya AI');
-    trigger.setAttribute('aria-expanded', 'false');
-    trigger.innerHTML = `
-      <div class="ananya-avatar-ring"></div>
-      <span class="ananya-avatar-emoji">🌸</span>
-      <span id="ananya-badge" class="ananya-badge hidden">0</span>`;
-
-    const label = document.createElement('div');
-    label.className = 'ananya-trigger-label';
-    label.textContent = '🌸 Ananya AI';
+    // V4.1 — Support-page-only widget: the floating round button is gone from
+    // every page (modern shopping sites access support from a support page).
+    // The chat now lives EMBEDDED on support.html inside #ananya-inline. If
+    // that container is missing on any page, we simply don't mount anything.
+    const inlineHost = document.getElementById('ananya-inline');
+    if (!inlineHost) return;
 
     const faqHTML = CONFIG.faqs.map((f, i) => `
       <div class="ananya-faq-item" data-idx="${i}">
@@ -774,9 +768,9 @@
         </a>
       </div>`;
 
-    document.body.appendChild(trigger);
-    document.body.appendChild(label);
-    document.body.appendChild(widget);
+    inlineHost.appendChild(widget);
+    widget.classList.add('ananya-open', 'ananya-inline-mode');
+    state.isOpen = true;
   }
 
   /* ══════════════════════════════════════════
@@ -792,14 +786,17 @@
 
   function goToLoginFromWidget() {
     try { localStorage.setItem('ananya-reopen', '1'); } catch (e) { /* storage optional */ }
-    window.location.href = 'login.html';
+    // Inline (support page) mode: come back to support.html after login.
+    const next = document.getElementById('ananya-inline') ? 'support.html' : '';
+    window.location.href = next ? 'login.html?next=' + next : 'login.html';
   }
 
   /* ══════════════════════════════════════════
      EVENTS
   ══════════════════════════════════════════ */
   function bindEvents() {
-    document.getElementById('ananya-trigger').addEventListener('click', toggleWidget);
+    const trigger = document.getElementById('ananya-trigger');
+    if (trigger) trigger.addEventListener('click', toggleWidget);
     document.getElementById('ananya-close-btn').addEventListener('click', closeWidget);
     document.getElementById('ananya-login-gate-btn')?.addEventListener('click', goToLoginFromWidget);
 
@@ -840,7 +837,8 @@
     });
 
     document.addEventListener('keydown', e => {
-      if (e.key === 'Escape' && state.isOpen) closeWidget();
+      // Inline (support page) mode: Escape koi floating panel band nahi karta.
+      if (e.key === 'Escape' && state.isOpen && !document.getElementById('ananya-inline')) closeWidget();
     });
   }
 
@@ -850,14 +848,14 @@
   function openWidget() {
     state.isOpen = true;
     document.getElementById('ananya-widget').classList.add('ananya-open');
-    document.getElementById('ananya-trigger').classList.add('ananya-trigger-hidden');
-    document.getElementById('ananya-trigger').setAttribute('aria-expanded', 'true');
+    const trig = document.getElementById('ananya-trigger');
+    if (trig) { trig.classList.add('ananya-trigger-hidden'); trig.setAttribute('aria-expanded', 'true'); }
     document.querySelector('.ananya-trigger-label')?.classList.remove('show');
     state.unread = 0;
     updateBadge();
 
-    // Mobile: bottom nav ko hide karo taaki input box show ho
-    if (window.innerWidth <= 480) {
+    // Mobile: bottom nav ko hide karo taaki input box show ho (inline mode skip)
+    if (!document.getElementById('ananya-inline') && window.innerWidth <= 480) {
       var bnav = document.querySelector('.bottom-nav');
       if (bnav) bnav.style.display = 'none';
       document.body.style.overflow = 'hidden';
@@ -875,11 +873,11 @@
   function closeWidget() {
     state.isOpen = false;
     document.getElementById('ananya-widget').classList.remove('ananya-open');
-    document.getElementById('ananya-trigger').classList.remove('ananya-trigger-hidden');
-    document.getElementById('ananya-trigger').setAttribute('aria-expanded', 'false');
+    const trig = document.getElementById('ananya-trigger');
+    if (trig) { trig.classList.remove('ananya-trigger-hidden'); trig.setAttribute('aria-expanded', 'false'); }
 
-    // Mobile: bottom nav wapas dikhao
-    if (window.innerWidth <= 480) {
+    // Mobile: bottom nav wapas dikhao (inline mode skip)
+    if (!document.getElementById('ananya-inline') && window.innerWidth <= 480) {
       var bnav = document.querySelector('.bottom-nav');
       if (bnav) bnav.style.display = '';
       document.body.style.overflow = '';
@@ -1000,30 +998,35 @@
     }
     applyAuthGate();
 
-    // Agar user login karke wapas laut aaya hai (login gate ke "Login" button
-    // se), aur ab logged in hai, to chat widget khud-ba-khud khol dete hain.
-    if (state.userId) {
-      try {
-        if (localStorage.getItem('ananya-reopen')) {
-          localStorage.removeItem('ananya-reopen');
-          setTimeout(() => { if (!state.isOpen) openWidget(); }, 400);
-        }
-      } catch (e) { /* storage optional */ }
-    }
-
-    setTimeout(() => {
-      if (!state.isOpen) {
-        const lbl = document.querySelector('.ananya-trigger-label');
-        if (lbl) {
-          lbl.classList.add('show');
-          setTimeout(() => lbl.classList.remove('show'), 4000);
-        }
+    // Floating-mode behaviours (auto-open after login / first visit) only make
+    // sense when the widget has a floating trigger. In inline (support page)
+    // mode the panel is already open, so skip them entirely.
+    if (!document.getElementById('ananya-inline')) {
+      // Agar user login karke wapas laut aaya hai (login gate ke "Login" button
+      // se), aur ab logged in hai, to chat widget khud-ba-khud khol dete hain.
+      if (state.userId) {
+        try {
+          if (localStorage.getItem('ananya-reopen')) {
+            localStorage.removeItem('ananya-reopen');
+            setTimeout(() => { if (!state.isOpen) openWidget(); }, 400);
+          }
+        } catch (e) { /* storage optional */ }
       }
-    }, 3000);
 
-    if (!localStorage.getItem('ananya-visited')) {
-      localStorage.setItem('ananya-visited', '1');
-      setTimeout(() => { if (!state.isOpen) openWidget(); }, 6000);
+      setTimeout(() => {
+        if (!state.isOpen) {
+          const lbl = document.querySelector('.ananya-trigger-label');
+          if (lbl) {
+            lbl.classList.add('show');
+            setTimeout(() => lbl.classList.remove('show'), 4000);
+          }
+        }
+      }, 3000);
+
+      if (!localStorage.getItem('ananya-visited')) {
+        localStorage.setItem('ananya-visited', '1');
+        setTimeout(() => { if (!state.isOpen) openWidget(); }, 6000);
+      }
     }
   }
 

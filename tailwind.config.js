@@ -26,6 +26,7 @@ export default {
     './forgot-password.html',
     './reset-password.html',
     './email-verified.html',
+    './support.html',
     './offline.html',
     './src/**/*.{js,jsx}',
   ],

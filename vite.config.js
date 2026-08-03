@@ -18,6 +18,7 @@ export default defineConfig({
         forgotPassword: resolve(__dirname, 'forgot-password.html'),
         resetPassword: resolve(__dirname, 'reset-password.html'),
         emailVerified: resolve(__dirname, 'email-verified.html'),
+        support: resolve(__dirname, 'support.html'),
         offline: resolve(__dirname, 'offline.html'),
       },
     },
