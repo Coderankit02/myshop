@@ -27,7 +27,7 @@
 
 // BUG FIX (Info #13): Version string ab comments mein clearly marked hai.
 // Har deploy par yahan ka number badhao agar OPTION C use kar rahe ho.
-const CACHE_VERSION = "v11"; // ← Fix: ananya-ai.js login-gate storageKey + ✕ close redirects to main page
+const CACHE_VERSION = "v12"; // ← Fix: sync session detection (no gate flash) + mobile full-screen support chat
 const CACHE_NAME = `rk-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = "/offline.html";
 
