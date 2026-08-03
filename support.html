@@ -71,6 +71,15 @@
     max-height:none;
   }
 
+  /* ── Corner-cut fix ──
+     .sp-chat-box (22px radius + overflow:hidden) ke andar widget ka apna
+     border-radius (var(--an-r-xl)=24px) hota tha — dono radii mismatch ki
+     wajah se 4 corners par content halka cut dikhta tha. Ab inline mode mein
+     widget ka radius 0: outer box hi single clean 22px rounding karta hai. */
+  #ananya-inline #ananya-widget.ananya-inline-mode{
+    border-radius:0;
+  }
+
   /* ── Mobile: full-screen chat (old floating-widget feel) ──
      Chhote screens par page chrome (header/hero/contact cards) chhupa kar
      chat ko poora viewport de do — bilkul pehle ke floating widget jaisa
