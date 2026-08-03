@@ -1148,6 +1148,11 @@ export default function App(){
             </div>
           );
         })}
+        <div className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5"
+          onClick={()=>window.location.href='support.html'}>
+          <Headphones size={21} strokeWidth={1.8} style={{color:'var(--gray)'}}/>
+          <span className="text-[10px] font-medium font-poppins" style={{color:'var(--gray)'}}>Help</span>
+        </div>
         {!isPWA&&(
           <div className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5" onClick={()=>window.RKPwa&&window.RKPwa.promptInstall()}>
             <Download size={21} strokeWidth={1.8} style={{color:'var(--primary)'}}/>
