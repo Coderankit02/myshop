@@ -216,12 +216,21 @@ async function searchProducts(keywords, priceCeiling) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), SUPABASE_TIMEOUT_MS);
   try {
+    // BUG FIX (2026-08): the ilike wildcards used to be sent as literal `%` in
+    // the URL, which Node/undici fetch sends mangled — Supabase answered 500 and
+    // searchProducts silently returned [] (so product lookups were ALWAYS
+    // falling back to Gemini). The whole or(...) value is now percent-encoded
+    // (encodeURIComponent), so the `%` wildcards arrive intact.
     const orFilter = keywords.map(k => `name.ilike.%${encodeURIComponent(k)}%`).join(',');
-    let path = `products?select=name,selling_price,original_price,is_active,stock_quantity,unit_value,categories(name)&is_active=eq.true&or=(${orFilter})&limit=8`;
+    const orParam = encodeURIComponent(`(${orFilter})`);
+    let path = `products?select=name,selling_price,original_price,is_active,stock_quantity,unit_value,categories(name)&is_active=eq.true&or=${orParam}&limit=8`;
     if (priceCeiling) path += `&selling_price=lte.${priceCeiling}`;
     const data = await supabaseSelect(path, { signal: controller.signal });
     return Array.isArray(data) ? data : [];
-  } catch (e) { return []; }
+  } catch (e) {
+    console.warn(`[ananya] searchProducts FAILED: ${e?.message || e}`);
+    return [];
+  }
   finally { clearTimeout(timer); }
 }
 
@@ -230,8 +239,10 @@ async function searchCategories(keywords) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), SUPABASE_TIMEOUT_MS);
   try {
+    // BUG FIX (2026-08): same % wildcard encoding fix as searchProducts above.
     const orFilter = keywords.map(k => `name.ilike.%${encodeURIComponent(k)}%`).join(',');
-    const path = `categories?select=name,slug&is_active=eq.true&or=(${orFilter})&limit=5`;
+    const orParam = encodeURIComponent(`(${orFilter})`);
+    const path = `categories?select=name,slug&is_active=eq.true&or=${orParam}&limit=5`;
     const data = await supabaseSelect(path, { signal: controller.signal });
     return Array.isArray(data) ? data : [];
   } catch (e) { return []; }
