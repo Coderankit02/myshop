@@ -710,24 +710,6 @@ export default function App(){
     <div className="max-w-site mx-auto px-4 md:px-8 pt-4 pb-6 md:pb-8">
       <HeroBanner/>
 
-      {/* Promo strip — 50-off banner on all sizes, referral banner desktop-only (unchanged from before) */}
-      <div className="mt-4 md:mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div className="flex items-center gap-3 rounded-2xl p-3.5 md:p-4" style={{background:'var(--primary-light)'}}>
-          <span className="text-2xl flex-shrink-0">🎁</span>
-          <div className="min-w-0">
-            <div className="font-bold font-poppins text-xs md:text-sm truncate" style={{color:'var(--primary-dark)'}}>Pehli order par ₹50 OFF!</div>
-            <div className="text-[11px] md:text-xs font-poppins" style={{color:'var(--gray)'}}>Code: RINKU50 • Min order ₹199</div>
-          </div>
-        </div>
-        <div className="hidden md:flex items-center gap-3 rounded-2xl p-4" style={{background:'#FFF3E0'}}>
-          <span className="text-2xl flex-shrink-0">👥</span>
-          <div className="min-w-0">
-            <div className="font-bold font-poppins text-sm" style={{color:'var(--dark)'}}>Dost ko refer karein!</div>
-            <div className="text-xs font-poppins" style={{color:'var(--gray)'}}>Dono ko ₹30 cashback milega</div>
-          </div>
-        </div>
-      </div>
-
       {/* ⚡ Flash Sale (Module 12) — real discounted products + midnight countdown */}
       <FlashSale prods={homeSections.flash} loading={homeLoading} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={openDetail}/>
 
