@@ -800,7 +800,19 @@
   function bindEvents() {
     const trigger = document.getElementById('ananya-trigger');
     if (trigger) trigger.addEventListener('click', toggleWidget);
-    document.getElementById('ananya-close-btn').addEventListener('click', closeWidget);
+    // Inline (support page) mode: ✕ ka matlab chat band karke main page
+    // (shopping) par wapas jaana hai. Pehle ✕ sirf 'ananya-open' class hatata
+    // tha, par inline-mode CSS us class ke visual effect ko override kar deti
+    // hai — isliye ✕ par kuch nahi hota tha aur user wapas nahi ja paata tha.
+    // Redirect yahan button handler mein rakha hai (closeWidget mein nahi)
+    // taaki AnanyaAI.close() API se support page kabhi accidentally na khule.
+    document.getElementById('ananya-close-btn').addEventListener('click', () => {
+      if (document.getElementById('ananya-inline')) {
+        window.location.href = 'index.html';
+        return;
+      }
+      closeWidget();
+    });
     document.getElementById('ananya-login-gate-btn')?.addEventListener('click', goToLoginFromWidget);
 
     document.addEventListener('click', e => {
@@ -874,15 +886,6 @@
   }
 
   function closeWidget() {
-    // Inline (support page) mode: koi floating panel nahi hai — ✕ ka matlab
-    // chat band karke main page (shopping) par wapas jaana hai. Pehle ✕ sirf
-    // 'ananya-open' class hatata tha, par inline-mode CSS us class ke visual
-    // effect ko override kar deti hai — isliye ✕ par kuch nahi hota tha aur
-    // user main page par wapas nahi ja paata tha.
-    if (document.getElementById('ananya-inline')) {
-      window.location.href = 'index.html';
-      return;
-    }
     state.isOpen = false;
     document.getElementById('ananya-widget').classList.remove('ananya-open');
     const trig = document.getElementById('ananya-trigger');
