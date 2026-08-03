@@ -1,29 +1,209 @@
 import { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react';
+import { Search, MapPin, ChevronDown, ShoppingCart, User, Sun, Moon, Download, Home, ShoppingBag, SlidersHorizontal, X, Zap, Leaf, BadgePercent, ShieldCheck, Package, Headphones, Send } from 'lucide-react';
 import { supabase } from './lib/supabaseClient';
-import { goLogin, goLoginForCheckout, TICKER, calcDiscount, catEmoji } from './lib/helpers';
-import { useCategories, useBanners, useProducts, useSearch } from './hooks/dataHooks';
+import { TICKER, calcDiscount, catEmoji } from './lib/helpers';
+import { useCategories, useBanners, useProducts, useSearch, useHomeSections } from './hooks/dataHooks';
 import { SkelCard, SkelBanner, SkelCat } from './components/Skeletons';
-import { CartIcon } from './components/CartIcon';
 import { PCard } from './components/PCard';
 import { ProductDetail } from './components/ProductDetail';
 import { CheckoutForm } from './components/CheckoutForm';
-import { BannerCardM } from './components/BannerCardM';
+import AuthModal from './components/AuthModal';
 
 // ── Mobile Category Row (outside App to prevent remount on every render) ──
+// ── Mobile Category Row (Module 4: Tailwind restyle — same props/onClick
+//     contract as before, so App.jsx's usage on the Shop page is unchanged) ──
 function MobileCatRow({cats,catsLoading,activeCatId,catEmoji,onClick}){
   return(
-    <div className="cats-row">
+    <div className="flex gap-3 overflow-x-auto pb-1 snap-x scrollbar-hide">
       {catsLoading
         ?[...Array(6)].map((_,i)=><SkelCat key={i}/>)
-        :cats.map(c=>(
-          <div key={c.id} className={`cat-chip ${activeCatId===c.id?'on':''}`} onClick={()=>onClick(c.id)}>
-            <div className="cat-chip-img-box" style={{background:'var(--primary-light)'}}>
-              {(c.display_image||c.image_url)?<img src={c.display_image||c.image_url} alt={c.name}/>:<span className="cat-emoji">{catEmoji(c)}</span>}
-            </div>
-            <div className="cat-chip-name">{c.name}</div>
-          </div>
-        ))
+        :cats.map(c=>{
+          const active=activeCatId===c.id;
+          return(
+            <button key={c.id} onClick={()=>onClick(c.id)} className="flex flex-col items-center gap-1 flex-shrink-0 snap-start w-[60px]">
+              <div className="w-full aspect-square rounded-2xl flex items-center justify-center text-xl overflow-hidden transition-shadow"
+                style={{background:'var(--primary-light)',boxShadow:active?'0 0 0 2px var(--primary)':'none'}}>
+                {(c.display_image||c.image_url)
+                  ?<img src={c.display_image||c.image_url} alt={c.name} className="w-full h-full object-cover"/>
+                  :<span>{catEmoji(c)}</span>
+                }
+              </div>
+              <span className="text-[10px] font-poppins text-center leading-tight line-clamp-1"
+                style={{color:active?'var(--primary)':'var(--dark)',fontWeight:active?700:500}}>{c.name}</span>
+            </button>
+          );
+        })
       }
+    </div>
+  );
+}
+
+// ── Module 12: Premium homepage sections ────────────────────
+// All standalone (stable component types, like MobileCatRow) so their
+// internal timers/state never remount when App re-renders.
+
+function useCountdownToMidnight(){
+  const [left,setLeft]=useState(()=>{const n=new Date();const e=new Date(n);e.setHours(24,0,0,0);return Math.max(0,e-n);});
+  useEffect(()=>{
+    const tick=()=>{const n=new Date();const e=new Date(n);e.setHours(24,0,0,0);setLeft(Math.max(0,e-n));};
+    const t=setInterval(tick,1000);
+    return()=>clearInterval(t);
+  },[]);
+  return left;
+}
+
+// ⚡ Flash Sale — real discounted products from useHomeSections, countdown to midnight
+function FlashSale({prods,loading,cart,addToCart,updQty,onDetail}){
+  const left=useCountdownToMidnight();
+  if(!loading&&prods.length===0)return null;
+  const pad=n=>String(n).padStart(2,'0');
+  const h=Math.floor(left/3.6e6),m=Math.floor(left%3.6e6/6e4),s=Math.floor(left%6e4/1e3);
+  const chips=[{v:h,l:'Hours'},{v:m,l:'Min'},{v:s,l:'Sec'}];
+  return(
+    <div className="mt-5 md:mt-7 rounded-3xl p-4 md:p-6"
+      style={{background:'linear-gradient(120deg,#14532D,#15803D 55%,#166534)',boxShadow:'0 10px 30px rgba(21,128,61,0.35)'}}>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2">
+          <span className="text-xl md:text-2xl animate-pulse">⚡</span>
+          <h2 className="text-white font-extrabold font-poppins text-base md:text-xl">Flash Sale</h2>
+          <span className="hidden sm:inline-block text-white/70 text-xs font-poppins">Sirf aaj ke liye!</span>
+        </div>
+        <div className="flex items-center gap-1.5" role="timer" aria-label="Flash sale countdown">
+          <span className="text-white/80 text-[10px] md:text-xs font-bold font-poppins mr-1">Ends in</span>
+          {chips.map(t=>(
+            <div key={t.l} className="flex flex-col items-center bg-white/15 backdrop-blur rounded-xl px-2 py-1 md:px-3 md:py-1.5 min-w-[50px]">
+              <span className="text-white font-black font-poppins text-sm md:text-lg tabular-nums">{pad(t.v)}</span>
+              <span className="text-white/70 text-[8px] md:text-[9px] font-poppins uppercase tracking-wide">{t.l}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="flex gap-3 md:gap-4 overflow-x-auto pb-1 mt-4 snap-x scrollbar-hide">
+        {loading
+          ?[...Array(4)].map((_,i)=><div key={i} className="flex-shrink-0 w-36 md:w-44 snap-start"><SkelCard/></div>)
+          :prods.map(p=>(
+            <div key={p.id} className="flex-shrink-0 w-36 md:w-44 snap-start">
+              <PCard p={p} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}/>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  );
+}
+
+// 💚 Why Choose Us — static premium feature grid
+function WhyChooseUs(){
+  const feats=[
+    {icon:Zap,title:'Lightning Delivery',desc:'1-2 ghante mein order aapke ghar tak'},
+    {icon:Leaf,title:'Fresh & Natural',desc:'Roz subah mandi se fresh fruits-sabziyan'},
+    {icon:BadgePercent,title:'Best Prices',desc:'Market se saste — daily deals & coupons'},
+    {icon:ShieldCheck,title:'100% Safe Payments',desc:'UPI, cards, netbanking — secure checkout'},
+    {icon:Package,title:'Wide Selection',desc:'1500+ products, 16+ categories — sab kuch ek jagah'},
+    {icon:Headphones,title:'24x7 Support',desc:'Ananya AI + WhatsApp — kabhi bhi help'},
+  ];
+  return(
+    <div className="mt-8">
+      <h2 className="text-base md:text-xl font-bold font-poppins" style={{color:'var(--dark)'}}>Why Choose <span style={{color:'var(--primary)'}}>RK Grocery Mart?</span></h2>
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 mt-4">
+        {feats.map(f=>{
+          const Icon=f.icon;
+          return(
+            <div key={f.title} className="rounded-2xl p-4 md:p-5 transition-transform hover:-translate-y-1"
+              style={{background:'var(--card-bg)',boxShadow:'0 2px 10px rgba(0,0,0,0.06)'}}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{background:'var(--primary-light)'}}>
+                <Icon size={20} style={{color:'var(--primary)'}}/>
+              </div>
+              <div className="mt-2.5 font-bold font-poppins text-xs md:text-sm" style={{color:'var(--dark)'}}>{f.title}</div>
+              <div className="mt-0.5 text-[10px] md:text-xs font-poppins leading-snug" style={{color:'var(--gray)'}}>{f.desc}</div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ⭐ Customer Reviews — curated testimonial grid
+function CustomerReviews(){
+  const reviews=[
+    {name:'Priya Sharma',place:'Jaunpur',stars:5,text:'Roj ka saman ab online — fresh sabziyan aur 1-2 ghante mein delivery! Bahut badhiya service.'},
+    {name:'Rahul Verma',place:'Safiabad',stars:5,text:'Rate market se kam hain aur coupons se aur bachat. UPI payment ekdum aasaan.'},
+    {name:'Sunita Devi',place:'Shahganj',stars:4,text:'Ananya AI se pooch kar order kiya — bilkul sahi product mila. Highly recommended!'},
+    {name:'Amit Yadav',place:'Machhlishahr',stars:5,text:'COD option hone se ghar walon ko bhi bharosa hai. RK Grocery Mart = ghar ki dukaan.'},
+  ];
+  return(
+    <div className="mt-8">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-base md:text-xl font-bold font-poppins" style={{color:'var(--dark)'}}>Kya Kehte Hain <span style={{color:'var(--primary)'}}>Hamare Customers?</span></h2>
+        <span className="hidden md:flex items-center gap-1 text-xs font-bold font-poppins px-3 py-1.5 rounded-full" style={{background:'var(--primary-light)',color:'var(--primary-dark)'}}>⭐ 4.8/5 average</span>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+        {reviews.map(r=>(
+          <div key={r.name} className="rounded-2xl p-4 md:p-5" style={{background:'var(--card-bg)',boxShadow:'0 2px 10px rgba(0,0,0,0.06)'}}>
+            <div className="text-[#FFB800] text-sm tracking-tight">{"★★★★★".slice(0,r.stars)}{"☆".repeat(5-r.stars)}</div>
+            <p className="mt-2.5 text-xs md:text-[13px] font-poppins leading-relaxed" style={{color:'var(--text)'}}>“{r.text}”</p>
+            <div className="mt-3 flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{background:'linear-gradient(135deg,var(--primary),var(--orange))'}}>{r.name[0]}</div>
+              <div>
+                <div className="text-xs font-bold font-poppins" style={{color:'var(--dark)'}}>{r.name}</div>
+                <div className="text-[10px] font-poppins" style={{color:'var(--gray)'}}>{r.place} ✓ Verified</div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// 📱 Download App — PWA install CTA
+function DownloadApp({onInstall}){
+  return(
+    <div className="mt-8 rounded-3xl p-5 md:p-8 flex flex-col md:flex-row items-center gap-5 md:gap-8"
+      style={{background:'linear-gradient(135deg,#16A34A,#15803D)'}}>
+      <div className="flex-1 text-center md:text-left">
+        <h2 className="text-white font-extrabold font-poppins text-lg md:text-2xl">App Install Karein 📱</h2>
+        <p className="text-white/80 text-xs md:text-sm font-poppins mt-1.5 leading-relaxed">Fast loading, offline access aur home screen se ek-tap shopping — bilkul free!</p>
+        <ul className="mt-3 space-y-1.5 text-left inline-block">
+          {['Offline mein bhi browse karein','Weekly app-exclusive offers','1-tap reorder & notifications'].map(t=>(
+            <li key={t} className="flex items-center gap-2 text-white/90 text-xs md:text-[13px] font-poppins"><span className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[9px]">✓</span>{t}</li>
+          ))}
+        </ul>
+        <div className="mt-4 flex flex-wrap gap-2.5 justify-center md:justify-start">
+          <button onClick={onInstall} className="flex items-center gap-2 bg-white text-[#15803D] font-extrabold font-poppins text-xs md:text-sm px-4 md:px-5 py-2.5 rounded-xl shadow-lg hover:scale-[1.03] active:scale-95 transition-transform">
+            <Download size={16}/> Get the App
+          </button>
+          <span className="text-white/70 text-[10px] md:text-xs font-poppins self-center">Android • iOS • Desktop</span>
+        </div>
+      </div>
+      <div className="text-7xl md:text-8xl select-none" aria-hidden="true">🛒</div>
+    </div>
+  );
+}
+
+// 📬 Newsletter — frontend-only subscribe (toast confirmation)
+function Newsletter({showToast}){
+  const [email,setEmail]=useState('');
+  const submit=e=>{
+    e.preventDefault();
+    if(!email||!/\S+@\S+\.\S+/.test(email)){showToast('Sahi email daalein 🙏');return;}
+    setEmail('');
+    showToast('Subscribe ho gaye! Offers aapke inbox mein 🎉');
+  };
+  return(
+    <div className="mt-8 rounded-3xl p-5 md:p-8 text-center" style={{background:'var(--primary-light)'}}>
+      <h2 className="font-extrabold font-poppins text-base md:text-xl" style={{color:'var(--primary-dark)'}}>Weekly Offers &amp; Deals 📬</h2>
+      <p className="text-xs md:text-sm font-poppins mt-1" style={{color:'var(--gray)'}}>Register karein — har hafte naye coupons aur flash sale alerts seedha inbox mein.</p>
+      <form onSubmit={submit} className="mt-4 flex flex-col sm:flex-row gap-2.5 max-w-md mx-auto">
+        <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="aapka@email.com" aria-label="Newsletter email"
+          className="flex-1 rounded-xl px-4 py-3 text-sm font-poppins outline-none"
+          style={{border:'1.5px solid var(--border)',background:'var(--card-bg)',color:'var(--dark)'}}/>
+        <button type="submit" className="text-white font-bold font-poppins text-sm rounded-xl px-5 py-3 flex items-center justify-center gap-2"
+          style={{background:'linear-gradient(135deg,var(--primary),var(--primary-dark))'}}>
+          <Send size={15}/> Subscribe
+        </button>
+      </form>
     </div>
   );
 }
@@ -42,6 +222,27 @@ export default function App(){
   const [user,setUser]=useState(null);
   const [detailProduct,setDetailProduct]=useState(null);
   const [shopPage,setShopPage]=useState(1);
+  // Module 4: listing-page sort + in-stock filter. These are purely
+  // display-layer — they re-order/filter the products array that
+  // useProducts() already fetched for the current page. They do NOT touch
+  // the Supabase query in dataHooks.js, so pagination/category/search logic
+  // is 100% unchanged. (Trade-off: since pagination is server-side, "Price:
+  // Low to High" etc. sorts within the current page of results, not across
+  // the entire catalog — flagged here for the next session.)
+  const [sortBy,setSortBy]=useState('default');
+  const [inStockOnly,setInStockOnly]=useState(false);
+  const [filterDrawerOpen,setFilterDrawerOpen]=useState(false);
+  const SORT_OPTIONS=[
+    {v:'default',l:'Recommended'},
+    {v:'price-low',l:'Price: Low to High'},
+    {v:'price-high',l:'Price: High to Low'},
+  ];
+  const sortFilterProds=(list)=>{
+    let out=inStockOnly?list.filter(p=>!(p.stock_quantity<=0)):list;
+    if(sortBy==='price-low') out=[...out].sort((a,b)=>a.selling_price-b.selling_price);
+    else if(sortBy==='price-high') out=[...out].sort((a,b)=>b.selling_price-a.selling_price);
+    return out;
+  };
   // Header "📍 Aapka Mohalla ▾" → becomes the user's saved address city once
   // known. Distance gets appended in two ways: (1) silently on every page
   // load/refresh IF the browser has already granted geolocation permission
@@ -96,8 +297,18 @@ export default function App(){
   };
   const {products:shopProds,loading:shopLoading,total:shopTotal,totalPages}=useProducts(shopOpts);
 
+  // Module 4: shared derived state for the listing page (desktop + mobile
+  // both read from this so sort/filter/search logic isn't duplicated).
+  const isSearchActive=search.trim().length>1;
+  const rawShopProds=isSearchActive?searchResults:shopProds;
+  const shopIsLoading=isSearchActive?searchLoading:shopLoading;
+  const visibleShopProds=sortFilterProds(rawShopProds);
+
   // Featured products for home
   const {products:featuredProds,loading:featLoading}=useProducts({featured:true,pageSize:8});
+
+  // Module 12: premium homepage sections (flash sale / deals / best sellers / new arrivals)
+  const {sections:homeSections,loading:homeLoading}=useHomeSections();
 
   // Section products per category (first 3 cats)
   const [sectionProds,setSectionProds]=useState({});
@@ -298,7 +509,16 @@ export default function App(){
   const total=cart.reduce((s,i)=>s+(i.price||0)*(i.qty||1),0);
   const count=cart.reduce((s,i)=>s+(i.qty||1),0);
 
-  const goToCheckout=()=>{setCartOpen(false);if(user)setPage('checkout');else goLoginForCheckout();};
+  // Module 7: auth is now an in-place modal instead of a full navigation to
+  // login.html/signup.html. `rk_redirect` sessionStorage + the existing
+  // `useEffect(()=>{...},[user])` above (unchanged) still does the actual
+  // "land on checkout after login" redirect once `user` updates via the
+  // existing onAuthStateChange listener — this just decides when to show it.
+  const [authModal,setAuthModal]=useState(null); // null | 'login' | 'signup'
+  const openLogin=()=>setAuthModal('login');
+  const openLoginForCheckout=()=>{sessionStorage.setItem('rk_redirect','checkout');setAuthModal('login');};
+
+  const goToCheckout=()=>{setCartOpen(false);if(user)setPage('checkout');else openLoginForCheckout();};
 
   const openDetail=p=>{setDetailProduct(p);setPage('detail');};
 
@@ -325,154 +545,290 @@ export default function App(){
     setPage('shop');setShopPage(1);
   },[cats]);
 
-  // ── Desktop Banner Row ────────────────────────────────
-  const DesktopBannerRow=()=>{
-    if(bannersLoading)return(<div className="desktop-banner-row">{[0,1,2].map(i=><SkelBanner key={i}/>)}</div>);
-    if(!banners.length)return null;
-    const shown=banners.slice(0,3);
-    return(
-      <div className="desktop-banner-row">
-        {shown.map((b,i)=>(
-          <div key={b.id} className="banner-card-d" style={{background:b.bg_gradient||'linear-gradient(135deg,#064E3B,#047857)'}} onClick={()=>handleBannerClick(b)}>
-            {b.image_url&&<img src={b.image_url} alt={b.title} className="banner-card-d-img"/>}
-            <div style={{flex:1,position:'relative',zIndex:1}}>
-              <div className="banner-tag">SPECIAL OFFER</div>
-              <div className="banner-title" style={{color:'#fff'}}>{b.title}</div>
-              <div className="banner-sub" style={{color:'rgba(255,255,255,0.8)'}}>{b.subtitle}</div>
-              <button className="banner-btn-sm" onClick={(e)=>{e.stopPropagation();handleBannerClick(b);}}>{b.button_text||'Shop Now'} →</button>
+  // ── HERO BANNER (Module 3: unified Tailwind carousel — same one on mobile
+  //     AND desktop now, replacing the old separate mobile-scroller /
+  //     desktop-3-up-grid split. bannerWrapRef/bannerIdx/handleBannerClick are
+  //     all UNCHANGED state/handlers from before — the existing autoplay +
+  //     scroll-sync effects above still work as-is because this keeps the same
+  //     "scrollable row of full-width slides" DOM shape they depend on. ──
+  const HeroBanner=()=>(
+    <div className="relative rounded-2xl overflow-hidden h-40 md:h-64">
+      <div ref={bannerWrapRef} className="flex h-full overflow-x-auto snap-x snap-mandatory scrollbar-hide">
+        {bannersLoading
+          ?<SkelBanner/>
+          :banners.map(b=>(
+            <div key={b.id} className="relative w-full h-full flex-shrink-0 snap-start cursor-pointer"
+              style={{background:b.bg_gradient||'linear-gradient(135deg,#064E3B,#047857)'}}
+              onClick={()=>handleBannerClick(b)}>
+              {b.image_url&&<img src={b.image_url} alt={b.title} className="absolute inset-0 w-full h-full object-cover opacity-70"/>}
+              {/* Fix #5 (preserved): decorative emoji only when there's no real banner image */}
+              {!b.image_url&&<div className="absolute right-2 bottom-2 text-6xl opacity-20">🛒</div>}
+              <div className="absolute inset-0 p-4 md:p-10 flex flex-col justify-end md:justify-center max-w-md"
+                style={{background:'linear-gradient(0deg, rgba(0,0,0,0.35), transparent 60%)'}}>
+                <span className="inline-block bg-white/20 text-white text-[10px] md:text-xs font-bold font-poppins px-2 py-1 rounded-lg mb-1 w-fit">LIMITED OFFER</span>
+                <p className="text-white font-bold text-base md:text-3xl font-poppins leading-tight">{b.title}</p>
+                {b.subtitle&&<p className="text-white/80 text-xs md:text-base mt-0.5">{b.subtitle}</p>}
+                <button onClick={e=>{e.stopPropagation();handleBannerClick(b);}}
+                  className="mt-2 md:mt-4 inline-flex w-fit items-center gap-1 bg-white text-charcoal text-xs md:text-sm font-bold font-poppins px-3 py-1.5 rounded-xl">
+                  {b.button_text||'Shop Now'} →
+                </button>
+              </div>
             </div>
-            {/* Fix #5: hide decorative emoji when a real banner image is present */}
-            {!b.image_url&&<div className="banner-emoji-d">🛒</div>}
-          </div>
-        ))}
+          ))
+        }
+      </div>
+      {banners.length>1&&(
+        <div className="absolute bottom-3 left-4 flex gap-1.5">
+          {banners.map((_,i)=>(
+            <button key={i} aria-label={`Banner ${i+1} dikhayein`} onClick={()=>setBannerIdx(i)}
+              className={`h-1.5 rounded-full transition-all ${i===bannerIdx?'w-5 bg-white':'w-1.5 bg-white/50'}`}/>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  // ── SHOP BY CATEGORY (Module 3: unified Tailwind icon grid — replaces the
+  //     old desktop-only .desktop-cat-grid block. Mobile keeps its separate
+  //     horizontal-scroll MobileCatRow, unchanged, for the Shop page. ──
+  const CategoryGrid=()=>(
+    <div>
+      <h2 className="text-base md:text-xl font-bold font-poppins" style={{color:'var(--dark)'}}>Shop by Category</h2>
+      <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3 md:gap-4 mt-3">
+        {catsLoading
+          ?[...Array(8)].map((_,i)=>(
+            <div key={i} aria-hidden="true" className="flex flex-col items-center gap-1.5">
+              <div className="w-full aspect-square rounded-2xl animate-pulse" style={{background:'var(--light)'}}/>
+              <div className="h-2.5 w-10 rounded animate-pulse" style={{background:'var(--light)'}}/>
+            </div>
+          ))
+          :cats.map(c=>(
+            <button key={c.id} onClick={()=>{setActiveCatId(c.id);setPage('shop');setShopPage(1);setSearch('');}}
+              className="flex flex-col items-center gap-1.5 group">
+              <div className="w-full aspect-square rounded-2xl flex items-center justify-center text-2xl md:text-3xl overflow-hidden transition-transform group-active:scale-95 group-hover:-translate-y-0.5"
+                style={{background:'var(--primary-light)'}}>
+                {(c.display_image||c.image_url)
+                  ?<img src={c.display_image||c.image_url} alt={c.name} className="w-full h-full object-cover"/>
+                  :<span>{catEmoji(c)}</span>
+                }
+              </div>
+              <span className="text-[10px] md:text-xs font-medium font-poppins text-center leading-tight line-clamp-2" style={{color:'var(--dark)'}}>{c.name}</span>
+            </button>
+          ))
+        }
+      </div>
+    </div>
+  );
+
+  // ── PRODUCT RAIL (Module 3: unified Tailwind horizontal-scroll rail, used
+  //     for both "Featured Products" and each per-category section. Data/props
+  //     (cart, addToCart, updQty, onDetail) are the exact same ones PCard
+  //     already took — no logic changed, only how it's laid out. ──
+  const ProductRail=({title,loading,products,onSeeAll})=>{
+    if(!loading&&(!products||products.length===0))return null;
+    return(
+      <div className="mt-8">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base md:text-xl font-bold font-poppins" style={{color:'var(--dark)'}}>{title}</h2>
+          <button onClick={onSeeAll} className="text-xs md:text-sm font-semibold font-poppins flex items-center gap-0.5" style={{color:'var(--primary)'}}>See All →</button>
+        </div>
+        <div className="flex gap-3 md:gap-4 overflow-x-auto pb-1 snap-x scrollbar-hide">
+          {loading||!products
+            ?[...Array(4)].map((_,i)=><div key={i} className="flex-shrink-0 w-36 md:w-44 snap-start"><SkelCard/></div>)
+            :products.map(p=>(
+              <div key={p.id} className="flex-shrink-0 w-36 md:w-44 snap-start">
+                <PCard p={p} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={openDetail}/>
+              </div>
+            ))
+          }
+        </div>
       </div>
     );
   };
 
-  // ── Desktop Category Grid ─────────────────────────────
-  const DesktopCatGrid=()=>(
-    <div className="desktop-cats-wrap">
-      <div style={{fontWeight:800,fontSize:'0.95rem'}}>Shop by Category</div>
-      {catsLoading
-        ?<div style={{display:'flex',gap:10,marginTop:12,flexWrap:'wrap'}} aria-busy="true" aria-label="Categories load ho rahi hain">{[...Array(8)].map((_,i)=><div key={i} className="skel" style={{width:110,height:80,borderRadius:12}}/>)}</div>
-        :<div className="desktop-cat-grid">
-          {allCats.map(c=>(
-            <div key={c.id} className={`desktop-cat-item ${activeCatId===c.id?'on':''}`} onClick={()=>{setActiveCatId(c.id);setPage('shop');setShopPage(1);setSearch('');}}>
-              {(c.display_image||c.image_url)
-                ?<img src={c.display_image||c.image_url} alt={c.name}/>
-                :<div className="cat-emoji-box">{catEmoji(c)}</div>
-              }
-              <span>{c.name}</span>
-            </div>
-          ))}
-        </div>
-      }
-    </div>
-  );
-
   // ── Desktop Sidebar ───────────────────────────────────
+  // ── Desktop Sidebar (Module 4: Tailwind restyle. Keeps the exact same
+  //     `position:sticky; top:var(--header-h)` mechanism the ResizeObserver
+  //     in the header effect above depends on — only the classnames/colors
+  //     changed, not the layout contract.) ───────────────────
   const DesktopSidebar=()=>(
-    <div className="desktop-sidebar">
-      <div className="sidebar-title">Categories</div>
-      {allCats.map(c=>(
-        <div key={c.id} className={`sidebar-cat ${activeCatId===c.id?'on':''}`} onClick={()=>{setActiveCatId(c.id);setShopPage(1);setSearch('');}}>
-          {(c.display_image||c.image_url)
-            ?<img src={c.display_image||c.image_url} alt={c.name} className="sidebar-cat-img"/>
-            :<div className="sidebar-cat-emoji">{catEmoji(c)}</div>
-          }
-          <span>{c.name}</span>
-        </div>
-      ))}
+    <div className="sticky rounded-2xl p-3 mr-4 my-4 flex-shrink-0"
+      style={{width:200,background:'var(--card-bg)',top:'var(--header-h)',boxShadow:'0 2px 10px rgba(0,0,0,0.06)',maxHeight:'calc(100vh - var(--header-h) - 20px)',overflowY:'auto'}}>
+      <div className="text-[11px] font-bold font-poppins uppercase tracking-wide pb-2 mb-1.5" style={{color:'var(--gray)',borderBottom:'1px solid var(--border)'}}>Categories</div>
+      {allCats.map(c=>{
+        const active=activeCatId===c.id;
+        return(
+          <div key={c.id} onClick={()=>{setActiveCatId(c.id);setShopPage(1);setSearch('');}}
+            className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl cursor-pointer text-[13px] font-semibold font-poppins active:scale-[0.97] hover:bg-black/[0.03] transition-colors"
+            style={{color:active?'var(--primary)':'var(--dark)',background:active?'var(--primary-light)':'transparent'}}>
+            {(c.display_image||c.image_url)
+              ?<img src={c.display_image||c.image_url} alt={c.name} className="w-7 h-7 rounded-lg object-cover flex-shrink-0"/>
+              :<div className="w-7 h-7 rounded-lg flex items-center justify-center text-base flex-shrink-0" style={{background:'var(--primary-light)'}}>{catEmoji(c)}</div>
+            }
+            <span className="truncate">{c.name}</span>
+          </div>
+        );
+      })}
     </div>
   );
 
   // MobileCatRow — App ke bahar move kar diya (scroll reset fix)
 
-  // ── Footer ────────────────────────────────────────────
-  const Footer=({mobile=false})=>(
-    <div style={{background:'#1A1A2E',color:'rgba(255,255,255,0.6)',padding:mobile?'20px 16px':'28px 24px',textAlign:'center',fontSize:'0.75rem',lineHeight:2,borderRadius:mobile?0:16,marginBottom:mobile?0:16}}>
-      <div style={{color:'#fff',fontWeight:900,fontSize:'1.1rem',marginBottom:8}}>🛒 rinku<span style={{color:'#FFB800'}}>.</span> kirana</div>
-      <div>📍 Aapke mohalle ki dukaan</div>
+  // ── Footer (Module 2/3: Tailwind restyle, same info as before — no new/fake links) ──
+  const Footer=()=>(
+    <div className="text-center font-poppins px-5 py-6 md:px-6 md:py-8 rounded-none md:rounded-2xl mb-0 md:mb-4"
+      style={{background:`linear-gradient(135deg, var(--primary), var(--primary-dark))`,color:'rgba(255,255,255,0.85)',fontSize:'0.78rem',lineHeight:2}}>
+      <div className="flex items-center justify-center gap-2.5" style={{marginBottom:8}}>
+        <img src="/icons/rk-logo.svg" alt="RK Grocery Mart" style={{width:38,height:38,borderRadius:12}}/>
+        <div className="text-left">
+          <div className="text-white font-extrabold font-poppins" style={{fontSize:'1.15rem',lineHeight:1.1}}>RK Grocery Mart</div>
+          <div className="text-white/75 font-poppins" style={{fontSize:'0.7rem'}}>हर घर की पसंद</div>
+        </div>
+      </div>
+      <div className="flex items-center justify-center gap-4 flex-wrap" style={{margin:'8px 0'}}>
+        <span className="flex items-center gap-1"><span>⚡</span><span className="text-xs">Fast delivery</span></span>
+        <span className="flex items-center gap-1"><span>🌿</span><span className="text-xs">Aapke mohalle ki dukaan</span></span>
+      </div>
       <div>📞 Call/WhatsApp: 6393196765</div>
       <div>⏰ Subah 7am – Raat 10pm</div>
-      <div style={{marginTop:8,opacity:0.4}}>© {new Date().getFullYear()} Rinku Kirana &amp; General Store</div>
+      <div style={{marginTop:8,opacity:0.7}}>© {new Date().getFullYear()} RK Grocery Mart — हर घर की पसंद</div>
     </div>
   );
 
-  // ── Desktop Home ──────────────────────────────────────
-  const DesktopHome=()=>(
-    <div className="desktop-wrap" style={{paddingTop:16,paddingBottom:24}}>
-      <DesktopBannerRow/>
-      <div className="desktop-offer-row">
-        <div className="offer-banner-full"><span className="ob-icon">🎁</span><div><div className="ob-title">Pehli order par ₹50 OFF!</div><div className="ob-sub">Code: RINKU50 • Min order ₹199</div></div></div>
-        <div className="offer-banner-ref"><span className="ob-icon">👥</span><div><div className="ob-title-b">Dost ko refer karein!</div><div className="ob-sub-b">Dono ko ₹30 cashback milega</div></div></div>
-      </div>
-      <DesktopCatGrid/>
-      {/* Featured */}
-      {(featLoading||featuredProds.length>0)&&(
-        <div style={{background:'var(--card-bg)',borderRadius:16,padding:'18px 20px',marginBottom:14}}>
-          <div className="dsec-hd">
-            <div className="dsec-title">⭐ Featured Products</div>
-            <button className="see-all" onClick={()=>setPage('shop')}>See All →</button>
+  // ── HOME (Module 3: single unified Tailwind homepage — replaces the old
+  //     separate DesktopHome/mobile-JSX split. Same data hooks as before
+  //     (banners/cats/featuredProds/sectionProds via useBanners/useCategories/
+  //     useProducts), same handlers (handleBannerClick, openDetail, addToCart,
+  //     updQty) — only the layout/markup changed. ──
+  const HomeContent=()=>(
+    <div className="max-w-site mx-auto px-4 md:px-8 pt-4 pb-6 md:pb-8">
+      <HeroBanner/>
+
+      {/* Promo strip — 50-off banner on all sizes, referral banner desktop-only (unchanged from before) */}
+      <div className="mt-4 md:mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="flex items-center gap-3 rounded-2xl p-3.5 md:p-4" style={{background:'var(--primary-light)'}}>
+          <span className="text-2xl flex-shrink-0">🎁</span>
+          <div className="min-w-0">
+            <div className="font-bold font-poppins text-xs md:text-sm truncate" style={{color:'var(--primary-dark)'}}>Pehli order par ₹50 OFF!</div>
+            <div className="text-[11px] md:text-xs font-poppins" style={{color:'var(--gray)'}}>Code: RINKU50 • Min order ₹199</div>
           </div>
-          {featLoading
-            ?<div className="desktop-prod-grid" aria-busy="true" aria-label="Products load ho rahe hain">{[...Array(6)].map((_,i)=><SkelCard key={i}/>)}</div>
-            :<div className="desktop-prod-grid">{featuredProds.map(p=><PCard key={p.id} p={p} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={openDetail}/>)}</div>
-          }
         </div>
-      )}
+        <div className="hidden md:flex items-center gap-3 rounded-2xl p-4" style={{background:'#FFF3E0'}}>
+          <span className="text-2xl flex-shrink-0">👥</span>
+          <div className="min-w-0">
+            <div className="font-bold font-poppins text-sm" style={{color:'var(--dark)'}}>Dost ko refer karein!</div>
+            <div className="text-xs font-poppins" style={{color:'var(--gray)'}}>Dono ko ₹30 cashback milega</div>
+          </div>
+        </div>
+      </div>
+
+      {/* ⚡ Flash Sale (Module 12) — real discounted products + midnight countdown */}
+      <FlashSale prods={homeSections.flash} loading={homeLoading} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={openDetail}/>
+
+      {/* 🔥 Today's Deals */}
+      <ProductRail title="🔥 Today's Deals" loading={homeLoading} products={homeSections.deals} onSeeAll={()=>setPage('shop')}/>
+
+      <div className="mt-6 md:mt-8"><CategoryGrid/></div>
+
+      {/* Featured */}
+      <ProductRail title="⭐ Featured Products" loading={featLoading} products={featuredProds} onSeeAll={()=>setPage('shop')}/>
+
+      {/* Best Sellers */}
+      <ProductRail title="🏆 Best Sellers" loading={homeLoading} products={homeSections.bestSellers} onSeeAll={()=>setPage('shop')}/>
+
+      {/* New Arrivals */}
+      <ProductRail title="✨ New Arrivals" loading={homeLoading} products={homeSections.newArrivals} onSeeAll={()=>setPage('shop')}/>
+
       {/* Category sections */}
       {cats.slice(0,6).map(c=>{
         const items=sectionProds[c.id];
         if(items&&items.length===0)return null;
         return(
-          <div key={c.id} style={{background:'var(--card-bg)',borderRadius:16,padding:'18px 20px',marginBottom:14}}>
-            <div className="dsec-hd">
-              <div className="dsec-title">{c.name}</div>
-              <button className="see-all" onClick={()=>{setActiveCatId(c.id);setPage('shop');setShopPage(1);setSearch('');}}>See All →</button>
-            </div>
-            {!items
-              ?<div className="desktop-prod-grid" aria-busy="true" aria-label="Products load ho rahe hain">{[...Array(4)].map((_,i)=><SkelCard key={i}/>)}</div>
-              :<div className="desktop-prod-grid">{items.slice(0,6).map(p=><PCard key={p.id} p={p} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={openDetail}/>)}</div>
-            }
-          </div>
+          <ProductRail key={c.id} title={c.name} loading={!items} products={items}
+            onSeeAll={()=>{setActiveCatId(c.id);setPage('shop');setShopPage(1);setSearch('');}}/>
         );
       })}
-      <div className="how-section">
-        <div style={{fontWeight:800,fontSize:'0.95rem',color:'var(--dark)'}}>How It Works</div>
-        <div className="how-grid">
+
+      {/* Why Choose Us */}
+      <WhyChooseUs/>
+
+      {/* Customer Reviews */}
+      <CustomerReviews/>
+
+      {/* Download App */}
+      <DownloadApp onInstall={()=>{if(window.RKPwa?.promptInstall){window.RKPwa.promptInstall();}else{showToast('Browser ke ⋮ menu se “Add to Home Screen” chunein 📱');}}}/>
+
+      {/* Newsletter */}
+      <Newsletter showToast={showToast}/>
+
+      {/* How It Works */}
+      <div className="mt-8 rounded-2xl p-5 md:p-6" style={{background:'var(--card-bg)'}}>
+        <div className="font-extrabold font-poppins text-sm md:text-base" style={{color:'var(--dark)'}}>How It Works</div>
+        <div className="grid grid-cols-3 gap-3 md:gap-6 mt-4">
           {[{i:'📱',t:'Open the app',s:'Search what you need'},{i:'🛒',t:'Place an order',s:'Add items to cart & checkout'},{i:'🚴',t:'Get fast delivery',s:'Delivered in 1-2 hours'}].map((h,i)=>(
-            <div key={i} className="how-card"><div className="how-icon">{h.i}</div><div className="how-title">{h.t}</div><div className="how-sub">{h.s}</div></div>
+            <div key={i} className="text-center">
+              <div className="text-2xl md:text-3xl mb-1.5">{h.i}</div>
+              <div className="font-bold font-poppins text-xs md:text-sm" style={{color:'var(--dark)'}}>{h.t}</div>
+              <div className="text-[10px] md:text-xs font-poppins mt-0.5" style={{color:'var(--gray)'}}>{h.s}</div>
+            </div>
           ))}
         </div>
       </div>
-      <Footer/>
+
+      <div className="mt-4"><Footer/></div>
     </div>
   );
 
   // ── Desktop Shop ──────────────────────────────────────
   const DesktopShop=()=>{
-    const prods=search.trim().length>1?searchResults:shopProds;
-    const isLoading=search.trim().length>1?searchLoading:shopLoading;
+    const prods=visibleShopProds;
+    const isLoading=shopIsLoading;
     const activeCatName=allCats.find(c=>c.id===activeCatId)?.name||'All Products';
+    const countLabel=isLoading?'Loading…':(inStockOnly?`${prods.length} in stock`:`${isSearchActive?searchResults.length:shopTotal} Products`);
     return(
-      <div className="desktop-shop-layout">
+      <div className="flex items-start max-w-site mx-auto px-4 md:px-7">
         <DesktopSidebar/>
-        <div className="desktop-content">
-          <div style={{background:'var(--card-bg)',borderRadius:16,padding:'18px 20px'}}>
-            <div style={{fontWeight:800,fontSize:'0.95rem',marginBottom:4}}>{isLoading?'Loading…':`${search.trim().length>1?searchResults.length:shopTotal} Products`}</div>
-            <div style={{fontSize:'0.78rem',color:'var(--gray)',marginBottom:14}}>{activeCatName}{search?` • "${search}"`:''}</div>
+        <div className="flex-1 min-w-0 py-4">
+          <div className="rounded-2xl p-4 md:p-5" style={{background:'var(--card-bg)'}}>
+            <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+              <div className="min-w-0">
+                <div className="font-extrabold font-poppins text-sm" style={{color:'var(--dark)'}}>{countLabel}</div>
+                <div className="text-xs font-poppins truncate" style={{color:'var(--gray)'}}>{activeCatName}{search?` • "${search}"`:''}</div>
+              </div>
+              <div className="flex items-center gap-3 flex-shrink-0">
+                <select value={sortBy} onChange={e=>setSortBy(e.target.value)} aria-label="Sort products"
+                  className="text-xs font-poppins font-semibold rounded-xl px-3 py-2 outline-none"
+                  style={{border:'1.5px solid var(--border)',background:'var(--page-bg)',color:'var(--dark)'}}>
+                  {SORT_OPTIONS.map(o=><option key={o.v} value={o.v}>{o.l}</option>)}
+                </select>
+                <label className="flex items-center gap-1.5 text-xs font-semibold font-poppins cursor-pointer select-none" style={{color:'var(--dark)'}}>
+                  <input type="checkbox" checked={inStockOnly} onChange={e=>setInStockOnly(e.target.checked)} style={{accentColor:'var(--primary)',width:15,height:15}}/>
+                  In stock only
+                </label>
+              </div>
+            </div>
             {isLoading
-              ?<div className="desktop-prod-grid" aria-busy="true" aria-label="Products load ho rahe hain">{[...Array(8)].map((_,i)=><SkelCard key={i}/>)}</div>
+              ?<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4" aria-busy="true" aria-label="Products load ho rahe hain">{[...Array(8)].map((_,i)=><SkelCard key={i}/>)}</div>
               :prods.length===0
-                ?<div style={{textAlign:'center',padding:'60px 0',color:'var(--gray)'}}><div style={{fontSize:'3rem'}}>🔍</div><p style={{marginTop:10,fontWeight:600}}>"{search||activeCatName}" mein koi product nahi mila</p></div>
-                :<div className="desktop-prod-grid">{prods.map(p=><PCard key={p.id} p={p} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={openDetail}/>)}</div>
+                ?<div className="text-center py-16">
+                  <div style={{fontSize:'3rem'}}>🔍</div>
+                  <p className="mt-2.5 font-semibold font-poppins text-sm" style={{color:'var(--gray)'}}>"{search||activeCatName}" mein koi product nahi mila</p>
+                  {inStockOnly&&<button onClick={()=>setInStockOnly(false)} className="text-xs font-bold font-poppins mt-2" style={{color:'var(--primary)'}}>"In stock only" filter hataayein</button>}
+                </div>
+                :<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">{prods.map(p=><PCard key={p.id} p={p} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={openDetail}/>)}</div>
             }
             {!search&&totalPages>1&&(
-              <div style={{display:'flex',justifyContent:'center',gap:8,marginTop:20}}>
-                {[...Array(totalPages)].map((_,i)=>(
-                  <button key={i} onClick={()=>setShopPage(i+1)} style={{width:34,height:34,borderRadius:8,border:'1.5px solid',borderColor:shopPage===i+1?'var(--primary)':'var(--border)',background:shopPage===i+1?'var(--primary)':'none',color:shopPage===i+1?'#fff':'var(--gray)',fontWeight:700,fontSize:'0.82rem'}}>{i+1}</button>
-                ))}
+              <div className="flex justify-center flex-wrap gap-2 mt-6">
+                {[...Array(totalPages)].map((_,i)=>{
+                  const on=shopPage===i+1;
+                  return(
+                    <button key={i} onClick={()=>setShopPage(i+1)}
+                      className="w-8 h-8 rounded-lg text-[13px] font-bold font-poppins flex items-center justify-center"
+                      style={{border:`1.5px solid ${on?'var(--primary)':'var(--border)'}`,background:on?'var(--primary)':'transparent',color:on?'#fff':'var(--gray)'}}>
+                      {i+1}
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -483,52 +839,99 @@ export default function App(){
 
   return(
     <div style={{background:'var(--page-bg)',minHeight:'100vh'}}>
-      {/* Desktop header */}
-      <div className="desktop-header" ref={desktopHeaderRef}>
-        <div className="dh-inner">
-          <div className="logo" onClick={()=>setPage('home')}>rinku<span>.</span></div>
-          <div className="dh-location" onClick={()=>showToast('📍 Location change abhi available nahi hai')}>
-            <div className="dh-location-label">Delivery in</div>
-            <div className="dh-location-addr" style={headerLabelStyle}>📍 {headerLabel} ▾</div>
+      {/* ── HEADER (Module 2: unified Tailwind header, same look on mobile+desktop
+           as the new design — replaces the old separate desktop-header/.header
+           blocks). All state/handlers below are UNCHANGED from before: setPage,
+           showToast, search/setSearch/setShopPage, toggleTheme, isPWA, user,
+           openLogin (Module 7: opens AuthModal in place of the old goLogin
+           full-page nav), setCartOpen, count. desktopHeaderRef stays attached so the
+           --header-h ResizeObserver (used by the desktop sidebar's sticky
+           offset) keeps working. */}
+      <header className="sticky top-0 z-50" ref={desktopHeaderRef}
+        style={{background:'var(--card-bg)',boxShadow:'0 2px 12px rgba(0,0,0,0.06)'}}>
+        <div className="max-w-site mx-auto px-4 md:px-8 pt-3 md:pt-4 pb-3">
+          <div className="flex items-center justify-between gap-3 md:gap-6">
+            {/* Logo + location */}
+            <div className="min-w-0 flex-shrink-0">
+              <button onClick={()=>setPage('home')} className="flex items-center gap-2 text-left" style={{background:'none'}}>
+                <img src="/icons/rk-logo.svg" alt="RK Grocery Mart" className="w-9 h-9 md:w-10 md:h-10 rounded-xl flex-shrink-0"/>
+                <span className="hidden sm:flex flex-col min-w-0">
+                  <span className="text-base md:text-lg font-extrabold font-poppins leading-none truncate" style={{color:'var(--dark)'}}>RK Grocery Mart</span>
+                  <span className="text-[9px] md:text-[10px] font-poppins font-medium mt-0.5 truncate" style={{color:'var(--primary)'}}>हर घर की पसंद</span>
+                </span>
+              </button>
+              <button className="flex items-center gap-1 mt-0.5 max-w-[150px] sm:max-w-[220px]" style={{background:'none'}}
+                onClick={()=>showToast('📍 Location change abhi available nahi hai')}>
+                <MapPin size={12} style={{color:'var(--primary)'}} className="flex-shrink-0"/>
+                <span className="text-xs font-poppins truncate" style={{color:'var(--gray)',...headerLabelStyle}}>{headerLabel}</span>
+                <ChevronDown size={11} style={{color:'var(--gray)'}} className="flex-shrink-0"/>
+              </button>
+            </div>
+
+            {/* Search — desktop only, center (mobile gets a full-width row below) */}
+            <div className="hidden md:block flex-1 max-w-xl mx-auto">
+              <div className="w-full flex items-center gap-3 rounded-2xl p-2.5"
+                style={{background:'var(--light)',border:'1.5px solid var(--border)',opacity:searchDisabled?0.5:1}}>
+                <Search size={18} style={{color:'var(--gray)'}} className="flex-shrink-0"/>
+                <input placeholder="Search groceries, snacks, dairy..." value={search} disabled={searchDisabled}
+                  onFocus={()=>{if(searchDisabled)showToast('Pehle yeh kaam poora karein 🙏');}}
+                  onChange={e=>{setSearch(e.target.value);setPage('shop');setShopPage(1);}}
+                  className="flex-1 bg-transparent text-sm font-poppins outline-none" style={{color:'var(--dark)'}}/>
+                {search&&!searchDisabled&&<button onClick={()=>setSearch('')} style={{color:'#A0AEC0',background:'none'}}>✕</button>}
+              </div>
+            </div>
+
+            {/* Right actions */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:'var(--primary-light)'}}
+                aria-label="Theme badlein" onClick={toggleTheme}>
+                {theme==='dark'?<Sun size={18} style={{color:'var(--primary-dark)'}}/>:<Moon size={18} style={{color:'var(--primary-dark)'}}/>}
+              </button>
+
+              {!isPWA&&(
+                <button onClick={()=>window.RKPwa&&window.RKPwa.promptInstall()}
+                  className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold font-poppins whitespace-nowrap"
+                  style={{background:'var(--primary-light)',color:'var(--primary-dark)'}}>
+                  <Download size={14}/> Get App
+                </button>
+              )}
+
+              <button onClick={()=>setCartOpen(true)} aria-label="Cart"
+                className="relative flex items-center gap-1.5 px-3 h-9 rounded-xl text-white font-poppins font-bold text-sm"
+                style={{background:`linear-gradient(135deg, var(--primary), var(--primary-dark))`, boxShadow:'0 4px 12px rgba(22,163,74,0.3)'}}>
+                <ShoppingCart size={17}/>
+                <span className="hidden md:inline">Cart</span>
+                {count>0&&<span className="absolute -top-1.5 -right-1.5 w-4 h-4 text-white text-[9px] font-bold rounded-full flex items-center justify-center font-poppins" style={{background:'var(--orange)'}}>{count>9?'9+':count}</span>}
+              </button>
+
+              {user?
+                <button onClick={()=>window.location.href='account.html'} aria-label="Account"
+                  className="flex items-center gap-1.5 h-9 px-2.5 rounded-xl font-poppins font-bold text-xs"
+                  style={{background:'var(--primary-light)',color:'var(--primary-dark)'}}>
+                  <User size={16}/> <span className="max-w-[64px] truncate">{user.name.split(' ')[0]}</span>
+                </button>
+                :<button onClick={openLogin} className="flex items-center gap-1.5 h-9 px-3 rounded-xl font-poppins font-bold text-xs text-white"
+                  style={{background:'var(--primary)'}}>
+                  <User size={16}/> Login
+                </button>
+              }
+            </div>
           </div>
-          <div className="dh-search" style={searchDisabled?{opacity:0.5}:{}}>
-            <span>🔍</span>
-            <input placeholder="Search groceries, snacks, dairy..." value={search} disabled={searchDisabled}
-              onFocus={()=>{if(searchDisabled)showToast('Pehle yeh kaam poora karein 🙏');}}
-              onChange={e=>{setSearch(e.target.value);setPage('shop');setShopPage(1);}}/>
-            {search&&!searchDisabled&&<button onClick={()=>setSearch('')} style={{color:'#A0AEC0',background:'none'}}>✕</button>}
-          </div>
-          <div className="dh-nav">
-            <button className={`dh-nav-btn ${page==='home'?'on':''}`} onClick={()=>setPage('home')}>🏠 <span className="dh-nav-label">Home</span></button>
-            <button className={`dh-nav-btn ${page==='shop'?'on':''}`} onClick={()=>setPage('shop')}>🛍️ <span className="dh-nav-label">Shop</span></button>
-            <button className="dh-theme-btn" aria-label="Theme badlein" onClick={toggleTheme}>{theme==='dark'?'☀️':'🌙'}</button>
-            {user?<button className="dh-user-btn" onClick={()=>window.location.href='account.html'}>👤 <span>{user.name.split(' ')[0]}</span></button>
-              :<button className="dh-user-btn" onClick={goLogin}>👤 Login</button>}
-            {!isPWA&&<button className="dh-getapp-btn" onClick={()=>window.RKPwa&&window.RKPwa.promptInstall()}>📲 Get App</button>}
-            <button className="dh-cart-btn" onClick={()=>setCartOpen(true)}><CartIcon/> <span className="dh-cart-label">Cart</span> {count>0&&<span className="c-badge">{count}</span>}</button>
+
+          {/* Mobile search — full width row below logo/actions */}
+          <div className="md:hidden w-full mt-3">
+            <div className="w-full flex items-center gap-3 rounded-2xl p-3"
+              style={{background:'var(--light)',border:'1.5px solid var(--border)',opacity:searchDisabled?0.5:1}}>
+              <Search size={16} style={{color:'var(--gray)'}} className="flex-shrink-0"/>
+              <input placeholder="Search groceries, snacks, dairy..." value={search} disabled={searchDisabled}
+                onFocus={()=>{if(searchDisabled)showToast('Pehle yeh kaam poora karein 🙏');}}
+                onChange={e=>{setSearch(e.target.value);setPage('shop');setShopPage(1);}}
+                className="flex-1 bg-transparent text-sm font-poppins outline-none" style={{color:'var(--dark)',fontSize:16}}/>
+              {search&&!searchDisabled&&<button onClick={()=>setSearch('')} style={{color:'#A0AEC0',background:'none'}}>✕</button>}
+            </div>
           </div>
         </div>
-      </div>
-      {/* Mobile header */}
-      <div className="header">
-        <div className="header-top">
-          <div className="logo-sm">rinku<span>.</span></div>
-          <div className="delivery-info" onClick={()=>showToast('📍 Location change abhi available nahi hai')}><div className="delivery-min">Delivery in</div><div className="delivery-addr" style={headerLabelStyle}><span className="delivery-pin">📍 </span>{headerLabel} ▾</div></div>
-          <div className="header-right">
-            <button className="theme-toggle-btn" aria-label="Theme badlein" onClick={toggleTheme}>{theme==='dark'?'☀️':'🌙'}</button>
-            {user?<button className="user-pill-btn" onClick={()=>window.location.href='account.html'}>👤 <span className="upn">{user.name.split(' ')[0]}</span></button>
-              :<button className="user-pill-btn" onClick={goLogin}>👤 <span className="upn">Login</span></button>}
-            <button className="cart-icon-btn" onClick={()=>setCartOpen(true)}><CartIcon size={17}/> {count>0&&<span className="c-badge">{count}</span>}</button>
-          </div>
-        </div>
-        <div className="search-bar" style={searchDisabled?{opacity:0.5}:{}}>
-          <span style={{fontSize:'1rem'}}>🔍</span>
-          <input placeholder="Search groceries, snacks, dairy..." value={search} disabled={searchDisabled}
-            onFocus={()=>{if(searchDisabled)showToast('Pehle yeh kaam poora karein 🙏');}}
-            onChange={e=>{setSearch(e.target.value);setPage('shop');setShopPage(1);}}/>
-          {search&&!searchDisabled&&<button onClick={()=>setSearch('')} style={{color:'#A0AEC0',fontSize:'1rem',background:'none'}}>✕</button>}
-        </div>
-      </div>
+      </header>
       {/* Ticker */}
       <div className="ticker">
         <div className="ticker-track">
@@ -537,117 +940,96 @@ export default function App(){
       </div>
 
       <div className="page-pad">
-        {/* ── HOME ── */}
-        {page==='home'&&(
-          <>
-            {/* Desktop */}
-            <div className="d-view"><DesktopHome/></div>
-            {/* Mobile */}
-            <div className="m-view">
-              {/* Banner */}
-              <div className="banner-slider">
-                <div className="banner-wrap" ref={bannerWrapRef}>
-                  {bannersLoading
-                    ?<SkelBanner/>
-                    :banners.map((b,i)=><BannerCardM key={b.id} b={b} active={i===bannerIdx} onClick={()=>handleBannerClick(b)}/>)
-                  }
-                </div>
-                {banners.length>1&&<div className="banner-dots">{banners.map((_,i)=><div key={i} className={`bdot ${i===bannerIdx?'on':''}`} onClick={()=>setBannerIdx(i)}/>)}</div>}
-              </div>
-              {/* Offers */}
-              <div className="offer-banner-full" style={{margin:'0 16px 8px'}}>
-                <span className="ob-icon">🎁</span>
-                <div><div className="ob-title">Pehli order par ₹50 OFF!</div><div className="ob-sub">Code: RINKU50 • Min order ₹199</div></div>
-              </div>
-              {/* Shop by category */}
-              <div style={{background:'var(--card-bg)',marginBottom:8,paddingBottom:4}}>
-                <div style={{padding:'12px 16px 0',fontWeight:800,fontSize:'0.92rem'}}>Shop by Category</div>
-                <MobileCatRow cats={allCats} catsLoading={catsLoading} activeCatId={activeCatId} catEmoji={catEmoji} onClick={id=>{setActiveCatId(id);setPage('shop');setShopPage(1);setSearch('');}}/>
-              </div>
-              {/* Featured */}
-              {(featLoading||featuredProds.length>0)&&(
-                <div style={{background:'var(--card-bg)',marginBottom:8,padding:'14px 0 4px'}}>
-                  <div className="section-hd">
-                    <div className="section-hd-title">⭐ Featured Products</div>
-                    <button className="see-all" onClick={()=>setPage('shop')}>See All →</button>
-                  </div>
-                  <div className="prods-row">
-                    {featLoading?[...Array(4)].map((_,i)=><div key={i} className="skel" style={{width:140,height:190,borderRadius:14,flexShrink:0}} aria-hidden="true"/>)
-                      :featuredProds.map(p=><PCard key={p.id} p={p} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={openDetail}/>)}
-                  </div>
-                </div>
-              )}
-              {/* Category sections */}
-              {cats.slice(0,6).map(c=>{
-                const items=sectionProds[c.id];
-                if(items&&items.length===0)return null;
-                return(
-                  <div key={c.id} style={{background:'var(--card-bg)',marginBottom:8,padding:'14px 0 4px'}}>
-                    <div className="section-hd">
-                      <div className="section-hd-title">{c.name}</div>
-                      <button className="see-all" onClick={()=>{setActiveCatId(c.id);setPage('shop');setShopPage(1);setSearch('');}}>See All →</button>
-                    </div>
-                    <div className="prods-row">
-                      {!items?[...Array(4)].map((_,i)=><div key={i} className="skel" style={{width:140,height:190,borderRadius:14,flexShrink:0}} aria-hidden="true"/>)
-                        :items.map(p=><PCard key={p.id} p={p} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={openDetail}/>)}
-                    </div>
-                  </div>
-                );
-              })}
-              <div className="how-section" style={{borderRadius:0,margin:'0 0 8px'}}>
-                <div style={{fontWeight:800,fontSize:'0.95rem'}}>How It Works</div>
-                <div className="how-grid">
-                  {[{i:'📱',t:'Open the app',s:'Search what you need'},{i:'🛒',t:'Place an order',s:'Add items to cart & checkout'},{i:'🚴',t:'Get fast delivery',s:'Delivered in 1-2 hours'}].map((h,i)=>(
-                    <div key={i} className="how-card"><div className="how-icon">{h.i}</div><div className="how-title">{h.t}</div><div className="how-sub">{h.s}</div></div>
-                  ))}
-                </div>
-              </div>
-              <Footer mobile/>
-            </div>
-            <style>{`.d-view{display:none}.m-view{display:block}@media(min-width:768px){.d-view{display:block}.m-view{display:none}}`}</style>
-          </>
-        )}
+        {/* ── HOME (Module 3: single unified Tailwind homepage, no more
+             separate mobile/desktop markup — see HomeContent above) ── */}
+        {page==='home'&&<HomeContent/>}
 
         {/* ── SHOP ── */}
         {page==='shop'&&(
           <>
             <div className="d-view"><DesktopShop/></div>
             <div className="m-view">
-              <div style={{background:'var(--card-bg)',marginBottom:8}}>
+              <div className="px-4 pt-3" style={{background:'var(--card-bg)'}}>
                 <MobileCatRow cats={allCats} catsLoading={catsLoading} activeCatId={activeCatId} catEmoji={catEmoji} onClick={id=>{setActiveCatId(id);setShopPage(1);setSearch('');}}/>
               </div>
-              <div style={{background:'var(--card-bg)',padding:'10px 0 4px'}}>
-                {((shopLoading&&search.trim().length<2)||(searchLoading&&search.trim().length>1))
-                  ?<>
-                    <div style={{fontWeight:800,fontSize:'0.9rem',marginBottom:2,padding:'0 16px'}}>Loading…</div>
-                    <div className="mobile-shop-grid" aria-busy="true" aria-label="Products load ho rahe hain">{[...Array(6)].map((_,i)=><SkelCard key={i}/>)}</div>
-                  </>
-                  :<>
-                    <div style={{fontWeight:800,fontSize:'0.9rem',marginBottom:2,padding:'0 16px'}}>{search.trim().length>1?searchResults.length:shopTotal} products</div>
-                    <div style={{fontSize:'0.72rem',color:'var(--gray)',marginBottom:10,padding:'0 16px'}}>{allCats.find(c=>c.id===activeCatId)?.name||'All'}{search?` • "${search}"`:''}</div>
-                    <div className="mobile-shop-grid">
-                      {(search.trim().length>1?searchResults:shopProds).map(p=><PCard key={p.id} p={p} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={openDetail}/>)}
+              <div className="px-4 pt-3 pb-2" style={{background:'var(--card-bg)'}}>
+                <div className="flex items-center justify-between gap-2 mb-2.5">
+                  <div className="min-w-0">
+                    <div className="font-extrabold font-poppins text-sm" style={{color:'var(--dark)'}}>
+                      {shopIsLoading?'Loading…':(inStockOnly?`${visibleShopProds.length} in stock`:`${isSearchActive?searchResults.length:shopTotal} products`)}
                     </div>
-                    {(search.trim().length>1?searchResults:shopProds).length===0&&
-                      <div style={{textAlign:'center',padding:'40px 0',color:'var(--gray)'}}><div style={{fontSize:'3rem'}}>🔍</div><p style={{marginTop:8,fontSize:'0.88rem',fontWeight:600}}>Koi product nahi mila</p></div>}
+                    <div className="text-[11px] font-poppins truncate" style={{color:'var(--gray)'}}>{allCats.find(c=>c.id===activeCatId)?.name||'All'}{search?` • "${search}"`:''}</div>
+                  </div>
+                  <button onClick={()=>setFilterDrawerOpen(true)}
+                    className="flex-shrink-0 flex items-center gap-1.5 text-xs font-bold font-poppins rounded-xl px-3 py-2"
+                    style={{border:'1.5px solid var(--border)',background:(sortBy!=='default'||inStockOnly)?'var(--primary-light)':'transparent',color:(sortBy!=='default'||inStockOnly)?'var(--primary-dark)':'var(--dark)'}}>
+                    <SlidersHorizontal size={14}/> Filters
+                  </button>
+                </div>
+                {shopIsLoading
+                  ?<div className="grid grid-cols-2 gap-2.5" aria-busy="true" aria-label="Products load ho rahe hain">{[...Array(6)].map((_,i)=><SkelCard key={i}/>)}</div>
+                  :<>
+                    {visibleShopProds.length>0
+                      ?<div className="grid grid-cols-2 gap-2.5">
+                        {visibleShopProds.map(p=><PCard key={p.id} p={p} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={openDetail}/>)}
+                      </div>
+                      :<div className="text-center py-10">
+                        <div style={{fontSize:'3rem'}}>🔍</div>
+                        <p className="mt-2 text-[0.88rem] font-semibold font-poppins" style={{color:'var(--gray)'}}>Koi product nahi mila</p>
+                        {inStockOnly&&<button onClick={()=>setInStockOnly(false)} className="text-xs font-bold font-poppins mt-2" style={{color:'var(--primary)'}}>"In stock only" filter hataayein</button>}
+                      </div>
+                    }
                   </>
                 }
                 {!search&&totalPages>1&&(
-                  <div style={{display:'flex',justifyContent:'center',gap:8,padding:'12px 16px'}}>
-                    {shopPage>1&&<button onClick={()=>setShopPage(p=>p-1)} style={{padding:'8px 16px',borderRadius:8,border:'1.5px solid var(--border)',background:'none',fontWeight:700}}>← Prev</button>}
-                    <span style={{padding:'8px 16px',fontWeight:700,color:'var(--gray)'}}>Page {shopPage} of {totalPages}</span>
-                    {shopPage<totalPages&&<button onClick={()=>setShopPage(p=>p+1)} style={{padding:'8px 16px',borderRadius:8,border:'1.5px solid var(--primary)',background:'var(--primary)',color:'#fff',fontWeight:700}}>Next →</button>}
+                  <div className="flex justify-center gap-2 py-3">
+                    {shopPage>1&&<button onClick={()=>setShopPage(p=>p-1)} className="px-4 py-2 rounded-lg font-bold font-poppins text-sm" style={{border:'1.5px solid var(--border)',background:'transparent',color:'var(--dark)'}}>← Prev</button>}
+                    <span className="px-4 py-2 font-bold font-poppins text-sm" style={{color:'var(--gray)'}}>Page {shopPage} of {totalPages}</span>
+                    {shopPage<totalPages&&<button onClick={()=>setShopPage(p=>p+1)} className="px-4 py-2 rounded-lg font-bold font-poppins text-sm text-white" style={{border:'1.5px solid var(--primary)',background:'var(--primary)'}}>Next →</button>}
                   </div>
                 )}
               </div>
             </div>
             <style>{`.d-view{display:none}.m-view{display:block}@media(min-width:768px){.d-view{display:block}.m-view{display:none}}`}</style>
+
+            {/* Mobile filter/sort bottom sheet (Module 4) */}
+            {filterDrawerOpen&&(
+              <div className="fixed inset-0 z-[70] flex items-end md:hidden" onClick={()=>setFilterDrawerOpen(false)}>
+                <div className="absolute inset-0" style={{background:'rgba(0,0,0,0.4)'}}/>
+                <div className="relative w-full rounded-t-2xl p-4" style={{background:'var(--card-bg)',maxHeight:'80vh',overflowY:'auto'}} onClick={e=>e.stopPropagation()}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="text-sm font-bold font-poppins" style={{color:'var(--dark)'}}>Filters &amp; Sort</div>
+                    <button onClick={()=>setFilterDrawerOpen(false)} aria-label="Band karein"><X size={20} style={{color:'var(--gray)'}}/></button>
+                  </div>
+                  <div className="mb-5">
+                    <div className="text-xs font-bold font-poppins mb-2 uppercase tracking-wide" style={{color:'var(--gray)'}}>Sort by</div>
+                    <div className="flex flex-col gap-1.5">
+                      {SORT_OPTIONS.map(o=>(
+                        <button key={o.v} onClick={()=>setSortBy(o.v)}
+                          className="text-left text-sm font-poppins px-3 py-2.5 rounded-xl"
+                          style={{background:sortBy===o.v?'var(--primary-light)':'transparent',color:sortBy===o.v?'var(--primary-dark)':'var(--dark)',fontWeight:sortBy===o.v?700:500}}>
+                          {o.l}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <label className="flex items-center gap-2 text-sm font-poppins cursor-pointer mb-6" style={{color:'var(--dark)'}}>
+                    <input type="checkbox" checked={inStockOnly} onChange={e=>setInStockOnly(e.target.checked)} style={{accentColor:'var(--primary)',width:16,height:16}}/>
+                    In stock only
+                  </label>
+                  <button onClick={()=>setFilterDrawerOpen(false)}
+                    className="w-full text-white font-bold font-poppins py-3 rounded-xl" style={{background:'var(--primary)'}}>
+                    {visibleShopProds.length} results dikhayein
+                  </button>
+                </div>
+              </div>
+            )}
           </>
         )}
 
         {/* ── PRODUCT DETAIL ── */}
         {page==='detail'&&detailProduct&&(
-          <ProductDetail product={detailProduct} cart={cart} addToCart={addToCart} updQty={updQty} onBack={()=>setPage('shop')}/>
+          <ProductDetail key={detailProduct.id} product={detailProduct} cart={cart} addToCart={addToCart} updQty={updQty} onBack={()=>setPage('shop')} onDetail={openDetail}/>
         )}
 
         {/* ── CHECKOUT ── */}
@@ -674,39 +1056,53 @@ export default function App(){
         )}
       </div>
 
-      {/* ── CART DRAWER ── */}
+      {/* ── CART DRAWER (Module 6: Tailwind restyle) ──
+           NOTE: ".drawer-bg" and ".cart-drawer" class names are KEPT — their
+           CSS (position:fixed, the bottom-sheet slideUp animation, z-index
+           stacking above the bottom-nav, dark-mode background) already
+           works and isn't worth re-deriving in Tailwind. ".total-row" is
+           ALSO kept exactly — checkout-location-react.js does
+           `querySelectorAll('.total-row')` to inject a delivery-charge line
+           above it once a location is picked, so removing/renaming it would
+           silently break that. Only the inner item markup/colors changed. ── */}
       {cartOpen&&(
         <>
           <div className="drawer-bg" onClick={()=>setCartOpen(false)}/>
-          <div className="cart-drawer">
-            <div className="drawer-handle"/>
-            <div className="drawer-head">
-              <div className="drawer-title">🛒 Mera Cart ({count} items)</div>
-              <button aria-label="Cart band karein" style={{fontSize:'1.1rem',color:'var(--gray)',background:'none'}} onClick={()=>setCartOpen(false)}>✕</button>
+          <div className="cart-drawer flex flex-col" style={{background:'var(--card-bg)'}}>
+            <div className="w-10 h-1 rounded-full mx-auto mt-3 flex-shrink-0" style={{background:'var(--border)'}}/>
+            <div className="flex items-center justify-between px-5 pt-3 pb-2.5 flex-shrink-0" style={{borderBottom:'1px solid var(--border)'}}>
+              <div className="font-extrabold font-poppins text-base" style={{color:'var(--dark)'}}>🛒 Mera Cart ({count} items)</div>
+              <button aria-label="Cart band karein" onClick={()=>setCartOpen(false)}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-lg" style={{color:'var(--gray)'}}>✕</button>
             </div>
-            <div className="drawer-body">
+            <div className="flex-1 overflow-y-auto px-5 py-3">
               {cart.length===0
-                ?<div className="cart-empty"><div className="ei">🛒</div><p style={{marginTop:12,fontSize:'0.88rem',color:'var(--gray)',fontWeight:600}}>Cart khali hai!</p></div>
+                ?<div className="text-center py-10">
+                  <div className="text-5xl animate-bounce">🛒</div>
+                  <p className="mt-3 text-sm font-bold font-poppins" style={{color:'var(--gray)'}}>Cart khali hai!</p>
+                </div>
                 :cart.map(i=>{
-                  // Bug fix #1: resolve a known stock_quantity for this cart line (if we've
-                  // seen the product anywhere) so the '+' button here respects the same
-                  // stock ceiling as the product card / PDP.
+                  // Bug fix #1 (preserved): resolve a known stock_quantity for this cart
+                  // line so the '+' button here respects the same stock ceiling as the
+                  // product card / PDP.
                   const knownStock=productById.current[i.id]?.stock_quantity;
                   const atMax=typeof knownStock==='number'&&i.qty>=knownStock;
                   return(
-                    <div key={i.id} className="ci">
+                    <div key={i.id} className="flex items-center gap-3 py-2.5" style={{borderBottom:'1px solid var(--border)'}}>
                       {i.image
-                        ?<img src={i.image} alt={i.name} className="ci-img"/>
-                        :<div className="ci-emoji">🛒</div>}
-                      <div className="ci-info">
-                        <div className="ci-name">{i.name} <span style={{color:'var(--gray)',fontSize:'0.7rem'}}>({i.unit})</span></div>
-                        <div className="ci-price">₹{i.price} × {i.qty} = <b>₹{(i.price*i.qty).toFixed(0)}</b></div>
-                        {atMax&&<div className="ci-stock-warn">Sirf {knownStock} stock mein hai</div>}
+                        ?<img src={i.image} alt={i.name} className="w-11 h-11 rounded-xl object-cover flex-shrink-0" style={{background:'var(--light)'}}/>
+                        :<div className="w-11 h-11 rounded-xl flex items-center justify-center text-2xl flex-shrink-0" style={{background:'var(--light)'}}>🛒</div>}
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[13px] font-bold font-poppins truncate" style={{color:'var(--dark)'}}>{i.name} <span className="font-normal" style={{color:'var(--gray)',fontSize:'0.7rem'}}>({i.unit})</span></div>
+                        <div className="text-xs font-poppins font-semibold mt-0.5" style={{color:'var(--primary)'}}>₹{i.price} × {i.qty} = <b>₹{(i.price*i.qty).toFixed(0)}</b></div>
+                        {atMax&&<div className="text-[10px] font-poppins font-semibold mt-0.5" style={{color:'var(--red)'}}>Sirf {knownStock} stock mein hai</div>}
                       </div>
-                      <div className="qty-ctrl" style={{marginLeft:'auto'}}>
-                        <button className="qbtn" aria-label="Quantity kam karein" onClick={()=>updQty(i.id,-1)}>−</button>
-                        <span className="qnum">{i.qty}</span>
-                        <button className="qbtn" aria-label="Quantity badhayein" disabled={atMax} onClick={()=>!atMax&&updQty(i.id,1,knownStock)}>+</button>
+                      <div className="flex items-center rounded-lg overflow-hidden flex-shrink-0" style={{border:'1.5px solid var(--primary)'}}>
+                        <button aria-label="Quantity kam karein" onClick={()=>updQty(i.id,-1)}
+                          className="w-7 h-7 flex items-center justify-center text-white font-bold" style={{background:'var(--primary)'}}>−</button>
+                        <span className="w-6 text-center text-xs font-bold font-poppins" style={{color:'var(--dark)'}}>{i.qty}</span>
+                        <button aria-label="Quantity badhayein" disabled={atMax} onClick={()=>!atMax&&updQty(i.id,1,knownStock)}
+                          className="w-7 h-7 flex items-center justify-center text-white font-bold disabled:opacity-40" style={{background:'var(--primary)'}}>+</button>
                       </div>
                     </div>
                   );
@@ -714,46 +1110,66 @@ export default function App(){
               }
             </div>
             {cart.length>0&&(
-              <div className="drawer-foot">
-                {!user&&<div style={{display:'flex',alignItems:'center',gap:8,background:'#FFF8E1',border:'1px solid #FFE0A3',borderRadius:10,padding:'8px 10px',marginBottom:10,fontSize:'0.72rem',color:'#92600B',fontWeight:600}}>🔐 Checkout se pehle login zaroori hai</div>}
-                <div className="total-row"><span>Total</span><span style={{color:'var(--primary)'}}>₹{total.toFixed(0)}</span></div>
-                <button className="proceed-btn" onClick={goToCheckout}>{user?`Checkout — ₹${total.toFixed(0)} →`:'Login & Checkout →'}</button>
+              <div className="px-5 flex-shrink-0" style={{borderTop:'1.5px solid var(--border)',paddingTop:14,paddingBottom:'calc(env(safe-area-inset-bottom,0px) + 16px)'}}>
+                {!user&&
+                  <div className="flex items-center gap-2 rounded-xl px-2.5 py-2 mb-2.5 text-xs font-semibold font-poppins" style={{background:'#FFF8E1',border:'1px solid #FFE0A3',color:'#92600B'}}>
+                    🔐 Checkout se pehle login zaroori hai
+                  </div>
+                }
+                <div className="total-row font-poppins" style={{color:'var(--dark)'}}><span>Total</span><span style={{color:'var(--primary)'}}>₹{total.toFixed(0)}</span></div>
+                <button onClick={goToCheckout}
+                  className="w-full text-white font-extrabold font-poppins rounded-2xl py-3.5 text-sm"
+                  style={{background:'linear-gradient(135deg, var(--primary), var(--primary-dark))',boxShadow:'0 6px 16px rgba(22,163,74,0.35)'}}>
+                  {user?`Checkout — ₹${total.toFixed(0)} →`:'Login & Checkout →'}
+                </button>
               </div>
             )}
           </div>
         </>
       )}
 
-      {/* ── BOTTOM NAV ── */}
-      <div className="bottom-nav">
+      {/* ── BOTTOM NAV (Module 2: Tailwind + lucide restyle) ──
+           NOTE: the outer element KEEPS the "bottom-nav" class — ananya-ai.js
+           does `querySelector('.bottom-nav')` to position the chat widget
+           above it, so this class name must never be removed. */}
+      <div className="bottom-nav flex" style={{background:'var(--card-bg)'}}>
         {[
-          {id:'home',i:'🏠',l:'Home'},
-          {id:'shop',i:'🛍️',l:'Shop'},
-        ].map(n=>(
-          <div key={n.id} className={`bn-item ${page===n.id?'on':''}`}
-            onClick={()=>setPage(n.id)}>
-            <span className="bn-icon">{n.i}</span>
-            <span className="bn-label">{n.l}</span>
-          </div>
-        ))}
+          {id:'home',icon:Home,l:'Home'},
+          {id:'shop',icon:ShoppingBag,l:'Shop'},
+        ].map(n=>{
+          const Icon=n.icon;const active=page===n.id;
+          return(
+            <div key={n.id} className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5"
+              onClick={()=>setPage(n.id)}>
+              <Icon size={21} strokeWidth={active?2.5:1.8} style={{color:active?'var(--primary)':'var(--gray)'}}/>
+              <span className="text-[10px] font-medium font-poppins" style={{color:active?'var(--primary)':'var(--gray)'}}>{n.l}</span>
+            </div>
+          );
+        })}
         {!isPWA&&(
-          <div className="bn-getapp-item" onClick={()=>window.RKPwa&&window.RKPwa.promptInstall()}>
-            <span className="bn-getapp-icon">📲</span>
-            <span className="bn-getapp-label">Get App</span>
+          <div className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5" onClick={()=>window.RKPwa&&window.RKPwa.promptInstall()}>
+            <Download size={21} strokeWidth={1.8} style={{color:'var(--primary)'}}/>
+            <span className="text-[10px] font-bold font-poppins" style={{color:'var(--primary)'}}>Get App</span>
           </div>
         )}
-        <div className={`bn-item ${page==='cart'?'on':''}`} onClick={()=>setCartOpen(true)}>
-          <span className="bn-icon">🛒</span>
-          <span className="bn-label">{`Cart${count>0?` (${count})`:''}`}</span>
+        <div className="relative flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5" onClick={()=>setCartOpen(true)}>
+          {count>0&&<span className="absolute top-1 right-1/4 w-4 h-4 text-white text-[9px] font-bold rounded-full flex items-center justify-center font-poppins" style={{background:'var(--orange)'}}>{count>9?'9+':count}</span>}
+          <ShoppingCart size={21} strokeWidth={page==='cart'?2.5:1.8} style={{color:page==='cart'?'var(--primary)':'var(--gray)'}}/>
+          <span className="text-[10px] font-medium font-poppins" style={{color:page==='cart'?'var(--primary)':'var(--gray)'}}>Cart</span>
         </div>
-        <div className={`bn-item ${page===(user?'account':'login')?'on':''}`}
-          onClick={()=>{if(user)window.location.href='account.html';else goLogin();}}>
-          <span className="bn-icon">👤</span>
-          <span className="bn-label">{user?'Account':'Login'}</span>
+        <div className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5"
+          onClick={()=>{if(user)window.location.href='account.html';else openLogin();}}>
+          <User size={21} strokeWidth={page===(user?'account':'login')?2.5:1.8} style={{color:page===(user?'account':'login')?'var(--primary)':'var(--gray)'}}/>
+          <span className="text-[10px] font-medium font-poppins" style={{color:page===(user?'account':'login')?'var(--primary)':'var(--gray)'}}>{user?'Account':'Login'}</span>
         </div>
       </div>
 
       {toast&&<div className="toast" role="status" aria-live="polite">{toast}</div>}
+
+      {/* ── AUTH MODAL (Module 7) ── */}
+      {authModal&&(
+        <AuthModal mode={authModal} onClose={()=>setAuthModal(null)} onSwitchMode={m=>setAuthModal(m)}/>
+      )}
     </div>
   );
 }

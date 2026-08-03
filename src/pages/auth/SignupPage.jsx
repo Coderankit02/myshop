@@ -138,12 +138,13 @@ export default function SignupPage() {
         {error   && <MsgBox type="error"   html={error}/>}
         {success && <MsgBox type="success" html={success}/>}
 
+        <form onSubmit={e => { e.preventDefault(); handleSignup(); }}>
         <div className="field-row" style={{marginBottom:14}}>
           <div className="field-group" style={{marginBottom:0}}>
             <div className="field-label">👤 Pehla Naam</div>
             <div className="field-wrap">
               <span className="field-icon">🧑</span>
-              <input className="field-input" type="text" autoComplete="given-name" placeholder="Rinku"
+              <input className="field-input" type="text" autoComplete="given-name" name="firstName" placeholder="Rahul"
                 value={firstName} onChange={e => setFirstName(e.target.value)}/>
             </div>
           </div>
@@ -151,7 +152,7 @@ export default function SignupPage() {
             <div className="field-label">👤 Aakhri Naam</div>
             <div className="field-wrap">
               <span className="field-icon">🧑</span>
-              <input className="field-input" type="text" autoComplete="family-name" placeholder="Gupta"
+              <input className="field-input" type="text" autoComplete="family-name" name="lastName" placeholder="Gupta"
                 value={lastName} onChange={e => setLastName(e.target.value)}/>
             </div>
           </div>
@@ -161,7 +162,7 @@ export default function SignupPage() {
           <div className="field-label">📧 Email Address</div>
           <div className="field-wrap">
             <span className="field-icon">✉️</span>
-            <input className="field-input" type="email" inputMode="email" autoComplete="email"
+            <input className="field-input" type="email" inputMode="email" autoComplete="email" name="email"
               placeholder="aapka@email.com" value={email} onChange={e => setEmail(e.target.value)}/>
           </div>
         </div>
@@ -170,7 +171,7 @@ export default function SignupPage() {
           <div className="field-label">🔒 Password</div>
           <div className="field-wrap">
             <span className="field-icon">🔐</span>
-            <input className="field-input" type={showPw1 ? 'text' : 'password'} autoComplete="new-password"
+            <input className="field-input" type={showPw1 ? 'text' : 'password'} autoComplete="new-password" name="password"
               placeholder="Naya strong password" value={password} onChange={e => setPassword(e.target.value)}
               style={{paddingRight:44}}/>
             <button className="pass-toggle" type="button" onClick={() => setShowPw1(v => !v)}>
@@ -196,7 +197,7 @@ export default function SignupPage() {
           <div className="field-label">🔒 Password Confirm</div>
           <div className="field-wrap">
             <span className="field-icon">✅</span>
-            <input className="field-input" type={showPw2 ? 'text' : 'password'} autoComplete="new-password"
+            <input className="field-input" type={showPw2 ? 'text' : 'password'} autoComplete="new-password" name="confirmPassword"
               placeholder="Wahi password dobara" value={confirm} onChange={e => setConfirm(e.target.value)}
               style={{paddingRight:44}}/>
             <button className="pass-toggle" type="button" onClick={() => setShowPw2(v => !v)}>
@@ -209,7 +210,7 @@ export default function SignupPage() {
           <div className="field-label">📱 Mobile Number <span style={{fontSize:'.62rem',color:'#B0BDCC',fontWeight:400}}>(optional)</span></div>
           <div className="field-wrap">
             <span className="field-icon">📞</span>
-            <input className="field-input" type="tel" inputMode="tel" autoComplete="tel"
+            <input className="field-input" type="tel" inputMode="tel" autoComplete="tel" name="phone"
               placeholder="9876543210" value={phone} onChange={e => setPhone(e.target.value)}/>
           </div>
         </div>
@@ -223,9 +224,10 @@ export default function SignupPage() {
           </span>
         </label>
 
-        <button className="submit-btn" onClick={handleSignup} disabled={loading}>
+        <button className="submit-btn" type="submit" disabled={loading}>
           {loading ? <><span className="spinner"/> Ek second…</> : '🚀 Account Banao — Free!'}
         </button>
+        </form>
 
         <div className="secure-badge">🔒 256-bit SSL • Supabase Auth • Data safe hai</div>
       </div>

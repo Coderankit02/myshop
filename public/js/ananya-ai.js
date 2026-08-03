@@ -9,7 +9,7 @@
   'use strict';
 
   const CONFIG = {
-    storeName:      'Rinku Kirana Store',
+    storeName:      'RK Grocery Mart',
     whatsappNumber: '916393196765',
     supabaseUrl:    'https://pffaflasgwhydkmxwkky.supabase.co',
     supabaseKey:    'sb_publishable__tFDYhkM3blZ0pIVT0YxLA_YvkKq79L',
@@ -18,8 +18,8 @@
       timings:   'Monday–Saturday: 8 AM – 9 PM | Sunday: 9 AM – 7 PM',
       phone:     '+91 63931 96765',
       whatsapp:  '6393196765',
-      address:   'Rinku Kirana Store, Uttar Pradesh, India',
-      email:     'support@rinkukiranastore.com',
+      address:   'RK Grocery Mart, Uttar Pradesh, India',
+      email:     'support@rkgrocerymart.com',
       delivery:  '5 km ke andar same-day delivery hoti hai',
       minOrder:  '₹200 minimum order delivery ke liye',
       freeDeliv: '₹200 se upar FREE delivery',
@@ -136,17 +136,17 @@
       {
         keys: ['namaste','hello','hi','hey','helo','namaskar','good morning','good evening','salam'],
         reply: () =>
-          `Namaste! 🙏😊\n\nMain Ananya hoon — Rinku Kirana Store ki smart assistant.\n\nMain in topics mein help kar sakti hoon:\n🚚 Delivery · 💳 Payment · ↩️ Returns\n🎁 Offers · 📞 Contact · 🛒 Orders\n\nKya poochna chahte hain? 😊`,
+          `Namaste! 🙏😊\n\nMain Ananya hoon — RK Grocery Mart ki smart assistant.\n\nMain in topics mein help kar sakti hoon:\n🚚 Delivery · 💳 Payment · ↩️ Returns\n🎁 Offers · 📞 Contact · 🛒 Orders\n\nKya poochna chahte hain? 😊`,
       },
       {
         keys: ['thanks','thank you','shukriya','dhanyawad','theek hai','ok','okay','achha'],
         reply: () =>
-          `Bahut bahut shukriya! 🙏😊\n\nKoi aur sawaal ho toh zaroor poochein.\n\nRinku Kirana Store mein aapka swagat hai! 🌸`,
+          `Bahut bahut shukriya! 🙏😊\n\nKoi aur sawaal ho toh zaroor poochein.\n\nRK Grocery Mart mein aapka swagat hai! 🌸`,
       },
       {
         keys: ['bye','goodbye','alvida','baad mein','later','tata'],
         reply: () =>
-          `Alvida! 👋😊\n\nRinku Kirana Store par aate rahein.\n\nKoi zaroorat ho toh main hamesha yahaan hoon! 🌸`,
+          `Alvida! 👋😊\n\nRK Grocery Mart par aate rahein.\n\nKoi zaroorat ho toh main hamesha yahaan hoon! 🌸`,
       },
     ],
   };
@@ -654,7 +654,7 @@
     if (!container) return;
     const banner = document.createElement('a');
     banner.className = 'ananya-whatsapp-banner ananya-whatsapp-banner-inline';
-    banner.href = `https://wa.me/${CONFIG.whatsappNumber}?text=Namaste! Rinku Kirana Store se help chahiye.`;
+    banner.href = `https://wa.me/${CONFIG.whatsappNumber}?text=Namaste! RK Grocery Mart se help chahiye.`;
     banner.target = '_blank';
     banner.rel = 'noopener noreferrer';
     banner.innerHTML = `
@@ -762,7 +762,7 @@
       <div class="ananya-panel" data-panel="info" role="tabpanel">
         <div class="ananya-info-panel">${infoHTML}</div>
         <a class="ananya-whatsapp-banner"
-           href="https://wa.me/${CONFIG.whatsappNumber}?text=Namaste! Rinku Kirana Store se help chahiye."
+           href="https://wa.me/${CONFIG.whatsappNumber}?text=Namaste! RK Grocery Mart se help chahiye."
            target="_blank" rel="noopener noreferrer"
            style="margin:0 12px 12px; display:flex;">
           <span class="ananya-whatsapp-icon">💬</span>
@@ -916,7 +916,7 @@
     removeTyping();
 
     const welcome =
-      `Namaste 👋\n\nMain Ananya hoon.\n\nRinku Kirana Store ki smart shopping assistant. 🌸\n\nMain products, orders, delivery aur support mein aapki madad kar sakti hoon.\n\nAaj main aapki kaise madad kar sakti hoon?`;
+      `Namaste 👋\n\nMain Ananya hoon.\n\nRK Grocery Mart ki smart shopping assistant. 🌸\n\nMain products, orders, delivery aur support mein aapki madad kar sakti hoon.\n\nAaj main aapki kaise madad kar sakti hoon?`;
     appendMessage('bot', welcome);
     saveMessage('assistant', welcome);
   }

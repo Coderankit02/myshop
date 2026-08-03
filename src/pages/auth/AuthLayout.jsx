@@ -18,10 +18,10 @@ export function BrandBar({ badge1, badge2 }) {
   return (
     <div className="brand-bar">
       <a href="index.html" className="brand-logo">
-        <div className="brand-icon">🛒</div>
+        <img src="/icons/rk-logo.svg" alt="RK Grocery Mart" style={{width:46,height:46,borderRadius:14}}/>
         <div>
-          <div className="brand-name">rinku<span>.</span></div>
-          <div className="brand-tagline">KIRANA &amp; GENERAL STORE</div>
+          <div className="brand-name">RK Grocery Mart</div>
+          <div className="brand-tagline">हर घर की पसंद · ONLINE GROCERY</div>
         </div>
       </a>
       <div className="trust-badges">

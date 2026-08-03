@@ -27,7 +27,7 @@
 
 // BUG FIX (Info #13): Version string ab comments mein clearly marked hai.
 // Har deploy par yahan ka number badhao agar OPTION C use kar rahe ho.
-const CACHE_VERSION = "v7"; // ← deploy par ye badhao (ya build script se auto-inject karo)
+const CACHE_VERSION = "v9"; // ← RK Grocery Mart rebrand (logo/manifest) shipped — bumped from v8
 const CACHE_NAME = `rk-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = "/offline.html";
 
@@ -39,6 +39,7 @@ const PRECACHE_URLS = [
   "/icons/app-logo.png",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
+  "/icons/rk-logo.svg",
 ];
 
 // ── INSTALL ───────────────────────────────────
@@ -126,10 +127,10 @@ self.addEventListener("push", (event) => {
   if (!event.data) return;
   let payload = {};
   try { payload = event.data.json(); }
-  catch (e) { payload = { title: "Rinku Kirana", body: event.data.text() }; }
+  catch (e) { payload = { title: "RK Grocery Mart", body: event.data.text() }; }
 
   event.waitUntil(
-    self.registration.showNotification(payload.title || "Rinku Kirana", {
+    self.registration.showNotification(payload.title || "RK Grocery Mart", {
       body: payload.body || "",
       icon: "/icons/icon-192.png",
       badge: "/icons/icon-96.png",

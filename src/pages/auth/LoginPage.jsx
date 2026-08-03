@@ -84,13 +84,13 @@ export default function LoginPage() {
         {error   && <MsgBox type="error"   html={error}/>}
         {success && <MsgBox type="success" html={success}/>}
 
+        <form onSubmit={handleLogin}>
         <div className="field-group">
           <div className="field-label">📧 Email Address</div>
           <div className="field-wrap">
             <span className="field-icon">✉️</span>
-            <input className="field-input" type="email" inputMode="email" autoComplete="email"
-              placeholder="aapka@email.com" value={email} onChange={e => setEmail(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleLogin()}/>
+            <input className="field-input" type="email" inputMode="email" autoComplete="email" name="email"
+              placeholder="aapka@email.com" value={email} onChange={e => setEmail(e.target.value)}/>
           </div>
         </div>
 
@@ -98,9 +98,8 @@ export default function LoginPage() {
           <div className="field-label">🔒 Password</div>
           <div className="field-wrap">
             <span className="field-icon">🔐</span>
-            <input className="field-input" type={showPw ? 'text' : 'password'} autoComplete="current-password"
-              placeholder="Apna password daalein" value={password} onChange={e => setPassword(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleLogin()} style={{paddingRight:44}}/>
+            <input className="field-input" type={showPw ? 'text' : 'password'} autoComplete="current-password" name="password"
+              placeholder="Apna password daalein" value={password} onChange={e => setPassword(e.target.value)} style={{paddingRight:44}}/>
             <button className="pass-toggle" type="button" onClick={() => setShowPw(v => !v)}>
               {showPw ? '🙈' : '👁️'}
             </button>
@@ -117,9 +116,10 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <button className="submit-btn" onClick={handleLogin} disabled={loading}>
+        <button className="submit-btn" type="submit" disabled={loading}>
           {loading ? <><span className="spinner"/> Ek second…</> : '🔑 Login Karo'}
         </button>
+        </form>
 
         <div className="secure-badge">🔒 256-bit SSL encrypted • Supabase Auth</div>
       </div>

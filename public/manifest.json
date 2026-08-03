@@ -1,7 +1,7 @@
 {
-  "name": "Rinku Kirana – Online Grocery",
-  "short_name": "Rinku Kirana",
-  "description": "Apke ghar tak grocery, kirana aur daily essentials — fast delivery.",
+  "name": "RK Grocery Mart – Online Grocery",
+  "short_name": "RK Mart",
+  "description": "हर घर की पसंद — grocery, kirana aur daily essentials — fast delivery.",
   "id": "/",
   "start_url": "/index.html?source=pwa",
   "scope": "/",
@@ -11,8 +11,8 @@
     "standalone"
   ],
   "orientation": "portrait-primary",
-  "background_color": "#000000",
-  "theme_color": "#000000",
+  "background_color": "#FFFFFF",
+  "theme_color": "#16A34A",
   "lang": "hi-IN",
   "dir": "ltr",
   "categories": [

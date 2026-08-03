@@ -12,7 +12,7 @@
   const SHOP = {
     lat : 25.7388984,
     lng : 82.6638101,
-    name: 'Rinku Kirana Store',
+    name: 'RK Grocery Mart',
   };
 
   /* ─── Delivery tier config ─────────────────────────────────────── */

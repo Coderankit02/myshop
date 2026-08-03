@@ -134,7 +134,7 @@
       "rk-pwa-install-banner",
       '<div class="rk-pwa-install-icon">🛒</div>' +
         '<div class="rk-pwa-install-text">' +
-        '<p class="rk-pwa-install-title">Rinku Kirana App Install Karein</p>' +
+        '<p class="rk-pwa-install-title">RK Grocery Mart App Install Karein</p>' +
         '<p class="rk-pwa-install-sub">Fast loading, offline access, home screen icon</p>' +
         "</div>" +
         '<div class="rk-pwa-install-actions">' +

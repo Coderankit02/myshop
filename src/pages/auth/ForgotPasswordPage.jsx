@@ -57,19 +57,20 @@ export default function ForgotPasswordPage() {
 
             {error && <MsgBox type="error" html={error}/>}
 
+            <form onSubmit={e => { e.preventDefault(); handleReset(); }}>
             <div className="field-group">
               <div className="field-label">📧 Registered Email</div>
               <div className="field-wrap">
                 <span className="field-icon">✉️</span>
-                <input className="field-input" type="email" inputMode="email" autoComplete="email"
-                  placeholder="aapka@email.com" value={email} onChange={e => setEmail(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleReset()}/>
+                <input className="field-input" type="email" inputMode="email" autoComplete="email" name="email"
+                  placeholder="aapka@email.com" value={email} onChange={e => setEmail(e.target.value)}/>
               </div>
             </div>
 
-            <button className="submit-btn" onClick={handleReset} disabled={loading}>
+            <button className="submit-btn" type="submit" disabled={loading}>
               {loading ? <><span className="spinner"/> Ek second…</> : '📧 Reset Link Bhejo'}
             </button>
+            </form>
 
             <div className="secure-badge">🔒 Secure link • 1 ghante mein expire hota hai</div>
           </>

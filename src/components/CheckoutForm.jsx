@@ -3,7 +3,20 @@ import { UpiPayCard } from './UpiPayCard';
 import { useShopSettings, useCouponValidator } from '../hooks/dataHooks';
 
 /* ══════════════════════════════════════════════════════════
-   CheckoutForm
+   CheckoutForm (Module 8: Tailwind restyle)
+   ALL state, handlers, validation rules, and backend calls below are
+   UNCHANGED from before — window.RKProfile / window.RKOrders /
+   window.RKPayment / window.RKLocation / window.RKDelivery / window.RKCart
+   are called exactly as they were. Only markup/classnames changed.
+
+   Protected classnames/ids KEPT exactly as-is (see risk analysis):
+     .co-card, .co-card-title, .addr-card, .addr-add-btn, .place-order-btn,
+     #addr-line1, #addr-city, #addr-pin
+   checkout-location-react.js's DOM-injection path is NOT loaded on this
+   page (see index.html comment near the script tags — it was superseded
+   by the GPS logic already built directly into this component below), but
+   these classes/ids are kept anyway since they're cheap to keep and other
+   code (or a future re-enable) may still expect them.
 ══════════════════════════════════════════════════════════ */
 export function CheckoutForm({cart,total:cartTotal,showToast,onSuccess,user,onLocationResolved}){
   const [pay,setPay]=useState('');
@@ -223,78 +236,114 @@ export function CheckoutForm({cart,total:cartTotal,showToast,onSuccess,user,onLo
     if(saved){if(window.RKCart)window.RKCart.clearCart();onSuccess(realOrderNumber,'upi');}
     else showToast('Verification submit nahi hua');
   };
+
+  // Shared Tailwind field styles (kept purely presentational — no ids/classes
+  // that any external script depends on are touched here).
+  const cardCls="rounded-2xl p-4 mb-3.5";
+  const cardStyle={background:'var(--card-bg)',boxShadow:'0 2px 10px rgba(0,0,0,0.05)'};
+  const inputCls="w-full mt-1 mb-3 px-3.5 py-2.5 rounded-xl text-sm font-poppins outline-none";
+  const inputStyle={background:'var(--light)',border:'1.5px solid var(--border)',color:'var(--dark)'};
+  const labelCls="text-xs font-semibold font-poppins block";
+
   if(showVerifyForm){
     return(
-      <div className="qr-fullscreen">
-        <div className="qr-fs-header">
-          <button className="qr-fs-close" aria-label="Band karein" onClick={()=>{setShowVerifyForm(false);setPendingOrder(null);}}>✕</button>
-          <div className="qr-fs-title">Payment Karein</div>
-          <div className={`qr-fs-timer ${remainingSec<=60?'urgent':''}`}>⏱ {fmtTime(remainingSec)}</div>
+      <div className="fixed inset-0 z-[90] flex flex-col" style={{background:'var(--page-bg)'}}>
+        <div className="flex items-center justify-between px-4 py-3 flex-shrink-0" style={{borderBottom:'1px solid var(--border)',background:'var(--card-bg)'}}>
+          <button aria-label="Band karein" onClick={()=>{setShowVerifyForm(false);setPendingOrder(null);}}
+            className="w-8 h-8 rounded-full flex items-center justify-center" style={{color:'var(--gray)'}}>✕</button>
+          <div className="font-extrabold font-poppins text-sm" style={{color:'var(--dark)'}}>Payment Karein</div>
+          <div className={`font-poppins font-bold text-xs px-2.5 py-1 rounded-lg ${remainingSec<=60?'animate-pulse':''}`}
+            style={{background:remainingSec<=60?'#FEE2E2':'var(--primary-light)',color:remainingSec<=60?'#B91C1C':'var(--primary-dark)'}}>⏱ {fmtTime(remainingSec)}</div>
         </div>
-        <div className="qr-fs-body">
-          <div className="qr-fs-amt-label">{orderInfo?.orderNumber?`Order #${orderInfo.orderNumber}`:'Order pending — verification ke baad confirm hoga'}</div>
-          <div className="qr-fs-amt">₹{finalAmount}</div>
+        <div className="flex-1 overflow-y-auto px-4 py-5 flex flex-col items-center">
+          <div className="text-xs font-poppins font-semibold text-center" style={{color:'var(--gray)'}}>
+            {orderInfo?.orderNumber?`Order #${orderInfo.orderNumber}`:'Order pending — verification ke baad confirm hoga'}
+          </div>
+          <div className="text-3xl font-extrabold font-poppins mt-1 mb-4" style={{color:'var(--dark)'}}>₹{finalAmount}</div>
           <UpiPayCard total={finalAmount} upiId={UPI_ID}/>
-          {showWaitHint&&<div className="payment-wait-hint"><span>⏰</span><span>QR dobara scan karein ya UPI ID <b>{UPI_ID}</b> par manually pay karein</span></div>}
-          <div className="co-card" style={{width:'100%',marginTop:14}}>
-            <div className="co-card-title">🧾 Payment Verification</div>
-            <label className="field-label" htmlFor="utr-input">UTR / Transaction ID</label>
-            <input id="utr-input" className="inp" placeholder="UTR / Transaction ID *" value={utr} onChange={e=>setUtr(e.target.value.replace(/\s/g,''))}/>
-            <div className="utr-hint">UTR aapke UPI app ke payment history mein milega (12 digit number)</div>
-            <label className={`upload-box ${screenshotFile?'has-file':''}`}>
-              <input type="file" accept="image/*" onChange={handleScreenshotChange} aria-label="Payment screenshot upload karein"/>
-              {!screenshotPreview?<><div style={{fontSize:'1.8rem'}}>📷</div><div style={{fontWeight:700,fontSize:'0.85rem',marginTop:6}}>Payment Screenshot Upload Karein</div><div style={{fontSize:'0.7rem',color:'var(--gray)',marginTop:2}}>JPG/PNG • Max 5MB</div></>
-                :<img className="upload-preview" src={screenshotPreview} alt="Screenshot preview"/>}
+          {showWaitHint&&(
+            <div className="flex items-center gap-2 rounded-xl px-3 py-2.5 mt-4 text-xs font-poppins font-semibold w-full max-w-sm" style={{background:'#FFF8E1',border:'1px solid #FFE0A3',color:'#92600B'}}>
+              <span>⏰</span><span>QR dobara scan karein ya UPI ID <b>{UPI_ID}</b> par manually pay karein</span>
+            </div>
+          )}
+          <div className={`${cardCls} w-full max-w-sm mt-3.5`} style={cardStyle}>
+            <div className="font-extrabold font-poppins text-sm mb-2" style={{color:'var(--dark)'}}>🧾 Payment Verification</div>
+            <label className={labelCls} htmlFor="utr-input" style={{color:'var(--gray)'}}>UTR / Transaction ID</label>
+            <input id="utr-input" className={inputCls} style={inputStyle} placeholder="UTR / Transaction ID *" value={utr} onChange={e=>setUtr(e.target.value.replace(/\s/g,''))}/>
+            <div className="text-[11px] font-poppins -mt-2 mb-3" style={{color:'var(--gray)'}}>UTR aapke UPI app ke payment history mein milega (12 digit number)</div>
+            <label className="block rounded-xl p-4 text-center cursor-pointer" style={{border:`1.5px dashed var(--border)`,background:screenshotFile?'var(--primary-light)':'var(--light)'}}>
+              <input type="file" accept="image/*" onChange={handleScreenshotChange} aria-label="Payment screenshot upload karein" className="hidden"/>
+              {!screenshotPreview
+                ?<>
+                  <div className="text-3xl">📷</div>
+                  <div className="font-bold font-poppins text-sm mt-1.5" style={{color:'var(--dark)'}}>Payment Screenshot Upload Karein</div>
+                  <div className="text-[11px] font-poppins mt-0.5" style={{color:'var(--gray)'}}>JPG/PNG • Max 5MB</div>
+                </>
+                :<img className="max-h-40 rounded-lg mx-auto" src={screenshotPreview} alt="Screenshot preview"/>
+              }
             </label>
           </div>
-          <button className="place-order-btn" style={{marginTop:14}} disabled={submittingVerify} onClick={handleSubmitVerification}>
+          <button className="place-order-btn w-full max-w-sm mt-3.5 text-white font-extrabold font-poppins rounded-2xl py-3.5 text-sm"
+            style={{background:'linear-gradient(135deg, var(--primary), var(--primary-dark))'}}
+            disabled={submittingVerify} onClick={handleSubmitVerification}>
             {submittingVerify?'⏳ Submitting...':'✅ Verification Submit Karein'}
           </button>
         </div>
       </div>
     );
   }
+
   return(
     <>
-      <div className="co-card">
-        <div className="co-card-title">📋 Order Summary</div>
-        {cart.slice(0,4).map(i=><div key={i.id} className="osi"><span>{i.name} ×{i.qty}</span><span><b>₹{(i.price*i.qty).toFixed(0)}</b></span></div>)}
-        {cart.length>4&&<div style={{fontSize:'0.72rem',color:'var(--gray)'}}>+{cart.length-4} more items</div>}
+      <div className={`co-card ${cardCls}`} style={cardStyle}>
+        <div className="co-card-title font-extrabold font-poppins text-sm mb-2.5" style={{color:'var(--dark)'}}>📋 Order Summary</div>
+        {cart.slice(0,4).map(i=>(
+          <div key={i.id} className="osi flex justify-between text-xs font-poppins py-1" style={{color:'var(--dark)'}}>
+            <span>{i.name} ×{i.qty}</span><span><b>₹{(i.price*i.qty).toFixed(0)}</b></span>
+          </div>
+        ))}
+        {cart.length>4&&<div className="text-[11px] font-poppins" style={{color:'var(--gray)'}}>+{cart.length-4} more items</div>}
         {/* BUG FIX (Critical #3): coupon code input — admin ke banaye coupons ab yahan se apply ho sakte hain */}
-        <div style={{marginTop:10,paddingTop:8,borderTop:'1px dashed var(--border)'}}>
+        <div className="mt-2.5 pt-2 " style={{borderTop:'1px dashed var(--border)'}}>
           {!appliedCoupon?(
-            <div style={{display:'flex',gap:8}}>
-              <input className="inp" style={{flex:1}} placeholder="Coupon code (e.g. WELCOME50)" value={couponCode} onChange={e=>{setCouponCode(e.target.value.toUpperCase());setCouponError('');}}/>
-              <button type="button" className="addr-add-btn" style={{width:'auto',padding:'0 14px'}} disabled={couponChecking||!couponCode.trim()} onClick={handleApplyCoupon}>{couponChecking?'...':'Apply'}</button>
+            <div className="flex gap-2">
+              <input className="flex-1 px-3 py-2 rounded-xl text-xs font-poppins outline-none" style={inputStyle} placeholder="Coupon code (e.g. WELCOME50)" value={couponCode} onChange={e=>{setCouponCode(e.target.value.toUpperCase());setCouponError('');}}/>
+              <button type="button" className="addr-add-btn px-3.5 rounded-xl text-xs font-bold font-poppins" style={{background:'var(--primary-light)',color:'var(--primary-dark)'}} disabled={couponChecking||!couponCode.trim()} onClick={handleApplyCoupon}>{couponChecking?'...':'Apply'}</button>
             </div>
           ):(
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',background:'var(--light)',borderRadius:8,padding:'8px 12px'}}>
+            <div className="flex justify-between items-center rounded-xl px-3 py-2 text-xs font-poppins" style={{background:'var(--light)'}}>
               <span>🎟️ <b>{appliedCoupon.code}</b> applied — ₹{appliedCoupon.discount} OFF</span>
               <button type="button" onClick={handleRemoveCoupon} style={{background:'none',border:'none',color:'var(--gray)',cursor:'pointer'}}>✕</button>
             </div>
           )}
-          {couponError&&<div className="phone-error" style={{marginTop:4}}>⚠️ {couponError}</div>}
+          {couponError&&<div className="text-[11px] font-poppins font-semibold mt-1" style={{color:'var(--red)'}}>⚠️ {couponError}</div>}
         </div>
-        <div style={{marginTop:8,fontSize:'0.82rem',color:'var(--gray)'}}>
-          <div style={{display:'flex',justifyContent:'space-between'}}><span>Subtotal</span><span>₹{total.toFixed(0)}</span></div>
-          {discount>0&&<div style={{display:'flex',justifyContent:'space-between',color:'var(--primary)'}}><span>Coupon Discount</span><span>−₹{discount.toFixed(0)}</span></div>}
-          {deliveryCharge>0&&<div style={{display:'flex',justifyContent:'space-between'}}><span>Delivery Charge</span><span>₹{deliveryCharge.toFixed(0)}</span></div>}
+        <div className="mt-2 text-xs font-poppins" style={{color:'var(--gray)'}}>
+          <div className="flex justify-between"><span>Subtotal</span><span>₹{total.toFixed(0)}</span></div>
+          {discount>0&&<div className="flex justify-between" style={{color:'var(--primary)'}}><span>Coupon Discount</span><span>−₹{discount.toFixed(0)}</span></div>}
+          {deliveryCharge>0&&<div className="flex justify-between"><span>Delivery Charge</span><span>₹{deliveryCharge.toFixed(0)}</span></div>}
         </div>
-        <div style={{borderTop:'1px solid var(--border)',marginTop:8,paddingTop:8,display:'flex',justifyContent:'space-between',fontWeight:800,fontSize:'0.9rem'}}><span>Total</span><span style={{color:'var(--primary)'}}>₹{finalAmount.toFixed(0)}</span></div>
+        <div className="flex justify-between font-extrabold font-poppins text-sm mt-2 pt-2" style={{borderTop:'1px solid var(--border)'}}>
+          <span>Total</span><span style={{color:'var(--primary)'}}>₹{finalAmount.toFixed(0)}</span>
+        </div>
       </div>
-      <div className="co-card">
-        <div className="co-card-title">🙋 Contact Details</div>
-        <label className="field-label" htmlFor="co-name">Aapka naam</label>
-        <input id="co-name" className="inp" placeholder="Aapka naam *" value={f.name} onChange={e=>setF({...f,name:e.target.value})}/>
-        <label className="field-label" htmlFor="co-phone">Mobile number</label>
-        <input id="co-phone" className="inp" type="tel" inputMode="numeric" maxLength="10" placeholder="10-digit mobile number *" value={f.phone} onChange={e=>setF({...f,phone:e.target.value.replace(/\D/g,'').slice(0,10)})} onBlur={()=>setPhoneTouched(true)}/>
-        {phoneTouched&&!isPhoneValid&&<div className="phone-error">⚠️ Sahi 10-digit mobile number daalein (jaise 9876543210)</div>}
+
+      <div className={`co-card ${cardCls}`} style={cardStyle}>
+        <div className="co-card-title font-extrabold font-poppins text-sm mb-2.5" style={{color:'var(--dark)'}}>🙋 Contact Details</div>
+        <label className={labelCls} htmlFor="co-name" style={{color:'var(--gray)'}}>Aapka naam</label>
+        <input id="co-name" className={inputCls} style={inputStyle} placeholder="Aapka naam *" value={f.name} onChange={e=>setF({...f,name:e.target.value})}/>
+        <label className={labelCls} htmlFor="co-phone" style={{color:'var(--gray)'}}>Mobile number</label>
+        <input id="co-phone" className={inputCls} style={inputStyle} type="tel" inputMode="numeric" maxLength="10" placeholder="10-digit mobile number *" value={f.phone} onChange={e=>setF({...f,phone:e.target.value.replace(/\D/g,'').slice(0,10)})} onBlur={()=>setPhoneTouched(true)}/>
+        {phoneTouched&&!isPhoneValid&&<div className="text-[11px] font-poppins font-semibold -mt-2" style={{color:'var(--red)'}}>⚠️ Sahi 10-digit mobile number daalein (jaise 9876543210)</div>}
       </div>
-      <div className="co-card">
-        <div className="co-card-title">📍 Delivery Address</div>
+
+      <div className={`co-card ${cardCls}`} style={cardStyle}>
+        <div className="co-card-title font-extrabold font-poppins text-sm mb-2.5" style={{color:'var(--dark)'}}>📍 Delivery Address</div>
         {(selectedAddrId||showNewForm)&&(
-          <div style={{marginBottom:10}}>
-            <button type="button" className="loc-detect-btn" disabled={locState==='loading'} onClick={handleUseLocation}>
+          <div className="mb-2.5">
+            <button type="button" disabled={locState==='loading'} onClick={handleUseLocation}
+              className="w-full text-left rounded-xl px-3.5 py-2.5 text-xs font-bold font-poppins"
+              style={{background:'var(--primary-light)',color:'var(--primary-dark)'}}>
               {locState==='loading'?'⏳ Location detect ho rahi hai…'
                 :locState==='success'?'✅ Location Detected — Tap to refresh'
                 :locState==='denied'?'🔓 Retry Location Access'
@@ -302,43 +351,34 @@ export function CheckoutForm({cart,total:cartTotal,showToast,onSuccess,user,onLo
                 :'📍 Use Current Location'}
             </button>
             {deliveryInfo&&(
-              <div className={`dr-status-card ${deliveryInfo.badgeClass}`} style={{marginTop:8}}>
-                <div className="dr-status-header">
-                  <span className="dr-status-emoji">{deliveryInfo.emoji}</span>
-                  <div className="dr-status-text">
-                    <div className="dr-status-label">{deliveryInfo.label}</div>
+              <div className="rounded-xl p-3 mt-2" style={{background:'var(--light)',border:'1px solid var(--border)'}}>
+                <div className="flex items-center gap-2.5">
+                  <span className="text-2xl">{deliveryInfo.emoji}</span>
+                  <div className="min-w-0">
+                    <div className="font-bold font-poppins text-xs" style={{color:'var(--dark)'}}>{deliveryInfo.label}</div>
                     {deliveryInfo.available
-                      ?<div className="dr-status-sub">Delivery charge: {deliveryInfo.charge===0?<span className="dr-free-tag">FREE</span>:<span className="dr-charge-val">₹{deliveryInfo.charge}</span>}</div>
-                      :<div className="dr-status-sub dr-status-sub--warn">Hum is location par deliver nahi karte.</div>}
+                      ?<div className="text-[11px] font-poppins" style={{color:'var(--gray)'}}>Delivery charge: {deliveryInfo.charge===0?<span style={{color:'var(--primary)',fontWeight:700}}>FREE</span>:<span style={{fontWeight:700}}>₹{deliveryInfo.charge}</span>}</div>
+                      :<div className="text-[11px] font-poppins font-semibold" style={{color:'var(--red)'}}>Hum is location par deliver nahi karte.</div>}
                   </div>
                 </div>
-                <div className="dr-meta-row">
-                  <div className="dr-meta-item">
-                    <span className="dr-meta-icon">📍</span>
-                    <div>
-                      <div className="dr-meta-label">Distance</div>
-                      <div className="dr-meta-val">{deliveryInfo.distanceKm<1?Math.round(deliveryInfo.distanceKm*1000)+' m':deliveryInfo.distanceKm.toFixed(1)+' km'}</div>
-                    </div>
+                <div className="grid grid-cols-3 gap-2 mt-2.5">
+                  <div>
+                    <div className="text-[10px] font-poppins" style={{color:'var(--gray)'}}>📍 Distance</div>
+                    <div className="text-xs font-bold font-poppins" style={{color:'var(--dark)'}}>{deliveryInfo.distanceKm<1?Math.round(deliveryInfo.distanceKm*1000)+' m':deliveryInfo.distanceKm.toFixed(1)+' km'}</div>
                   </div>
                   {deliveryInfo.available&&<>
-                    <div className="dr-meta-item">
-                      <span className="dr-meta-icon">💰</span>
-                      <div>
-                        <div className="dr-meta-label">Delivery</div>
-                        <div className="dr-meta-val">{deliveryInfo.charge===0?'FREE':'₹'+deliveryInfo.charge}</div>
-                      </div>
+                    <div>
+                      <div className="text-[10px] font-poppins" style={{color:'var(--gray)'}}>💰 Delivery</div>
+                      <div className="text-xs font-bold font-poppins" style={{color:'var(--dark)'}}>{deliveryInfo.charge===0?'FREE':'₹'+deliveryInfo.charge}</div>
                     </div>
-                    <div className="dr-meta-item">
-                      <span className="dr-meta-icon">⏱️</span>
-                      <div>
-                        <div className="dr-meta-label">ETA</div>
-                        <div className="dr-meta-val">{deliveryInfo.eta}</div>
-                      </div>
+                    <div>
+                      <div className="text-[10px] font-poppins" style={{color:'var(--gray)'}}>⏱️ ETA</div>
+                      <div className="text-xs font-bold font-poppins" style={{color:'var(--dark)'}}>{deliveryInfo.eta}</div>
                     </div>
                   </>}
                 </div>
                 {!deliveryInfo.available&&(
-                  <div className="dr-unavail-msg">
+                  <div className="text-[11px] font-poppins font-semibold mt-2" style={{color:'var(--red)'}}>
                     ❌ Sorry, aapka location hamari 8 km delivery range se bahar hai.
                     <br/>Abhi hum sirf Jaunpur aur aas-paas ke areas mein deliver karte hain.
                   </div>
@@ -347,58 +387,77 @@ export function CheckoutForm({cart,total:cartTotal,showToast,onSuccess,user,onLo
             )}
           </div>
         )}
-        {loadingAddrs?<div style={{fontSize:'0.8rem',color:'var(--gray)',padding:'8px 0'}}>Addresses load ho rahe hain…</div>
+        {loadingAddrs?<div className="text-xs font-poppins py-2" style={{color:'var(--gray)'}}>Addresses load ho rahe hain…</div>
           :<>
             {addresses.map(a=>(
-              <div key={a.id} className={`addr-card ${selectedAddrId===a.id?'sel':''}`} onClick={()=>{setSelectedAddrId(a.id);setShowNewForm(false);}}>
-                <div className="addr-card-label-row"><span className="addr-card-label">{a.label}</span>{a.is_default&&<span className="addr-default-tag">DEFAULT</span>}</div>
-                <div className="addr-card-text">{a.line1}{a.line2?', '+a.line2:''}<br/>{a.city}{a.pincode?' - '+a.pincode:''}</div>
+              <div key={a.id} onClick={()=>{setSelectedAddrId(a.id);setShowNewForm(false);}}
+                className="addr-card rounded-xl p-3 mb-2 cursor-pointer"
+                style={{border:`1.5px solid ${selectedAddrId===a.id?'var(--primary)':'var(--border)'}`,background:selectedAddrId===a.id?'var(--primary-light)':'transparent'}}>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-extrabold font-poppins" style={{color:'var(--dark)'}}>{a.label}</span>
+                  {a.is_default&&<span className="text-[9px] font-extrabold font-poppins px-1.5 py-0.5 rounded" style={{background:'var(--primary)',color:'#fff'}}>DEFAULT</span>}
+                </div>
+                <div className="text-xs font-poppins mt-0.5" style={{color:'var(--gray)'}}>{a.line1}{a.line2?', '+a.line2:''}<br/>{a.city}{a.pincode?' - '+a.pincode:''}</div>
               </div>
             ))}
-            {!showNewForm&&<button className="addr-add-btn" onClick={()=>setShowNewForm(true)}>+ Naya Address Add Karo</button>}
+            {!showNewForm&&<button className="addr-add-btn w-full text-center rounded-xl py-2.5 text-xs font-bold font-poppins" style={{border:'1.5px dashed var(--border)',color:'var(--primary)'}} onClick={()=>setShowNewForm(true)}>+ Naya Address Add Karo</button>}
           </>
         }
         {showNewForm&&(
-          <div style={{border:'1.5px dashed var(--border)',borderRadius:12,padding:12,marginTop:6}}>
-            <label className="field-label" htmlFor="addr-label">Label</label>
-            <input id="addr-label" className="inp" placeholder="Label (Home/Office)" value={newAddr.label} onChange={e=>setNewAddr({...newAddr,label:e.target.value})}/>
-            <label className="field-label" htmlFor="addr-line1">Pura pata *</label>
-            <input id="addr-line1" className="inp" placeholder="Ghar ka pura pata, gali, makaan no. *" value={newAddr.line1} onChange={e=>setNewAddr({...newAddr,line1:e.target.value})} required/>
-            <label className="field-label" htmlFor="addr-line2">Landmark *</label>
-            <input id="addr-line2" className="inp" placeholder="Mohalla / Landmark *" value={newAddr.line2} onChange={e=>setNewAddr({...newAddr,line2:e.target.value})} required/>
-            <div className="addr-form-grid">
+          <div className="rounded-xl p-3 mt-1.5" style={{border:'1.5px dashed var(--border)'}}>
+            <label className={labelCls} htmlFor="addr-label" style={{color:'var(--gray)'}}>Label</label>
+            <input id="addr-label" className={inputCls} style={inputStyle} placeholder="Label (Home/Office)" value={newAddr.label} onChange={e=>setNewAddr({...newAddr,label:e.target.value})}/>
+            <label className={labelCls} htmlFor="addr-line1" style={{color:'var(--gray)'}}>Pura pata *</label>
+            <input id="addr-line1" className={inputCls} style={inputStyle} placeholder="Ghar ka pura pata, gali, makaan no. *" value={newAddr.line1} onChange={e=>setNewAddr({...newAddr,line1:e.target.value})} required/>
+            <label className={labelCls} htmlFor="addr-line2" style={{color:'var(--gray)'}}>Landmark *</label>
+            <input id="addr-line2" className={inputCls} style={inputStyle} placeholder="Mohalla / Landmark *" value={newAddr.line2} onChange={e=>setNewAddr({...newAddr,line2:e.target.value})} required/>
+            <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <label className="field-label" htmlFor="addr-city">City *</label>
-                <input id="addr-city" className="inp" placeholder="City *" value={newAddr.city} onChange={e=>setNewAddr({...newAddr,city:e.target.value})} required/>
+                <label className={labelCls} htmlFor="addr-city" style={{color:'var(--gray)'}}>City *</label>
+                <input id="addr-city" className={inputCls} style={inputStyle} placeholder="City *" value={newAddr.city} onChange={e=>setNewAddr({...newAddr,city:e.target.value})} required/>
               </div>
               <div>
-                <label className="field-label" htmlFor="addr-pin">Pincode *</label>
-                <input id="addr-pin" className="inp" placeholder="222001 *" value={newAddr.pincode} onChange={e=>setNewAddr({...newAddr,pincode:e.target.value.replace(/\D/g,'').slice(0,6)})} required/>
+                <label className={labelCls} htmlFor="addr-pin" style={{color:'var(--gray)'}}>Pincode *</label>
+                <input id="addr-pin" className={inputCls} style={inputStyle} placeholder="222001 *" value={newAddr.pincode} onChange={e=>setNewAddr({...newAddr,pincode:e.target.value.replace(/\D/g,'').slice(0,6)})} required/>
               </div>
             </div>
-            <button className="addr-add-btn" disabled={savingAddr} onClick={saveNewAddress} style={{background:'var(--primary)',color:'#fff'}}>{savingAddr?'Saving…':'💾 Address Save Karke Use Karo'}</button>
-            {addresses.length>0&&<button className="addr-add-btn" style={{marginTop:6}} onClick={()=>setShowNewForm(false)}>Cancel</button>}
+            <button className="addr-add-btn w-full rounded-xl py-2.5 text-xs font-bold font-poppins text-white" disabled={savingAddr} onClick={saveNewAddress} style={{background:'var(--primary)'}}>{savingAddr?'Saving…':'💾 Address Save Karke Use Karo'}</button>
+            {addresses.length>0&&<button className="addr-add-btn w-full rounded-xl py-2.5 text-xs font-bold font-poppins mt-1.5" style={{color:'var(--gray)'}} onClick={()=>setShowNewForm(false)}>Cancel</button>}
           </div>
         )}
         {/* Polish fix: removed target="_blank" — opening a new tab for a simple address-manage
             link felt jarring on mobile. It now navigates in the same tab/flow. */}
-        <a href="account.html?tab=addresses" rel="noopener" className="addr-manage-link">✏️ Saare Addresses Manage Karo →</a>
+        <a href="account.html?tab=addresses" rel="noopener" className="block text-center text-xs font-bold font-poppins mt-2.5" style={{color:'var(--primary)'}}>✏️ Saare Addresses Manage Karo →</a>
       </div>
-      <div className="co-card">
-        <div className="co-card-title">💳 Payment Method</div>
-        <div className="pay-grid">
-          <div className={`pay-card ${pay==='cod'?'sel':''}`} onClick={()=>setPay('cod')}><div className="pi">💵</div><div className="pl">Cash on Delivery</div><div className="pd">Ghar pe cash dena</div></div>
-          <div className={`pay-card ${pay==='upi'?'sel':''}`} onClick={()=>setPay('upi')}><div className="pi">📱</div><div className="pl">UPI / QR Code</div><div className="pd">Scan karke pay karo</div></div>
+
+      <div className={`co-card ${cardCls}`} style={cardStyle}>
+        <div className="co-card-title font-extrabold font-poppins text-sm mb-2.5" style={{color:'var(--dark)'}}>💳 Payment Method</div>
+        <div className="grid grid-cols-2 gap-2.5">
+          <div onClick={()=>setPay('cod')} className="rounded-xl p-3 text-center cursor-pointer"
+            style={{border:`1.5px solid ${pay==='cod'?'var(--primary)':'var(--border)'}`,background:pay==='cod'?'var(--primary-light)':'transparent'}}>
+            <div className="text-2xl">💵</div>
+            <div className="text-xs font-bold font-poppins mt-1" style={{color:'var(--dark)'}}>Cash on Delivery</div>
+            <div className="text-[10px] font-poppins" style={{color:'var(--gray)'}}>Ghar pe cash dena</div>
+          </div>
+          <div onClick={()=>setPay('upi')} className="rounded-xl p-3 text-center cursor-pointer"
+            style={{border:`1.5px solid ${pay==='upi'?'var(--primary)':'var(--border)'}`,background:pay==='upi'?'var(--primary-light)':'transparent'}}>
+            <div className="text-2xl">📱</div>
+            <div className="text-xs font-bold font-poppins mt-1" style={{color:'var(--dark)'}}>UPI / QR Code</div>
+            <div className="text-[10px] font-poppins" style={{color:'var(--gray)'}}>Scan karke pay karo</div>
+          </div>
         </div>
       </div>
-      {orderError&&<div className="order-error-banner" role="alert">⚠️ {orderError.replace(/^⚠️\s*/,'')}</div>}
+
+      {orderError&&<div className="rounded-xl px-3.5 py-2.5 mb-3 text-xs font-poppins font-semibold" role="alert" style={{background:'#FEE2E2',color:'#B91C1C'}}>⚠️ {orderError.replace(/^⚠️\s*/,'')}</div>}
       {deliveryInfo&&!deliveryInfo.available&&(
-        <div className="order-error-banner order-error-banner--info" role="status">
+        <div className="rounded-xl px-3.5 py-2.5 mb-3 text-xs font-poppins font-semibold" role="status" style={{background:'#FFF8E1',color:'#92600B'}}>
           📍 Aapka location hamari normal delivery area (8 km) se bahar lag raha hai.
           Aap order place kar sakte hain — admin location verify karke order confirm ya cancel karega.
         </div>
       )}
-      <button className="place-order-btn" disabled={placing} onClick={handlePlaceOrder}>
+      <button className="place-order-btn w-full text-white font-extrabold font-poppins rounded-2xl py-3.5 text-sm"
+        style={{background:'linear-gradient(135deg, var(--primary), var(--primary-dark))',boxShadow:'0 6px 16px rgba(22,163,74,0.35)'}}
+        disabled={placing} onClick={handlePlaceOrder}>
         {placing?'⏳ Order Place Ho Raha Hai...':(pay==='upi'?'📲 Order Confirm Karein':'🚚 Order Place Karo')} →
       </button>
     </>

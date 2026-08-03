@@ -76,7 +76,7 @@ export function useProducts(options={}){
 // (UPI ID checkout mein hardcoded thi). Ye hook live shop_settings row deta hai,
 // jise CheckoutForm aur baaki jagah use kiya ja sakta hai.
 const SHOP_SETTINGS_DEFAULTS = {
-  shop_name: 'Rinku Kirana Store',
+  shop_name: 'RK Grocery Mart',
   contact: '',
   whatsapp: '',
   upi_id: 'Q025544077@ybl', // fallback agar admin ne settings save na ki ho
@@ -132,6 +132,45 @@ export function useCouponValidator(){
     return{valid:true,code:data.code,discount:finalDiscount,coupon:data};
   },[]);
   return{validate,checking};
+}
+
+// ── Homepage premium sections (Module 12) ──────────────────────────────
+// Derives Flash Sale / Today's Deals / Best Sellers / New Arrivals from ONE
+// products batch so the homepage never fans out into 4 parallel queries.
+// Sections are computed client-side from REAL product data (discount from
+// original vs selling price, stock, created_at) — no fake numbers anywhere.
+export function useHomeSections(){
+  const [sections,setSections]=useState({flash:[],deals:[],bestSellers:[],newArrivals:[]});
+  const [loading,setLoading]=useState(true);
+  const fetch=useCallback(async()=>{
+    try{
+      const {data}=await supabase.from('products')
+        .select('*,categories(id,name,slug),product_images(id,image_url,is_default,sort_order)')
+        .eq('is_active',true)
+        .order('is_featured',{ascending:false})
+        .order('created_at',{ascending:false})
+        .limit(80);
+      const enriched=(data||[]).map(p=>{
+        const imgs=(p.product_images||[]).slice().sort((a,b)=>a.sort_order-b.sort_order);
+        return{
+          ...p,
+          discount:calcDiscount(p.selling_price,p.original_price),
+          images:imgs,
+          primary_image:(imgs.find(i=>i.is_default)||imgs[0])?.image_url||null,
+        };
+      });
+      const inStock=enriched.filter(p=>p.stock_quantity>0);
+      setSections({
+        flash:inStock.filter(p=>p.discount>=20).sort((a,b)=>b.discount-a.discount).slice(0,8),
+        deals:inStock.filter(p=>p.discount>0).sort((a,b)=>b.discount-a.discount).slice(0,8),
+        bestSellers:inStock.slice(0,8),
+        newArrivals:[...enriched].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,8),
+      });
+    }catch(e){/* keep previous sections; just stop the loader */}
+    setLoading(false);
+  },[]);
+  useEffect(()=>{fetch();},[fetch]);
+  return{sections,loading};
 }
 
 export function useSearch(query,active){

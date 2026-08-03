@@ -129,13 +129,14 @@ export default function ResetPasswordPage() {
 
             {error && <MsgBox type="error" html={error}/>}
 
+            <form onSubmit={e => { e.preventDefault(); handleNewPassword(); }}>
             <div className="field-group">
               <div className="field-label">🔒 Naya Password</div>
               <div className="field-wrap">
                 <span className="field-icon">🔐</span>
-                <input className="field-input" type={showPw1 ? 'text' : 'password'} autoComplete="new-password"
+                <input className="field-input" type={showPw1 ? 'text' : 'password'} autoComplete="new-password" name="newPassword"
                   placeholder="Naya strong password" value={newPass} onChange={e => setNewPass(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleNewPassword()} style={{paddingRight:44}}/>
+                  style={{paddingRight:44}}/>
                 <button className="pass-toggle" type="button" onClick={() => setShowPw1(v => !v)}>
                   {showPw1 ? '🙈' : '👁️'}
                 </button>
@@ -157,18 +158,19 @@ export default function ResetPasswordPage() {
               <div className="field-label">✅ Password Confirm</div>
               <div className="field-wrap">
                 <span className="field-icon">✅</span>
-                <input className="field-input" type={showPw2 ? 'text' : 'password'} autoComplete="new-password"
+                <input className="field-input" type={showPw2 ? 'text' : 'password'} autoComplete="new-password" name="confirmPassword"
                   placeholder="Wahi password dobara" value={confirm} onChange={e => setConfirm(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleNewPassword()} style={{paddingRight:44}}/>
+                  style={{paddingRight:44}}/>
                 <button className="pass-toggle" type="button" onClick={() => setShowPw2(v => !v)}>
                   {showPw2 ? '🙈' : '👁️'}
                 </button>
               </div>
             </div>
 
-            <button className="submit-btn" onClick={handleNewPassword} disabled={loading}>
+            <button className="submit-btn" type="submit" disabled={loading}>
               {loading ? <><span className="spinner"/> Ek second…</> : '✅ Password Update Karo'}
             </button>
+            </form>
             <div className="secure-badge">🔒 Supabase secure update • Link sirf ek baar use hota hai</div>
           </>
         )}

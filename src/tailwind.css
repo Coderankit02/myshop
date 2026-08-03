@@ -1,0 +1,7 @@
+/* Tailwind utilities only — preflight/base is disabled in tailwind.config.js
+   so this never resets the existing hand-written design system.
+   Imported once from src/main.jsx (the index.html / App.jsx entry) in
+   Module 0. Other MPA entries (login-main.jsx, signup-main.jsx, etc.) will
+   import this same file once we start converting those pages, module by
+   module — no need to duplicate it. */
+@tailwind utilities;

@@ -1,8 +1,26 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { uploadToCloudinary } from '../../lib/cloudinary';
+import {
+  Home, Package, MapPin, User, Heart, Bell, Star, Settings as SettingsIcon,
+  ChevronLeft, ChevronRight, X, Camera, LogOut, Sun, Moon, Copy, Share2,
+} from 'lucide-react';
 
-/* ─── helpers ─────────────────────────────── */
+/* ══════════════════════════════════════════════════════════
+   AccountPage (Module 9: Tailwind restyle — layout only)
+   ALL state, handlers, Supabase calls, and window.RKProfile /
+   window.RKCart / window.RKOrders bridges below are UNCHANGED
+   from before. Only markup/classnames changed to match the new
+   design (rk-grocery-website AccountLayout: gradient hero +
+   desktop sidebar / mobile tab strip).
+
+   Protected classnames/ids KEPT exactly as-is (see risk analysis):
+     .bottom-nav, #toastEl
+   (account.css keeps every other old class too — nothing was
+   deleted — but this file itself no longer references them.)
+══════════════════════════════════════════════════════════ */
+
+/* ─── helpers (unchanged) ─────────────────── */
 const fmt      = n => '₹' + Number(n).toLocaleString('en-IN');
 const fmtDate  = d => new Date(d).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' });
 const fmtTime  = d => new Date(d).toLocaleString('en-IN', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
@@ -19,25 +37,87 @@ const notifIcon   = t => ({ offer:'🎁', order:'📦', delivery:'🚴', stock:'
 const addrIcon    = l => { const s=(l||'').toLowerCase(); if(s.includes('home')) return '🏠'; if(s.includes('office')||s.includes('work')) return '🏢'; return '📍'; };
 
 const TABS = [
-  { id:'overview',      icon:'🏠', label:'Overview' },
-  { id:'orders',        icon:'📦', label:'Orders' },
-  { id:'addresses',     icon:'📍', label:'Addresses' },
-  { id:'profile',       icon:'👤', label:'Profile' },
-  { id:'wishlist',      icon:'❤️', label:'Wishlist' },
-  { id:'notifications', icon:'🔔', label:'Alerts' },
-  { id:'rewards',       icon:'⭐', label:'Rewards' },
-  { id:'settings',      icon:'⚙️', label:'Settings' },
+  { id:'overview',      icon:Home,        label:'Overview' },
+  { id:'orders',        icon:Package,     label:'Orders' },
+  { id:'addresses',     icon:MapPin,      label:'Addresses' },
+  { id:'profile',       icon:User,        label:'Profile' },
+  { id:'wishlist',      icon:Heart,       label:'Wishlist' },
+  { id:'notifications', icon:Bell,        label:'Alerts' },
+  { id:'rewards',       icon:Star,        label:'Rewards' },
+  { id:'settings',      icon:SettingsIcon,label:'Settings' },
 ];
 
-function Toast({ msg }) {
-  return msg ? <div className="toast" style={{display:'block'}}>{msg}</div> : null;
+/* ─── shared presentational helpers (Tailwind + CSS-var tokens,
+       same convention as CheckoutForm.jsx / App.jsx) ─────────── */
+const cardWrap  = "rounded-2xl mb-3.5 overflow-hidden";
+const cardStyle = { background:'var(--card-bg)', boxShadow:'0 2px 10px rgba(0,0,0,0.05)', border:'1px solid var(--border)' };
+const inputCls  = "w-full rounded-xl px-3.5 py-2.5 text-[15px] font-poppins outline-none";
+const inputStyle= { background:'var(--light)', border:'1.5px solid var(--border)', color:'var(--dark)' };
+const labelCls  = "text-[10px] font-bold font-poppins uppercase tracking-wide block mb-1.5";
+const btnPrimaryStyle   = { background:'linear-gradient(135deg, var(--primary), var(--primary-dark))', boxShadow:'0 4px 16px rgba(22,163,74,0.3)' };
+const btnSecondaryStyle = { background:'var(--light)', color:'var(--gray)', border:'1.5px solid var(--border)' };
+const btnDangerStyle    = { background:'#FEF2F2', color:'var(--red)', border:'1.5px solid #FECACA' };
+
+function Card({ title, icon, action, children, noBody }) {
+  return (
+    <div className={cardWrap} style={cardStyle}>
+      {title && (
+        <>
+          <div className="flex items-center justify-between px-4 md:px-5 py-3.5">
+            <div className="flex items-center gap-2 text-sm font-extrabold font-poppins" style={{color:'var(--dark)'}}>
+              {icon && <span className="text-base leading-none">{icon}</span>} {title}
+            </div>
+            {action}
+          </div>
+          <div className="h-px" style={{background:'var(--border)'}}/>
+        </>
+      )}
+      {noBody ? children : <div className="p-4 md:p-5">{children}</div>}
+    </div>
+  );
 }
 
-function Modal({ html, onClose }) {
-  if (!html) return null;
+function CardActionBtn({ onClick, children }) {
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-box" onClick={e=>e.stopPropagation()} dangerouslySetInnerHTML={{__html:html}}/>
+    <button onClick={onClick}
+      className="text-[11px] font-bold font-poppins px-3 py-1.5 rounded-full transition-colors"
+      style={{background:'var(--primary-light)', color:'var(--primary)'}}>
+      {children}
+    </button>
+  );
+}
+
+function EmptyState({ icon, title, sub, cta, onCta }) {
+  return (
+    <div className="text-center py-10 px-5">
+      <div className="text-5xl mb-2.5">{icon}</div>
+      <div className="text-sm font-bold font-poppins" style={{color:'var(--dark)'}}>{title}</div>
+      <div className="text-xs font-poppins mt-1" style={{color:'var(--muted)'}}>{sub}</div>
+      {cta && (
+        <button onClick={onCta}
+          className="mt-4 inline-flex items-center gap-1 text-white rounded-full px-5 py-2.5 text-xs font-bold font-poppins"
+          style={{background:'var(--primary)'}}>{cta}</button>
+      )}
+    </div>
+  );
+}
+
+function Badge({ status }) {
+  const map = {
+    pending:          ['var(--badge-yellow-bg)','var(--badge-yellow-text)'],
+    confirmed:        ['var(--badge-blue-bg)','var(--badge-blue-text)'],
+    out_for_delivery: ['var(--badge-purple-bg)','var(--badge-purple-text)'],
+    delivered:        ['var(--badge-green-bg)','var(--badge-green-text)'],
+    cancelled:        ['var(--badge-red-bg)','var(--badge-red-text)'],
+  };
+  const [bg,text] = map[status]||['var(--light)','var(--gray)'];
+  return <span className="inline-block px-2.5 py-1 rounded-full text-[10px] font-extrabold font-poppins tracking-wide mt-1" style={{background:bg,color:text}}>{statusLabel(status)}</span>;
+}
+
+function Toggle({ on, onClick }) {
+  return (
+    <div className="w-[46px] h-[26px] rounded-full relative cursor-pointer flex-shrink-0 transition-colors duration-300" style={{background:on?'var(--primary)':'#CBD5E1'}} onClick={onClick}>
+      <div className="w-5 h-5 bg-white rounded-full absolute top-[3px] transition-all duration-300" style={{left:on?'23px':'3px', boxShadow:'0 1px 4px rgba(0,0,0,0.2)'}}/>
     </div>
   );
 }
@@ -48,110 +128,50 @@ function OverviewTab({ state, switchTab }) {
   const totalOrders = state.orders.length;
   const savings     = state.orders.reduce((s,o)=>s+(o.discount||0),0);
   const unread      = state.notifications.filter(n=>!n.is_read).length;
-  const loyalty     = loyaltyLevel(totalOrders);
   const recentOrders = state.orders.slice(0,3);
 
   return (
     <>
-      {/* Hero */}
-      <div className="hero-card">
-        <div className="hero-bg-circle1"/><div className="hero-bg-circle2"/><div className="hero-bg-dots"/>
-        <div className="hero-top">
-          <div className="avatar-wrap">
-            <div className="avatar">{p?.avatar_url ? <img src={p.avatar_url} alt=""/> : (p?.name?p.name[0].toUpperCase():'👤')}</div>
-            <div className="avatar-edit-btn" onClick={()=>switchTab('profile')}>✏️</div>
-          </div>
-          <div className="hero-info">
-            <div className="hero-greeting">👋 Namaste,</div>
-            <div className="hero-name">{p?.name||'User'}</div>
-            <div className="hero-email">{p?.email||''}</div>
-            <div className="loyalty-pill"><span style={{color:loyalty.color}}>{loyalty.label}</span></div>
-          </div>
-        </div>
-        <div className="hero-stats">
-          <div className="hstat"><div className="hstat-val">{totalOrders}</div><div className="hstat-lbl">Orders</div></div>
-          <div className="hstat"><div className="hstat-val">{fmt(savings)}</div><div className="hstat-lbl">Saved</div></div>
-          <div className="hstat"><div className="hstat-val">{memberSince(p?.created_at||state.user?.created_at)}</div><div className="hstat-lbl">Member Since</div></div>
-        </div>
-      </div>
-
-      {/* Stats grid */}
-      <div className="stats-grid">
-        {[
-          {icon:'📦',val:totalOrders,        lbl:'Orders',    tab:'orders'},
-          {icon:'💰',val:fmt(savings),        lbl:'Savings',   tab:'rewards'},
-          {icon:'❤️',val:state.wishlist.length,lbl:'Wishlist',  tab:'wishlist'},
-          {icon:'📍',val:state.addresses.length,lbl:'Addresses',tab:'addresses'},
-          {icon:'🛒',val:state.cartCount,     lbl:'Cart',      tab:null,href:'index.html'},
-          {icon:'🔔',val:unread,              lbl:'Alerts',    tab:'notifications'},
-        ].map(s=>(
-          <div key={s.lbl} className="stat-tile" onClick={()=>s.tab?switchTab(s.tab):(window.location.href='index.html')}>
-            <div className="stat-tile-icon">{s.icon}</div>
-            <div className="stat-tile-val">{s.val}</div>
-            <div className="stat-tile-lbl">{s.lbl}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Recent orders */}
-      <div className="card">
-        <div className="card-head">
-          <div className="card-title"><span className="card-title-icon">📦</span> Recent Orders</div>
-          <button className="card-action-btn" onClick={()=>switchTab('orders')}>View All</button>
-        </div>
-        <div className="divider"/>
+      <Card title="Recent Orders" icon="📦" action={<CardActionBtn onClick={()=>switchTab('orders')}>View All</CardActionBtn>} noBody>
         {recentOrders.length
           ? recentOrders.map(o=><OrderRow key={o.id} o={o}/>)
           : <EmptyState icon="🛒" title="Koi order nahi abhi tak" sub="Apna pehla order place karo!" cta="Shop Now →" onCta={()=>window.location.href='index.html'}/>}
-      </div>
+      </Card>
 
-      {/* Quick actions */}
-      <div className="card">
-        <div className="card-head"><div className="card-title"><span className="card-title-icon">⚡</span> Quick Actions</div></div>
-        <div className="divider"/>
-        <div className="qa-grid">
+      <Card title="Quick Actions" icon="⚡">
+        <div className="grid grid-cols-2 gap-2.5">
           {[
             {i:'🛍️',t:'Shop Now',     s:'Browse products',    fn:()=>window.location.href='index.html'},
             {i:'📍',t:'Add Address',  s:'Save delivery spot', fn:()=>switchTab('addresses')},
             {i:'❤️',t:'My Wishlist',  s:'Saved products',     fn:()=>switchTab('wishlist')},
             {i:'🎁',t:'Refer & Earn', s:'Get ₹30 cashback',   fn:()=>switchTab('rewards')},
           ].map(a=>(
-            <div key={a.t} className="qa-tile" onClick={a.fn}>
-              <div className="qa-icon">{a.i}</div>
-              <div className="qa-title">{a.t}</div>
-              <div className="qa-sub">{a.s}</div>
+            <div key={a.t} onClick={a.fn} className="rounded-xl p-3.5 cursor-pointer transition-all hover:-translate-y-0.5"
+              style={{background:'var(--light)', border:'1.5px solid var(--border)'}}>
+              <div className="text-2xl mb-1.5">{a.i}</div>
+              <div className="text-xs font-extrabold font-poppins" style={{color:'var(--dark)'}}>{a.t}</div>
+              <div className="text-[10px] font-poppins mt-0.5" style={{color:'var(--muted)'}}>{a.s}</div>
             </div>
           ))}
         </div>
-      </div>
+      </Card>
     </>
   );
 }
 
 function OrderRow({ o, onClick }) {
   return (
-    <div className="order-row" onClick={onClick}>
-      <div className="order-icon-box">🛒</div>
-      <div className="order-info">
-        <div className="order-num">{o.order_number}</div>
-        <div className="order-meta">{o.delivery_name||''} • {o.delivery_city||'Jaunpur'}</div>
-        <div className="order-date">{fmtTime(o.created_at)}</div>
+    <div onClick={onClick} className="flex gap-3 items-start px-4 md:px-5 py-3.5 cursor-pointer transition-colors last:border-b-0" style={{borderBottom:'1px solid var(--border)'}}>
+      <div className="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style={{background:'var(--light)', border:'1.5px solid var(--border)'}}>🛒</div>
+      <div className="flex-1 min-w-0">
+        <div className="text-[13px] font-extrabold font-poppins" style={{color:'var(--dark)'}}>{o.order_number}</div>
+        <div className="text-[11px] font-poppins mt-0.5" style={{color:'var(--muted)'}}>{o.delivery_name||''} • {o.delivery_city||'Jaunpur'}</div>
+        <div className="text-[10px] font-poppins mt-0.5" style={{color:'var(--muted)'}}>{fmtTime(o.created_at)}</div>
       </div>
-      <div className="order-right">
-        <div className="order-amt">{fmt(o.final_amount)}</div>
-        <div className={`badge badge-${o.status}`}>{statusLabel(o.status)}</div>
+      <div className="text-right flex-shrink-0">
+        <div className="text-sm font-extrabold font-poppins" style={{color:'var(--dark)'}}>{fmt(o.final_amount)}</div>
+        <Badge status={o.status}/>
       </div>
-    </div>
-  );
-}
-
-function EmptyState({ icon, title, sub, cta, onCta }) {
-  return (
-    <div className="empty-state">
-      <div className="empty-icon">{icon}</div>
-      <div className="empty-title">{title}</div>
-      <div className="empty-sub">{sub}</div>
-      {cta && <button className="empty-cta" onClick={onCta}>{cta}</button>}
     </div>
   );
 }
@@ -179,72 +199,74 @@ function OrdersTab({ state, showToast }) {
 
   return (
     <>
-      <div className="card">
-        <div className="card-head"><div className="card-title"><span className="card-title-icon">📦</span> My Orders ({state.orders.length})</div></div>
-        <div className="divider"/>
+      <Card title={`My Orders (${state.orders.length})`} icon="📦" noBody>
         {state.orders.length
           ? state.orders.map(o=><OrderRow key={o.id} o={o} onClick={()=>viewOrder(o)}/>)
           : <EmptyState icon="📦" title="Koi order nahi mila" sub="Pehla order place karo!" cta="Shop Now →" onCta={()=>window.location.href='index.html'}/>}
-      </div>
+      </Card>
 
       {modal && (
-        <div className="modal-overlay" onClick={()=>setModal(null)}>
-          <div className="modal-box" onClick={e=>e.stopPropagation()}>
-            <div className="modal-head">
-              <div className="modal-title">Order {modal.o.order_number}</div>
-              <button className="modal-close" onClick={()=>setModal(null)}>✕</button>
+        <div className="fixed inset-0 z-[90] flex items-end md:items-center justify-center" onClick={()=>setModal(null)}>
+          <div className="absolute inset-0" style={{background:'rgba(15,23,42,0.55)'}}/>
+          <div onClick={e=>e.stopPropagation()} className="relative w-full md:w-[520px] max-h-[88vh] overflow-y-auto rounded-t-2xl md:rounded-2xl" style={{background:'var(--card-bg)'}}>
+            <div className="flex items-center justify-between px-5 py-4 sticky top-0 z-10" style={{background:'var(--card-bg)', borderBottom:'1px solid var(--border)'}}>
+              <div className="text-sm font-extrabold font-poppins" style={{color:'var(--dark)'}}>Order {modal.o.order_number}</div>
+              <button onClick={()=>setModal(null)} aria-label="Band karein" className="w-8 h-8 rounded-full flex items-center justify-center" style={{background:'var(--light)', color:'var(--gray)'}}><X size={16}/></button>
             </div>
-            <div className="modal-body">
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
+            <div className="p-5">
+              <div className="flex justify-between items-center mb-4">
                 <div>
-                  <div style={{fontSize:'.72rem',color:'var(--muted)',marginBottom:2}}>Total Amount</div>
-                  <div style={{fontSize:'1.3rem',fontWeight:900,color:'var(--primary)'}}>{fmt(modal.o.final_amount)}</div>
+                  <div className="text-[11px] font-poppins mb-0.5" style={{color:'var(--muted)'}}>Total Amount</div>
+                  <div className="text-xl font-black font-poppins" style={{color:'var(--primary)'}}>{fmt(modal.o.final_amount)}</div>
                 </div>
-                <div className={`badge badge-${modal.o.status}`} style={{fontSize:'.72rem',padding:'5px 14px'}}>{statusLabel(modal.o.status)}</div>
+                <Badge status={modal.o.status}/>
               </div>
 
-              <div className="section-label">Order Status</div>
-              <div className="tl">
+              <div className="text-[11px] font-bold font-poppins uppercase tracking-wide mb-2.5" style={{color:'var(--muted)'}}>Order Status</div>
+              <div className="mb-5">
                 {modal.tlSteps.map((step,i)=>{
                   let cls = i<modal.curIdx?'done':i===modal.curIdx?'active':'waiting';
                   if (modal.o.status==='cancelled') cls='waiting';
+                  const dotStyle = cls==='done'?{background:'var(--primary-light)',color:'var(--primary)'}
+                    :cls==='active'?{background:'var(--primary)',color:'#fff',boxShadow:'0 0 0 4px rgba(22,163,74,0.2)'}
+                    :{background:'var(--light)',color:'var(--muted)'};
                   return (
-                    <div key={i} className="tl-item">
-                      <div className={`tl-dot ${cls}`}>{step.icon}</div>
-                      <div className="tl-content">
-                        <div className={`tl-label ${cls}`}>{step.label}</div>
-                        <div className="tl-sub">{cls!=='waiting'?step.sub:'Awaited'}</div>
+                    <div key={i} className="flex gap-3 mb-2.5">
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0" style={dotStyle}>{step.icon}</div>
+                      <div className="pt-1">
+                        <div className="text-[13px] font-bold font-poppins" style={{color:cls==='waiting'?'var(--muted)':'var(--dark)'}}>{step.label}</div>
+                        <div className="text-[11px] font-poppins mt-0.5" style={{color:'var(--muted)'}}>{cls!=='waiting'?step.sub:'Awaited'}</div>
                       </div>
                     </div>
                   );
                 })}
               </div>
 
-              <div className="divider" style={{marginBottom:16}}/>
-              <div className="section-label">Items Ordered</div>
+              <div className="h-px mb-4" style={{background:'var(--border)'}}/>
+              <div className="text-[11px] font-bold font-poppins uppercase tracking-wide mb-2.5" style={{color:'var(--muted)'}}>Items Ordered</div>
               {modal.items.map(it=>(
-                <div key={it.id} className="oi-row">
-                  <div className="oi-left">
-                    <span style={{fontSize:'1.5rem'}}>{it.emoji||'🛒'}</span>
-                    <div><div className="oi-name">{it.name}</div><div className="oi-unit">{it.unit} × {it.qty}</div></div>
+                <div key={it.id} className="flex items-center justify-between py-2.5 last:border-b-0" style={{borderBottom:'1px solid var(--border)'}}>
+                  <div className="flex gap-2.5 items-center">
+                    <span className="text-2xl">{it.emoji||'🛒'}</span>
+                    <div><div className="text-[13px] font-bold font-poppins" style={{color:'var(--dark)'}}>{it.name}</div><div className="text-[11px] font-poppins" style={{color:'var(--muted)'}}>{it.unit} × {it.qty}</div></div>
                   </div>
-                  <div className="oi-total">{fmt(it.line_total)}</div>
+                  <div className="text-sm font-extrabold font-poppins" style={{color:'var(--dark)'}}>{fmt(it.line_total)}</div>
                 </div>
               ))}
 
-              <div className="divider" style={{margin:'14px 0'}}/>
-              <div className="section-label">Delivery To</div>
-              <div style={{fontSize:'.82rem',lineHeight:1.7,color:'var(--text)'}}>
+              <div className="h-px my-3.5" style={{background:'var(--border)'}}/>
+              <div className="text-[11px] font-bold font-poppins uppercase tracking-wide mb-2.5" style={{color:'var(--muted)'}}>Delivery To</div>
+              <div className="text-[13px] font-poppins leading-relaxed" style={{color:'var(--text)'}}>
                 <b>{modal.o.delivery_name}</b><br/>
                 📞 {modal.o.delivery_phone}<br/>
                 📍 {modal.o.delivery_line1}{modal.o.delivery_line2?', '+modal.o.delivery_line2:''}, {modal.o.delivery_city}{modal.o.delivery_pincode?' - '+modal.o.delivery_pincode:''}
               </div>
 
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginTop:18}}>
+              <div className="grid grid-cols-2 gap-2.5 mt-5">
                 {modal.o.status==='delivered'
-                  ? <button className="btn-primary" onClick={()=>{reorder(modal.o.id);setModal(null);}}>🔁 Reorder</button>
+                  ? <button className="w-full text-white font-extrabold font-poppins rounded-xl py-3 text-sm" style={btnPrimaryStyle} onClick={()=>{reorder(modal.o.id);setModal(null);}}>🔁 Reorder</button>
                   : <div/>}
-                <button className="btn-secondary" onClick={()=>setModal(null)}>Close</button>
+                <button className="w-full font-bold font-poppins rounded-xl py-3 text-sm" style={btnSecondaryStyle} onClick={()=>setModal(null)}>Close</button>
               </div>
             </div>
           </div>
@@ -304,54 +326,60 @@ function AddressesTab({ state, setState, showToast }) {
 
   return (
     <>
-      <div className="card">
-        <div className="card-head">
-          <div className="card-title"><span className="card-title-icon">📍</span> Saved Addresses ({state.addresses.length})</div>
-          <button className="card-action-btn" onClick={()=>setForm({})}>+ Add New</button>
-        </div>
-        <div className="divider"/>
+      <Card title={`Saved Addresses (${state.addresses.length})`} icon="📍" action={<CardActionBtn onClick={()=>setForm({})}>+ Add New</CardActionBtn>} noBody>
         {state.addresses.length
           ? state.addresses.map(a=>(
-            <div key={a.id} className="addr-row">
-              <div className="addr-icon-box">{addrIcon(a.label)}</div>
-              <div className="addr-info">
-                <div className="addr-label-row">
-                  <span className="addr-label">{a.label}</span>
-                  {a.is_default&&<span className="default-tag">DEFAULT</span>}
+            <div key={a.id} className="flex gap-3 items-start px-4 md:px-5 py-3.5 last:border-b-0" style={{borderBottom:'1px solid var(--border)'}}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-base flex-shrink-0" style={{background:'var(--primary-light)'}}>{addrIcon(a.label)}</div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <span className="text-[13px] font-extrabold font-poppins" style={{color:'var(--dark)'}}>{a.label}</span>
+                  {a.is_default&&<span className="text-white text-[9px] font-extrabold font-poppins px-1.5 py-0.5 rounded-full" style={{background:'var(--primary)'}}>DEFAULT</span>}
                 </div>
-                <div className="addr-text">{a.line1}{a.line2?', '+a.line2:''}<br/>{a.city}{a.pincode?' - '+a.pincode:''}</div>
-                <div className="addr-actions">
-                  <button className="addr-btn addr-btn-edit" onClick={()=>setForm({...a})}>✏️ Edit</button>
-                  <button className="addr-btn addr-btn-del" onClick={()=>deleteAddr(a.id)}>🗑️ Delete</button>
-                  {!a.is_default&&<button className="addr-btn addr-btn-default" onClick={()=>setDefault(a.id)}>✓ Set Default</button>}
+                <div className="text-[11px] font-poppins leading-snug" style={{color:'var(--gray)'}}>{a.line1}{a.line2?', '+a.line2:''}<br/>{a.city}{a.pincode?' - '+a.pincode:''}</div>
+                <div className="flex gap-1.5 mt-2 flex-wrap">
+                  <button onClick={()=>setForm({...a})} className="text-[11px] font-bold font-poppins px-2.5 py-1 rounded-md" style={{background:'#EFF6FF',color:'#1D4ED8'}}>✏️ Edit</button>
+                  <button onClick={()=>deleteAddr(a.id)} className="text-[11px] font-bold font-poppins px-2.5 py-1 rounded-md" style={{background:'#FEF2F2',color:'var(--red)'}}>🗑️ Delete</button>
+                  {!a.is_default&&<button onClick={()=>setDefault(a.id)} className="text-[11px] font-bold font-poppins px-2.5 py-1 rounded-md" style={{background:'var(--primary-light)',color:'var(--primary)'}}>✓ Set Default</button>}
                 </div>
               </div>
             </div>
           ))
           : <EmptyState icon="📍" title="Koi address nahi" sub="Delivery ke liye address add karo" cta="+ Add Address" onCta={()=>setForm({})}/>}
-      </div>
+      </Card>
 
       {form!==null && (
-        <div className="card" style={{marginTop:0}}>
-          <div className="card-head"><div className="card-title">{f.id?'✏️ Edit Address':'➕ New Address'}</div></div>
-          <div className="divider"/>
-          <div className="card-body">
-            <div className="field-group"><label className="field-label">Label</label><input className="inp" placeholder="e.g. Home / Office" value={f.label||''} onChange={e=>upd({label:e.target.value})}/></div>
-            <div className="field-group"><label className="field-label">Address Line 1 *</label><input className="inp" placeholder="House no., Street name" value={f.line1||''} onChange={e=>upd({line1:e.target.value})}/></div>
-            <div className="field-group"><label className="field-label">Address Line 2 (Landmark) *</label><input className="inp" placeholder="Mohalla, Landmark" value={f.line2||''} onChange={e=>upd({line2:e.target.value})}/></div>
-            <div className="form-grid">
-              <div className="field-group"><label className="field-label">City *</label><input className="inp" value={f.city||'Jaunpur'} onChange={e=>upd({city:e.target.value})}/></div>
-              <div className="field-group"><label className="field-label">Pincode *</label><input className="inp" placeholder="222001" type="tel" value={f.pincode||''} onChange={e=>upd({pincode:e.target.value})}/></div>
-            </div>
-            <div className="toggle-wrap">
-              <div className={`toggle ${f.is_default?'on':''}`} onClick={()=>upd({is_default:!f.is_default})}><div className="toggle-dot"/></div>
-              <span className="toggle-label">Set as default delivery address</span>
-            </div>
-            <button className="btn-primary" onClick={saveAddr}>💾 Save Address</button>
-            <div style={{height:10}}/>
-            <button className="btn-secondary" onClick={()=>setForm(null)}>Cancel</button>
+        <Card title={f.id?'✏️ Edit Address':'➕ New Address'}>
+          <div className="mb-3">
+            <label className={labelCls} style={{color:'var(--gray)'}}>Label</label>
+            <input className={inputCls} style={inputStyle} placeholder="e.g. Home / Office" value={f.label||''} onChange={e=>upd({label:e.target.value})}/>
           </div>
-        </div>
+          <div className="mb-3">
+            <label className={labelCls} style={{color:'var(--gray)'}}>Address Line 1 *</label>
+            <input className={inputCls} style={inputStyle} placeholder="House no., Street name" value={f.line1||''} onChange={e=>upd({line1:e.target.value})}/>
+          </div>
+          <div className="mb-3">
+            <label className={labelCls} style={{color:'var(--gray)'}}>Address Line 2 (Landmark) *</label>
+            <input className={inputCls} style={inputStyle} placeholder="Mohalla, Landmark" value={f.line2||''} onChange={e=>upd({line2:e.target.value})}/>
+          </div>
+          <div className="grid grid-cols-2 gap-2.5 mb-3">
+            <div>
+              <label className={labelCls} style={{color:'var(--gray)'}}>City *</label>
+              <input className={inputCls} style={inputStyle} value={f.city||'Jaunpur'} onChange={e=>upd({city:e.target.value})}/>
+            </div>
+            <div>
+              <label className={labelCls} style={{color:'var(--gray)'}}>Pincode *</label>
+              <input className={inputCls} style={inputStyle} placeholder="222001" type="tel" value={f.pincode||''} onChange={e=>upd({pincode:e.target.value})}/>
+            </div>
+          </div>
+          <div className="flex items-center gap-2.5 mb-4">
+            <Toggle on={!!f.is_default} onClick={()=>upd({is_default:!f.is_default})}/>
+            <span className="text-[13px] font-semibold font-poppins" style={{color:'var(--text)'}}>Set as default delivery address</span>
+          </div>
+          <button className="w-full text-white font-extrabold font-poppins rounded-xl py-3 text-sm" style={btnPrimaryStyle} onClick={saveAddr}>💾 Save Address</button>
+          <div className="h-2.5"/>
+          <button className="w-full font-bold font-poppins rounded-xl py-3 text-sm" style={btnSecondaryStyle} onClick={()=>setForm(null)}>Cancel</button>
+        </Card>
       )}
     </>
   );
@@ -397,33 +425,38 @@ function ProfileTab({ state, setState, showToast }) {
   }
 
   return (
-    <div className="card">
-      <div className="card-head"><div className="card-title"><span className="card-title-icon">👤</span> Edit Profile</div></div>
-      <div className="divider"/>
-      <div className="card-body">
-        <label htmlFor="avatarInput">
-          <div className="avatar-upload-row">
-            <div className="avatar-big">
-              {preview ? <img src={preview} alt=""/> : p.avatar_url ? <img src={p.avatar_url} alt=""/> : (p.name?p.name[0].toUpperCase():'👤')}
-            </div>
-            <div>
-              <div className="avatar-upload-info-title">📷 Photo Change Karo</div>
-              <div className="avatar-upload-info-sub">JPG, PNG • Max 2MB</div>
-            </div>
+    <Card title="Edit Profile" icon="👤">
+      <label htmlFor="avatarInput">
+        <div className="flex items-center gap-3.5 rounded-2xl p-4 mb-4 cursor-pointer transition-colors" style={{background:'var(--light)', border:'1.5px solid var(--border)'}}>
+          <div className="w-16 h-16 rounded-full flex items-center justify-center text-3xl overflow-hidden flex-shrink-0" style={{background:'var(--primary-light)', border:'3px solid var(--primary)'}}>
+            {preview ? <img src={preview} alt="" className="w-full h-full object-cover rounded-full"/> : p.avatar_url ? <img src={p.avatar_url} alt="" className="w-full h-full object-cover rounded-full"/> : (p.name?p.name[0].toUpperCase():'👤')}
           </div>
-        </label>
-        <input type="file" id="avatarInput" accept="image/*" style={{display:'none'}} onChange={previewAvatar}/>
-
-        <div className="field-group"><label className="field-label">Full Name *</label><input className="inp" value={name} onChange={e=>setName(e.target.value)} placeholder="Aapka naam"/></div>
-        <div className="field-group"><label className="field-label">Email</label><input className="inp" value={p.email||''} readOnly placeholder="Email"/></div>
-        <div className="field-group"><label className="field-label">Phone Number</label><input className="inp" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="10-digit mobile" type="tel" maxLength={10}/></div>
-        <div className="info-box" style={{marginBottom:14}}>
-          📅 Member since: <b>{memberSince(p.created_at||state.user?.created_at)}</b>
-          &nbsp;•&nbsp; 🆔 ID: <span style={{fontSize:'.65rem',opacity:.6}}>{state.user?.id?.slice(0,8)}…</span>
+          <div>
+            <div className="text-[13px] font-bold font-poppins" style={{color:'var(--dark)'}}>📷 Photo Change Karo</div>
+            <div className="text-[11px] font-poppins mt-0.5" style={{color:'var(--muted)'}}>JPG, PNG • Max 2MB</div>
+          </div>
         </div>
-        <button className="btn-primary" onClick={saveProfile} disabled={saving}>{saving?'⏳ Saving...':'💾 Profile Save Karo'}</button>
+      </label>
+      <input type="file" id="avatarInput" accept="image/*" className="hidden" onChange={previewAvatar}/>
+
+      <div className="mb-3">
+        <label className={labelCls} style={{color:'var(--gray)'}}>Full Name *</label>
+        <input className={inputCls} style={inputStyle} value={name} onChange={e=>setName(e.target.value)} placeholder="Aapka naam"/>
       </div>
-    </div>
+      <div className="mb-3">
+        <label className={labelCls} style={{color:'var(--gray)'}}>Email</label>
+        <input className={inputCls} style={{...inputStyle, background:'#F1F5F9', color:'var(--gray)', cursor:'not-allowed'}} value={p.email||''} readOnly placeholder="Email"/>
+      </div>
+      <div className="mb-3">
+        <label className={labelCls} style={{color:'var(--gray)'}}>Phone Number</label>
+        <input className={inputCls} style={inputStyle} value={phone} onChange={e=>setPhone(e.target.value)} placeholder="10-digit mobile" type="tel" maxLength={10}/>
+      </div>
+      <div className="rounded-xl px-3.5 py-3 text-[12px] font-poppins leading-relaxed mb-3.5" style={{background:'#F0FDF9', border:'1.5px solid #A7F3D0', color:'#065F46'}}>
+        📅 Member since: <b>{memberSince(p.created_at||state.user?.created_at)}</b>
+        &nbsp;•&nbsp; 🆔 ID: <span className="text-[10px] opacity-60">{state.user?.id?.slice(0,8)}…</span>
+      </div>
+      <button className="w-full text-white font-extrabold font-poppins rounded-xl py-3 text-sm disabled:opacity-60" style={btnPrimaryStyle} onClick={saveProfile} disabled={saving}>{saving?'⏳ Saving...':'💾 Profile Save Karo'}</button>
+    </Card>
   );
 }
 
@@ -439,26 +472,24 @@ function WishlistTab({ state, setState, showToast }) {
     if (!error) { setState(s=>({...s,wishlist:s.wishlist.filter(x=>x.id!==w.id)})); showToast('Wishlist se hata diya'); }
   }
   return (
-    <div className="card">
-      <div className="card-head"><div className="card-title"><span className="card-title-icon">❤️</span> My Wishlist ({state.wishlist.length})</div></div>
-      <div className="divider"/>
+    <Card title={`My Wishlist (${state.wishlist.length})`} icon="❤️" noBody>
       {state.wishlist.length
         ? state.wishlist.map(w=>(
-          <div key={w.id} className="wish-row">
-            <div className="wish-emoji-box">{w.emoji||'🛒'}</div>
-            <div className="wish-info">
-              <div className="wish-name">{w.name}</div>
-              <div className="wish-unit">{w.unit||''}</div>
-              <div className="wish-price">₹{w.price}</div>
+          <div key={w.id} className="flex gap-3 items-center px-4 md:px-5 py-3.5 last:border-b-0" style={{borderBottom:'1px solid var(--border)'}}>
+            <div className="w-[52px] h-[52px] rounded-xl flex items-center justify-center text-2xl flex-shrink-0" style={{background:'var(--light)', border:'1.5px solid var(--border)'}}>{w.emoji||'🛒'}</div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[13px] font-bold font-poppins" style={{color:'var(--dark)'}}>{w.name}</div>
+              <div className="text-[11px] font-poppins mt-0.5" style={{color:'var(--muted)'}}>{w.unit||''}</div>
+              <div className="text-sm font-extrabold font-poppins mt-0.5" style={{color:'var(--primary)'}}>₹{w.price}</div>
             </div>
-            <div className="wish-actions">
-              <button className="wish-add-btn" onClick={()=>addToCart(w)}>🛒 Add</button>
-              <button className="wish-del-btn" onClick={()=>remove(w)}>🗑️ Remove</button>
+            <div className="flex flex-col gap-1.5">
+              <button onClick={()=>addToCart(w)} className="text-white text-[11px] font-bold font-poppins rounded-md px-3 py-1.5" style={{background:'var(--primary)'}}>🛒 Add</button>
+              <button onClick={()=>remove(w)} className="text-[11px] font-bold font-poppins rounded-md px-2.5 py-1" style={{background:'#FEF2F2', color:'var(--red)'}}>🗑️ Remove</button>
             </div>
           </div>
         ))
         : <EmptyState icon="❤️" title="Wishlist khali hai" sub="Products par ❤️ tap karo" cta="Browse Products →" onCta={()=>window.location.href='index.html'}/>}
-    </div>
+    </Card>
   );
 }
 
@@ -476,29 +507,26 @@ function NotificationsTab({ state, setState, showToast }) {
   }
   const unread = state.notifications.filter(n=>!n.is_read);
   return (
-    <div className="card">
-      <div className="card-head">
-        <div className="card-title">
-          <span className="card-title-icon">🔔</span> Notifications
-          {unread.length>0&&<span style={{background:'var(--red)',color:'#fff',borderRadius:'50%',width:20,height:20,display:'inline-flex',alignItems:'center',justifyContent:'center',fontSize:'.62rem',fontWeight:800}}>{unread.length}</span>}
-        </div>
-        {unread.length>0&&<button className="card-action-btn" onClick={markAll}>Mark All Read</button>}
-      </div>
-      <div className="divider"/>
+    <Card
+      title={<span className="flex items-center gap-2">Notifications {unread.length>0&&<span className="w-5 h-5 rounded-full text-white text-[10px] font-extrabold flex items-center justify-center" style={{background:'var(--red)'}}>{unread.length}</span>}</span>}
+      icon="🔔"
+      action={unread.length>0&&<CardActionBtn onClick={markAll}>Mark All Read</CardActionBtn>}
+      noBody
+    >
       {state.notifications.length
         ? state.notifications.map(n=>(
-          <div key={n.id} className={`notif-row ${!n.is_read?'unread':''}`} onClick={()=>markRead(n)}>
-            <div className="notif-icon-box" style={{background:notifColor(n.type)}}>{notifIcon(n.type)}</div>
-            <div className="notif-body">
-              <div className="notif-title">{n.title||'Notification'}</div>
-              <div className="notif-msg">{n.message||''}</div>
-              <div className="notif-time">{fmtTime(n.created_at)}</div>
+          <div key={n.id} onClick={()=>markRead(n)} className="flex gap-3 items-start px-4 md:px-5 py-3.5 cursor-pointer last:border-b-0" style={{borderBottom:'1px solid var(--border)', background:!n.is_read?'var(--primary-light)':'transparent'}}>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-base flex-shrink-0" style={{background:notifColor(n.type)}}>{notifIcon(n.type)}</div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[13px] font-bold font-poppins" style={{color:'var(--dark)'}}>{n.title||'Notification'}</div>
+              <div className="text-[11px] font-poppins mt-0.5 leading-relaxed" style={{color:'var(--gray)'}}>{n.message||''}</div>
+              <div className="text-[10px] font-poppins mt-1" style={{color:'var(--muted)'}}>{fmtTime(n.created_at)}</div>
             </div>
-            {!n.is_read?<div className="unread-dot"/>:<div className="read-dot"/>}
+            {!n.is_read?<div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{background:'var(--primary)'}}/>:<div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{background:'var(--border)'}}/>}
           </div>
         ))
         : <EmptyState icon="🔔" title="Koi notification nahi" sub="Offers aur order updates yahan dikhenge"/>}
-    </div>
+    </Card>
   );
 }
 
@@ -515,58 +543,59 @@ function RewardsTab({ state }) {
 
   function copy() { navigator.clipboard.writeText(refCode).then(()=>alert('Code copy ho gaya! 📋')); }
   function share() {
-    const txt=`Rinku Kirana par order karo!\nMera referral code: ${refCode}\nDono ko ₹30 cashback milega 🎉\nhttps://rinkukirana.com`;
-    if (navigator.share) navigator.share({title:'Rinku Kirana',text:txt});
+    const txt=`RK Grocery Mart par order karo!\nMera referral code: ${refCode}\nDono ko ₹30 cashback milega 🎉\n${window.location.origin}`;
+    if (navigator.share) navigator.share({title:'RK Grocery Mart',text:txt});
     else window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`);
   }
 
   return (
     <>
-      <div className="rewards-hero">
-        <div style={{fontSize:'.68rem',color:'rgba(255,255,255,0.6)',fontWeight:700,letterSpacing:'.8px',textTransform:'uppercase',marginBottom:4}}>Your Points</div>
-        <div className="rw-pts">{pts}</div>
-        <div className="rw-pts-lbl">Total Reward Points</div>
-        <div className="rw-bar-bg"><div className="rw-bar" style={{width:progress+'%'}}/></div>
-        <div className="rw-bar-labels"><span>{loyalty.label}</span><span>{totalOrders}/{nextTarget} orders</span></div>
-        <div className="rw-chips">
-          <div className="rw-chip"><div className="rw-chip-val">{deliveredCount}</div><div className="rw-chip-lbl">Delivered</div></div>
-          <div className="rw-chip"><div className="rw-chip-val">{fmt(savings)}</div><div className="rw-chip-lbl">Total Saved</div></div>
-          <div className="rw-chip"><div className="rw-chip-val">{pts}</div><div className="rw-chip-lbl">Points</div></div>
+      <div className="rounded-2xl p-5 mb-3.5 relative overflow-hidden" style={{background:'linear-gradient(135deg,#1E1B4B,#312E81,#4F46E5)', boxShadow:'0 8px 32px rgba(79,70,229,0.3)'}}>
+        <div className="text-[11px] font-bold font-poppins uppercase tracking-wide mb-1" style={{color:'rgba(255,255,255,0.6)'}}>Your Points</div>
+        <div className="text-4xl font-black font-poppins text-white" style={{letterSpacing:'-1px'}}>{pts}</div>
+        <div className="text-xs font-semibold font-poppins mt-0.5" style={{color:'rgba(255,255,255,0.65)'}}>Total Reward Points</div>
+        <div className="rounded-full h-[7px] mt-4" style={{background:'rgba(255,255,255,0.15)'}}>
+          <div className="h-[7px] rounded-full transition-all duration-1000" style={{width:progress+'%', background:'linear-gradient(90deg,#FFB800,#FF6B35)'}}/>
         </div>
-      </div>
-
-      <div className="referral-box">
-        <div style={{fontSize:'.82rem',fontWeight:800,color:'#C2410C'}}>🎁 Dost ko refer karo, dono ko ₹30 cashback!</div>
-        <div className="ref-code-box">
-          <span className="ref-code">{refCode}</span>
-          <button className="ref-copy-btn" onClick={copy}>📋 Copy</button>
-        </div>
-        <div style={{fontSize:'.71rem',color:'#EA580C',marginBottom:10}}>Minimum order ₹199 • Ek baar per user</div>
-        <button className="ref-share-btn" onClick={share}>📤 WhatsApp Par Share Karo</button>
-      </div>
-
-      <div className="card">
-        <div className="card-head"><div className="card-title"><span className="card-title-icon">ℹ️</span> Points Kaise Milenge?</div></div>
-        <div className="divider"/>
-        <div className="card-body">
-          {[
-            {i:'🛒',t:'Order Karo',  s:'Har delivered order = 10 points',        bg:'#E8F8F1'},
-            {i:'👥',t:'Refer Karo',  s:'Dost ka pehla order = 50 bonus points',  bg:'#EFF6FF'},
-            {i:'⭐',t:'Redeem Karo', s:'100 points = ₹10 discount (coming soon)', bg:'#FFFBEB'},
-          ].map(r=>(
-            <div key={r.t} className="how-row">
-              <div className="how-icon" style={{background:r.bg}}>{r.i}</div>
-              <div><div className="how-title">{r.t}</div><div className="how-sub">{r.s}</div></div>
+        <div className="flex justify-between text-[11px] font-poppins mt-1.5" style={{color:'rgba(255,255,255,0.6)'}}><span>{loyalty.label}</span><span>{totalOrders}/{nextTarget} orders</span></div>
+        <div className="flex gap-2 mt-4 flex-wrap">
+          {[[deliveredCount,'Delivered'],[fmt(savings),'Total Saved'],[pts,'Points']].map(([val,lbl])=>(
+            <div key={lbl} className="flex-1 rounded-xl p-3 text-center" style={{minWidth:72, background:'rgba(255,255,255,0.12)', border:'1px solid rgba(255,255,255,0.15)'}}>
+              <div className="text-sm font-black font-poppins text-white">{val}</div>
+              <div className="text-[10px] font-poppins mt-0.5" style={{color:'rgba(255,255,255,0.65)'}}>{lbl}</div>
             </div>
           ))}
         </div>
       </div>
+
+      <div className="rounded-2xl p-4 md:p-5 mb-3.5" style={{background:'linear-gradient(135deg,#FFF7ED,#FED7AA)', border:'1.5px solid #FDBA74'}}>
+        <div className="text-[13px] font-extrabold font-poppins" style={{color:'#C2410C'}}>🎁 Dost ko refer karo, dono ko ₹30 cashback!</div>
+        <div className="bg-white rounded-xl px-3.5 py-2.5 flex items-center justify-between my-3" style={{border:'1.5px dashed #FB923C'}}>
+          <span className="text-lg font-black font-poppins" style={{color:'var(--dark)', letterSpacing:'3px'}}>{refCode}</span>
+          <button onClick={copy} className="text-white text-[11px] font-bold font-poppins rounded-md px-3 py-1.5 flex items-center gap-1" style={{background:'var(--orange)'}}><Copy size={12}/> Copy</button>
+        </div>
+        <div className="text-[11px] font-poppins mb-2.5" style={{color:'#EA580C'}}>Minimum order ₹199 • Ek baar per user</div>
+        <button onClick={share} className="w-full text-white rounded-xl py-3 font-extrabold font-poppins text-sm flex items-center justify-center gap-1.5" style={{background:'linear-gradient(135deg,#EA580C,#DC2626)'}}><Share2 size={15}/> WhatsApp Par Share Karo</button>
+      </div>
+
+      <Card title="Points Kaise Milenge?" icon="ℹ️">
+        {[
+          {i:'🛒',t:'Order Karo',  s:'Har delivered order = 10 points',        bg:'#E8F8F1'},
+          {i:'👥',t:'Refer Karo',  s:'Dost ka pehla order = 50 bonus points',  bg:'#EFF6FF'},
+          {i:'⭐',t:'Redeem Karo', s:'100 points = ₹10 discount (coming soon)', bg:'#FFFBEB'},
+        ].map(r=>(
+          <div key={r.t} className="flex gap-3 items-center py-2.5 last:border-b-0" style={{borderBottom:'1px solid var(--border)'}}>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-base flex-shrink-0" style={{background:r.bg}}>{r.i}</div>
+            <div><div className="text-[13px] font-bold font-poppins" style={{color:'var(--dark)'}}>{r.t}</div><div className="text-[11px] font-poppins mt-0.5" style={{color:'var(--muted)'}}>{r.s}</div></div>
+          </div>
+        ))}
+      </Card>
     </>
   );
 }
 
 /* ─── Settings Tab ────────────────────────── */
-function SettingsTab({ state, switchTab }) {
+function SettingsTab({ switchTab }) {
   const [dark, setDark] = useState(document.documentElement.getAttribute('data-theme')==='dark');
 
   function toggleTheme() {
@@ -591,56 +620,46 @@ function SettingsTab({ state, switchTab }) {
     {icon:'📍',bg:'#F5F3FF',label:'Manage Addresses',  sub:'Delivery addresses',             fn:()=>switchTab('addresses')},
     {icon:'⭐',bg:'#FFFBEB',label:'Rewards & Referral',sub:'Points aur cashback',            fn:()=>switchTab('rewards')},
     {icon:'📦',bg:'#F0FDF4',label:'Order History',     sub:'Purane orders dekhein',          fn:()=>switchTab('orders')},
-    {icon:'📱',bg:'#F8FAFC',label:'App Version',       sub:'v1.0.0 • Rinku Kirana',          fn:null},
+    {icon:'📱',bg:'#F8FAFC',label:'App Version',       sub:'v1.0.0 • RK Grocery Mart',        fn:null},
   ];
 
   return (
     <>
-      <div className="card">
-        <div className="card-head"><div className="card-title"><span className="card-title-icon">⚙️</span> Settings</div></div>
-        <div className="divider"/>
+      <Card title="Settings" icon="⚙️" noBody>
         {rows.map(r=>(
-          <div key={r.label} className="settings-row" onClick={r.fn||undefined} style={r.fn?{cursor:'pointer'}:{}}>
-            <div className="settings-left">
-              <div className="settings-icon" style={{background:r.bg}}>{r.icon}</div>
-              <div><div className="settings-label">{r.label}</div><div className="settings-sub">{r.sub}</div></div>
+          <div key={r.label} onClick={r.fn||undefined} className={`flex items-center justify-between px-4 md:px-5 py-3.5 last:border-b-0 ${r.fn?'cursor-pointer':''}`} style={{borderBottom:'1px solid var(--border)'}}>
+            <div className="flex items-center gap-3">
+              <div className="w-[38px] h-[38px] rounded-xl flex items-center justify-center text-base flex-shrink-0" style={{background:r.bg}}>{r.icon}</div>
+              <div><div className="text-[13px] font-bold font-poppins" style={{color:'var(--dark)'}}>{r.label}</div><div className="text-[11px] font-poppins mt-0.5" style={{color:'var(--muted)'}}>{r.sub}</div></div>
             </div>
-            {r.fn&&<div className="settings-arrow">›</div>}
+            {r.fn&&<ChevronRight size={16} style={{color:'var(--muted)'}}/>}
           </div>
         ))}
-      </div>
+      </Card>
 
-      <div className="card">
-        <div className="card-head"><div className="card-title"><span className="card-title-icon">💳</span> Payment Methods</div></div>
-        <div className="divider"/>
-        {[{icon:'💵',bg:'#F0FDF4',name:'Cash on Delivery',sub:'Ghar pe cash dena'},{icon:'📱',bg:'#EFF6FF',name:'UPI / QR Code',sub:'rinkukirana@upi'}].map(p=>(
-          <div key={p.name} className="payment-row">
-            <div className="payment-icon" style={{background:p.bg}}>{p.icon}</div>
-            <div className="payment-info"><div className="payment-name">{p.name}</div><div className="payment-sub">{p.sub}</div></div>
-            <span className="active-badge">Active</span>
+      <Card title="Payment Methods" icon="💳" noBody>
+        {[{icon:'💵',bg:'#F0FDF4',name:'Cash on Delivery',sub:'Ghar pe cash dena'},{icon:'📱',bg:'#EFF6FF',name:'UPI / QR Code',sub:'QR scan karke pay karein'}].map(p=>(
+          <div key={p.name} className="flex items-center gap-3 px-4 md:px-5 py-3.5 last:border-b-0" style={{borderBottom:'1px solid var(--border)'}}>
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style={{background:p.bg}}>{p.icon}</div>
+            <div className="flex-1"><div className="text-[13px] font-bold font-poppins" style={{color:'var(--dark)'}}>{p.name}</div><div className="text-[11px] font-poppins mt-0.5" style={{color:'var(--muted)'}}>{p.sub}</div></div>
+            <span className="text-[10px] font-extrabold font-poppins px-2.5 py-1 rounded-full" style={{background:'var(--primary-light)', color:'var(--primary)'}}>Active</span>
           </div>
         ))}
-      </div>
+      </Card>
 
-      <div className="card">
-        <div className="card-head"><div className="card-title"><span className="card-title-icon">🌗</span> Appearance</div></div>
-        <div className="divider"/>
-        <div className="card-body">
-          <div className="toggle-wrap" style={{marginBottom:0}}>
-            <div className={`toggle ${dark?'on':''}`} onClick={toggleTheme}><div className="toggle-dot"/></div>
-            <span className="toggle-label">Dark Mode</span>
-          </div>
+      <Card title="Appearance" icon="🌗">
+        <div className="flex items-center gap-2.5">
+          <Toggle on={dark} onClick={toggleTheme}/>
+          <span className="text-[13px] font-semibold font-poppins flex items-center gap-1.5" style={{color:'var(--text)'}}>{dark?<Moon size={14}/>:<Sun size={14}/>} Dark Mode</span>
         </div>
-      </div>
+      </Card>
 
-      <div className="card">
-        <div className="card-body">
-          <button className="btn-danger" onClick={logout}>🚪 Logout</button>
-        </div>
-      </div>
+      <Card>
+        <button className="w-full font-extrabold font-poppins rounded-xl py-3 text-sm flex items-center justify-center gap-1.5" style={btnDangerStyle} onClick={logout}><LogOut size={15}/> Logout</button>
+      </Card>
 
-      <div style={{textAlign:'center',fontSize:'.68rem',color:'var(--muted)',padding:'10px 0 20px',lineHeight:2}}>
-        🛒 Rinku Kirana Store • Jaunpur<br/>
+      <div className="text-center text-[11px] leading-relaxed pt-2.5 pb-5" style={{color:'var(--muted)'}}>
+        🛒 RK Grocery Mart • Jaunpur<br/>
         📞 6393196765 • v1.0.0
       </div>
     </>
@@ -698,53 +717,129 @@ export default function AccountPage() {
   },[]);
 
   if (loading) return (
-    <div id="loadingPage">
-      <div className="loader-ring"/>
-      <div style={{fontSize:'.85rem',fontWeight:600,color:'var(--muted)'}}>Loading your account…</div>
+    <div className="flex flex-col items-center justify-center gap-3.5" style={{minHeight:'100vh', background:'var(--page-bg)'}}>
+      <div className="w-12 h-12 rounded-full animate-spin" style={{border:'4px solid var(--primary-light)', borderTopColor:'var(--primary)'}}/>
+      <div className="text-sm font-semibold font-poppins" style={{color:'var(--muted)'}}>Loading your account…</div>
     </div>
   );
 
   const tabProps = { state, setState, showToast, switchTab };
+  const p = state.profile;
+  const totalOrders = state.orders.length;
+  const savings = state.orders.reduce((s,o)=>s+(o.discount||0),0);
+  const loyalty = loyaltyLevel(totalOrders);
 
   return (
-    <>
-      <div className="topnav">
-        <div className="topnav-left">
-          <button className="back-btn" onClick={()=>window.location.href='index.html'}>←</button>
-          <span className="topnav-title">My Account</span>
+    <div style={{background:'var(--page-bg)', minHeight:'100vh'}}>
+      {/* Topnav */}
+      <div className="sticky top-0 z-[200] flex items-center gap-2.5 px-4 h-[58px] backdrop-blur-md" style={{background:'var(--card-bg)', borderBottom:'1px solid var(--border)', opacity:0.98}}>
+        <button onClick={()=>window.location.href='index.html'} aria-label="Back" className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{background:'var(--light)', border:'1.5px solid var(--border)', color:'var(--gray)'}}>
+          <ChevronLeft size={18}/>
+        </button>
+        <span className="text-sm font-extrabold font-poppins flex-1" style={{color:'var(--dark)'}}>My Account</span>
+        <a href="index.html" className="flex items-center gap-2 text-lg font-black font-poppins" style={{color:'var(--primary)'}}>
+          <img src="/icons/rk-logo.svg" alt="RK Grocery Mart" style={{width:30,height:30,borderRadius:9}}/> RK Grocery Mart
+        </a>
+      </div>
+
+      <div className="max-w-site mx-auto px-4 md:px-8 py-4 md:py-6 pb-28 md:pb-10">
+        {/* Hero */}
+        <div className="rounded-2xl p-5 md:p-6 relative overflow-hidden" style={{background:'linear-gradient(135deg,#064E3B 0%,#065F46 35%,#1BA672 80%,#34D399 100%)', boxShadow:'0 8px 32px rgba(6,78,59,0.35)'}}>
+          <div className="absolute rounded-full pointer-events-none" style={{right:-50,top:-50,width:200,height:200,background:'rgba(255,255,255,0.06)'}}/>
+          <div className="absolute rounded-full pointer-events-none" style={{right:40,bottom:-70,width:240,height:240,background:'rgba(255,255,255,0.04)'}}/>
+          <div className="flex items-center gap-3.5 md:gap-4 relative z-[1]">
+            <div className="relative flex-shrink-0">
+              <div className="w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center text-2xl md:text-3xl font-bold font-poppins overflow-hidden" style={{background:'rgba(255,255,255,0.2)', border:'3px solid rgba(255,255,255,0.5)', boxShadow:'0 4px 16px rgba(0,0,0,0.2)'}}>
+                {p?.avatar_url ? <img src={p.avatar_url} alt="" className="w-full h-full object-cover"/> : (p?.name?p.name[0].toUpperCase():'👤')}
+              </div>
+              <button onClick={()=>switchTab('profile')} aria-label="Change photo" className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center" style={{background:'var(--yellow)', border:'2px solid rgba(255,255,255,0.9)', boxShadow:'0 2px 6px rgba(0,0,0,0.15)'}}>
+                <Camera size={12} className="text-white"/>
+              </button>
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[11px] font-semibold font-poppins uppercase tracking-wide" style={{color:'rgba(255,255,255,0.65)'}}>👋 Namaste,</div>
+              <div className="text-xl md:text-2xl font-black font-poppins text-white truncate" style={{letterSpacing:'-.4px'}}>{p?.name||'User'}</div>
+              <div className="text-xs font-poppins truncate mt-0.5" style={{color:'rgba(255,255,255,0.7)'}}>{p?.email||''}</div>
+              <div className="inline-flex items-center gap-1 rounded-full px-3 py-1 mt-2" style={{background:'rgba(255,184,0,0.22)', border:'1.5px solid rgba(255,184,0,0.45)'}}>
+                <span className="text-[11px] font-extrabold font-poppins" style={{color:'#FFD700'}}>{loyalty.label}</span>
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-2 md:gap-3 mt-5 relative z-[1]">
+            {[[totalOrders,'Orders'],[fmt(savings),'Saved'],[memberSince(p?.created_at||state.user?.created_at),'Member Since']].map(([val,lbl])=>(
+              <div key={lbl} className="rounded-xl p-2.5 md:p-3 text-center backdrop-blur-sm" style={{background:'rgba(255,255,255,0.12)', border:'1px solid rgba(255,255,255,0.15)'}}>
+                <div className="text-sm md:text-base font-black font-poppins text-white" style={{letterSpacing:'-.5px'}}>{val}</div>
+                <div className="text-[10px] font-poppins mt-0.5" style={{color:'rgba(255,255,255,0.65)'}}>{lbl}</div>
+              </div>
+            ))}
+          </div>
         </div>
-        <a href="index.html" className="logo-link">rinku<span>.</span></a>
-      </div>
 
-      <div className="tabs-bar">
-        {TABS.map(t=>(
-          <button key={t.id} className={`tab-btn ${activeTab===t.id?'on':''}`} onClick={()=>switchTab(t.id)}>
-            <span className="tb-icon">{t.icon}</span> {t.label}
-          </button>
-        ))}
-      </div>
+        <div className="grid md:grid-cols-[220px_1fr] gap-5 md:gap-6 mt-5">
+          {/* Desktop sidebar */}
+          <aside className="hidden md:block">
+            <nav className="rounded-2xl p-2 sticky top-24" style={{background:'var(--card-bg)', boxShadow:'0 2px 12px rgba(0,0,0,0.06)', border:'1px solid var(--border)'}}>
+              {TABS.map(t=>{
+                const Icon=t.icon; const active=activeTab===t.id;
+                return (
+                  <button key={t.id} onClick={()=>switchTab(t.id)}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-poppins font-semibold transition-colors"
+                    style={active?{background:'var(--primary-light)',color:'var(--primary)'}:{color:'var(--dark)'}}>
+                    <Icon size={17}/> {t.label}
+                  </button>
+                );
+              })}
+            </nav>
+          </aside>
 
-      <div id="app">
-        <div className="page">
-          {activeTab==='overview'      && <OverviewTab {...tabProps}/>}
-          {activeTab==='orders'        && <OrdersTab {...tabProps}/>}
-          {activeTab==='addresses'     && <AddressesTab {...tabProps}/>}
-          {activeTab==='profile'       && <ProfileTab {...tabProps}/>}
-          {activeTab==='wishlist'      && <WishlistTab {...tabProps}/>}
-          {activeTab==='notifications' && <NotificationsTab {...tabProps}/>}
-          {activeTab==='rewards'       && <RewardsTab {...tabProps}/>}
-          {activeTab==='settings'      && <SettingsTab {...tabProps}/>}
+          {/* Mobile tab strip */}
+          <nav className="md:hidden -mx-4 px-4 flex items-center gap-2 overflow-x-auto pb-1" style={{scrollbarWidth:'none'}}>
+            {TABS.map(t=>{
+              const Icon=t.icon; const active=activeTab===t.id;
+              return (
+                <button key={t.id} onClick={()=>switchTab(t.id)}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-poppins font-bold whitespace-nowrap flex-shrink-0 transition-colors"
+                  style={active?{background:'var(--primary)',color:'#fff'}:{background:'var(--card-bg)',color:'var(--dark)',border:'1px solid var(--border)'}}>
+                  <Icon size={14}/> {t.label}
+                </button>
+              );
+            })}
+          </nav>
+
+          <main className="min-w-0">
+            {activeTab==='overview'      && <OverviewTab {...tabProps}/>}
+            {activeTab==='orders'        && <OrdersTab {...tabProps}/>}
+            {activeTab==='addresses'     && <AddressesTab {...tabProps}/>}
+            {activeTab==='profile'       && <ProfileTab {...tabProps}/>}
+            {activeTab==='wishlist'      && <WishlistTab {...tabProps}/>}
+            {activeTab==='notifications' && <NotificationsTab {...tabProps}/>}
+            {activeTab==='rewards'       && <RewardsTab {...tabProps}/>}
+            {activeTab==='settings'      && <SettingsTab {...tabProps}/>}
+          </main>
         </div>
       </div>
 
-      <nav className="bottom-nav">
-        <a href="index.html" className="bn-item"><span className="bn-icon">🏠</span><span className="bn-label">Home</span></a>
-        <a href="index.html#shop" className="bn-item"><span className="bn-icon">🛍️</span><span className="bn-label">Shop</span></a>
-        <a href="index.html" className="bn-item"><span className="bn-icon">🛒</span><span className="bn-label">Cart</span></a>
-        <a href="account.html" className="bn-item on"><span className="bn-icon">👤</span><span className="bn-label">Account</span></a>
+      {/* Mobile bottom nav — KEEPS the "bottom-nav" class (ananya-ai.js
+          does querySelector('.bottom-nav') to position the chat widget). */}
+      <nav className="bottom-nav flex" style={{background:'var(--card-bg)'}}>
+        <a href="index.html" className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5" style={{color:'var(--gray)'}}><Home size={20} strokeWidth={1.8}/><span className="text-[10px] font-medium font-poppins">Home</span></a>
+        <a href="index.html#shop" className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5" style={{color:'var(--gray)'}}><Package size={20} strokeWidth={1.8}/><span className="text-[10px] font-medium font-poppins">Shop</span></a>
+        <a href="index.html" className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5" style={{color:'var(--gray)'}}><ChevronRight size={20} strokeWidth={1.8}/><span className="text-[10px] font-medium font-poppins">Cart</span></a>
+        <a href="account.html" className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5" style={{color:'var(--primary)'}}><User size={20} strokeWidth={2.5}/><span className="text-[10px] font-bold font-poppins">Account</span></a>
       </nav>
 
-      <div id="toastEl" className="toast" style={{display:toast?'block':'none'}}>{toast}</div>
-    </>
+      {/* Toast — KEEPS id="toastEl" (checkout-location.js / account-location-patch.js
+          look up this exact id). */}
+      <div id="toastEl" className="fixed left-1/2 z-[999] px-5 py-2.5 rounded-full text-sm font-semibold font-poppins text-white whitespace-nowrap max-w-[88vw] overflow-hidden text-ellipsis"
+        style={{
+          bottom:'calc(88px + env(safe-area-inset-bottom,0px))',
+          transform:'translateX(-50%)',
+          background:'#0F172A',
+          boxShadow:'0 8px 32px rgba(0,0,0,0.25)',
+          display:toast?'block':'none',
+        }}>
+        {toast}
+      </div>
+    </div>
   );
 }
