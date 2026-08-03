@@ -19,12 +19,56 @@ if (!SUPABASE_ANON_KEY) {
   console.error('[ananya] SUPABASE_ANON_KEY environment variable set nahi hai. Vercel dashboard mein set karein.');
 }
 
-// BUG FIX (Sept 2026): gemini-2.0-flash / gemini-2.0-flash-lite were RETIRED by
-// Google on 2026-06-01 — every request 429/404'd and Ananya AI was completely
-// broken in production. Moved to the current stable family: gemini-2.5-flash
-// (primary) + gemini-2.5-flash-lite (cheaper fallback).
-const GEMINI_PRIMARY_MODEL = 'gemini-2.5-flash';
-const GEMINI_FALLBACK_MODEL = 'gemini-2.5-flash-lite';
+// BUG FIX (2026-08): gemini-2.0-flash / gemini-2.0-flash-lite were RETIRED by
+// Google on 2026-06-01 (every request failed), and gemini-2.5-* models are now
+// being closed to new keys too ("no longer available to new users"). Google
+// keeps shipping newer model generations (3.x+), so hardcoding ANY model ID
+// will eventually break again. Instead we AUTO-DISCOVER the best available
+// "flash" model from Gemini's live models list once per serverless instance
+// (cached ~6h), and only fall back to the constants below if discovery fails.
+const GEMINI_PRIMARY_MODEL = 'gemini-2.5-flash';       // fallback if discovery fails
+const GEMINI_FALLBACK_MODEL = 'gemini-2.5-flash-lite';  // fallback if discovery fails
+
+// ── Gemini model auto-discovery ──────────────────────────────────────────
+let _modelCache = null;   // { primary, fallback, expiresAt }
+const MODEL_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6h per serverless instance
+
+function modelScore(name) {
+  if (!/^gemini-/.test(name)) return -1;
+  if (/preview|image|live|audio|embedding|tts|thinking/.test(name)) return -1;
+  const verMatch = name.match(/^gemini-([\d.]+)/);
+  const ver = verMatch ? parseFloat(verMatch[1]) : 0;
+  const pro = /-pro/.test(name) ? 0.1 : 1;
+  const lite = /-lite/.test(name) ? 0 : 1;
+  return ver * 100 + pro + lite;
+}
+
+async function discoverGeminiModels(apiKey) {
+  if (_modelCache && Date.now() < _modelCache.expiresAt) return _modelCache;
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, {
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) throw new Error(`models list ${res.status}`);
+    const data = await res.json();
+    const ranked = (data.models || [])
+      .map(m => m.name.replace(/^models\//, ''))
+      .map(n => ({ n, s: modelScore(n) }))
+      .filter(x => x.s >= 0)
+      .sort((a, b) => b.s - a.s)
+      .map(x => x.n);
+    const primary = ranked.find(n => /-flash/.test(n) && !/-lite/.test(n) && !/-pro/.test(n)) || ranked[0];
+    const fallback = ranked.find(n => /-flash-lite/.test(n)) || ranked[1] || primary;
+    if (primary) {
+      _modelCache = { primary, fallback: fallback || primary, expiresAt: Date.now() + MODEL_CACHE_TTL_MS };
+      console.log(`[ananya] Gemini models auto-discovered: primary=${primary}, fallback=${fallback || primary}`);
+      return _modelCache;
+    }
+  } catch (err) {
+    console.warn(`[ananya] Gemini model discovery failed (${err?.message || err}) — using hardcoded defaults`);
+  }
+  return null;
+}
 const GEMINI_TIMEOUT_MS = 12000;
 const SUPABASE_TIMEOUT_MS = 6000;
 
@@ -282,8 +326,16 @@ async function getGeminiReply(systemPrompt, historyContents) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
   try {
-    try { return await callGemini(GEMINI_PRIMARY_MODEL, apiKey, systemPrompt, historyContents, controller.signal); }
-    catch (primaryErr) { return await callGemini(GEMINI_FALLBACK_MODEL, apiKey, systemPrompt, historyContents, controller.signal); }
+    const discovered = await discoverGeminiModels(apiKey);
+    const primary = discovered?.primary || GEMINI_PRIMARY_MODEL;
+    const fallback = discovered?.fallback || GEMINI_FALLBACK_MODEL;
+    try { return await callGemini(primary, apiKey, systemPrompt, historyContents, controller.signal); }
+    catch (primaryErr) {
+      try { return await callGemini(fallback, apiKey, systemPrompt, historyContents, controller.signal); }
+      catch (fallbackErr) {
+        throw new Error(`Gemini primary(${primary}) + fallback(${fallback}) failed: ${String(fallbackErr?.message || fallbackErr).slice(0, 300)}`);
+      }
+    }
   } finally { clearTimeout(timer); }
 }
 
