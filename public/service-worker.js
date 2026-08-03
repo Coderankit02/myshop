@@ -27,7 +27,7 @@
 
 // BUG FIX (Info #13): Version string ab comments mein clearly marked hai.
 // Har deploy par yahan ka number badhao agar OPTION C use kar rahe ho.
-const CACHE_VERSION = "v13"; // ← Fix: support.html definite chat-box height (scroll + keyboard + collapse)
+const CACHE_VERSION = "v14"; // ← Fix: support.html corner-cut (inline widget radius 0)
 const CACHE_NAME = `rk-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = "/offline.html";
 
