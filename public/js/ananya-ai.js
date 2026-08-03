@@ -208,6 +208,32 @@
   }
 
   /* ══════════════════════════════════════════
+     SYNC SESSION DETECTION
+     Supabase-js ka default storage key format:
+     `sb-${projectRef}-auth-token` (projectRef = supabase URL ka pehla
+     hostname part). src/lib/supabaseClient.js isi default key ke andar
+     session save karta hai. Yahan hum localStorage se session ko
+     SYNCHRONOUSLY padhte hain (bina async/CDN load ke) taaki logged-in
+     user ko login-gate kabhi flash na ho — pehli paint se hi pata ho ki
+     user logged in hai. Async initSupabase() baad mein hi ise refresh/
+     validate karta hai.
+  ══════════════════════════════════════════ */
+  function getStoredSessionSync() {
+    try {
+      const host = CONFIG.supabaseUrl.replace(/^https?:\/\//, '').split('.')[0];
+      const key = `sb-${host}-auth-token`;
+      const raw = localStorage.getItem(key);
+      if (!raw) return null;
+      const data = JSON.parse(raw);
+      // supabase-js v2 session object: { access_token, refresh_token, expires_at, user }
+      if (data && data.access_token && data.user) return data;
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /* ══════════════════════════════════════════
      SUPABASE
   ══════════════════════════════════════════ */
   async function initSupabase() {
@@ -997,12 +1023,19 @@
     state.initialized = true;
     await syncShopInfo();
 
+    // Pehli paint se hi sahi auth state: localStorage session ko synchronously
+    // padho (async CDN/auth check ka wait kiye bina) — isse logged-in user ko
+    // login-gate kabhi nahi dikhega, aur logout user ko turant gate milega.
+    const storedSession = getStoredSessionSync();
+    if (storedSession) {
+      state.userId = storedSession.user.id || null;
+      state.accessToken = storedSession.access_token || null;
+    }
+
     buildWidget();
     bindEvents();
     applyTheme();
     setupViewportFix();
-    // Optimistic default: assume guest until the real auth check below
-    // resolves, so the chat panel never briefly flashes unguarded.
     applyAuthGate();
 
     await loadSupabaseLib();

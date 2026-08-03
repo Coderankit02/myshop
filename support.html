@@ -55,6 +55,20 @@
   html[data-theme="dark"] .sp-chat-box{background:#151B26;border-color:var(--border);}
   html[data-theme="dark"] .sp-card{background:#151B26;}
   html[data-theme="dark"] .sp-hero h1{color:#F1F5F9;}
+
+  /* ── Mobile: full-screen chat (old floating-widget feel) ──
+     Chhote screens par page chrome (header/hero/contact cards) chhupa kar
+     chat ko poora viewport de do — bilkul pehle ke floating widget jaisa
+     immersive experience. ✕ button chat header mein hi hai jo main page par
+     wapas le jaata hai. */
+  @media (max-width: 480px){
+    body{overflow:hidden;}
+    .sp-header,.sp-hero,.sp-contact,.sp-foot{display:none;}
+    .sp-main{padding:0;max-width:100%;}
+    .sp-chat-box{height:100dvh;height:100vh;max-height:none;border-radius:0;border:none;box-shadow:none;}
+    #ananya-inline{min-height:0;height:100%;}
+    #ananya-inline #ananya-widget.ananya-inline-mode{min-height:0;height:100%;}
+  }
 </style>
 </head>
 <body>
