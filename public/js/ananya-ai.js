@@ -228,13 +228,16 @@
       if (window.sb) {
         state.supabase = window.sb;
       } else {
-        // Fallback: React app load nahi hua is page par (e.g. offline.html)
-        // — apna khud ka client banao agar CDN library available hai.
+        // Fallback: React app load nahi hua is page par (e.g. support.html,
+        // offline.html) — apna khud ka client banao agar CDN library available
+        // hai. IMPORTANT: custom storageKey use NAHI karte — site ke asli login
+        // session (src/lib/supabaseClient.js default storage key ke andar) ko
+        // detect karne ke liye wahi default storage chahiye. Pehle yahan
+        // 'ananya-widget-auth' lagaya tha, isliye support.html par logged-in
+        // user ko bhi hamesha guest/gate dikhta tha.
         const SB = window.supabase || window.supabaseJs;
         if (SB && typeof SB.createClient === 'function' && CONFIG.supabaseUrl !== 'YOUR_SUPABASE_URL') {
-          state.supabase = SB.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey, {
-            auth: { storageKey: 'ananya-widget-auth' }
-          });
+          state.supabase = SB.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey);
         }
       }
 
@@ -871,6 +874,15 @@
   }
 
   function closeWidget() {
+    // Inline (support page) mode: koi floating panel nahi hai — ✕ ka matlab
+    // chat band karke main page (shopping) par wapas jaana hai. Pehle ✕ sirf
+    // 'ananya-open' class hatata tha, par inline-mode CSS us class ke visual
+    // effect ko override kar deti hai — isliye ✕ par kuch nahi hota tha aur
+    // user main page par wapas nahi ja paata tha.
+    if (document.getElementById('ananya-inline')) {
+      window.location.href = 'index.html';
+      return;
+    }
     state.isOpen = false;
     document.getElementById('ananya-widget').classList.remove('ananya-open');
     const trig = document.getElementById('ananya-trigger');
