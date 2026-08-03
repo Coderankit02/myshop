@@ -273,8 +273,19 @@
           const res = await state.supabase.auth.getSession();
           session = res?.data?.session || null;
         } catch (e) { /* auth optional */ }
-        if (session?.user) state.userId = session.user.id;
-        if (session?.access_token) state.accessToken = session.access_token;
+        // IMPORTANT: session nahi mila to userId/accessToken CLEAR karo.
+        // getStoredSessionSync() ne localStorage se userId pehle se set kar
+        // diya hoga — agar wo session expired/revoked hai aur async check
+        // kuch nahi deta, to stale userId ke saath gate galat chhupa rehta.
+        // Async check hi authoritative hai: login-gate sirf tabhi hatna
+        // chahiye jab real session confirm ho.
+        if (session?.user) {
+          state.userId = session.user.id;
+          state.accessToken = session.access_token;
+        } else {
+          state.userId = null;
+          state.accessToken = null;
+        }
       }
     } catch (e) { /* supabase optional */ }
   }
