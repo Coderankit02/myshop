@@ -56,17 +56,41 @@
   html[data-theme="dark"] .sp-card{background:#151B26;}
   html[data-theme="dark"] .sp-hero h1{color:#F1F5F9;}
 
+  /* ── Chat box ko DEFINITE height do ──
+     ananya-ai.css ka `#ananya-inline{height:100%}` (ID selector — specificity
+     zyada) .sp-chat-box ke height ko override kar deta hai. Jab parent
+     (.sp-main) ki koi explicit height nahi hoti, to `height:100%` auto
+     ban jaata hai → chat box content jitna collapse ho jaata hai (chhota),
+     typing par textarea ke saath grow karta hai (bada), aur .ananya-messages
+     ka overflow-y:auto kabhi trigger nahi hota (scroll nahi). Isliye yahan
+     container ko explicitly fixed height dete hain — isse widget ke andar ka
+     flex chain (messages = flex:1 + overflow-y:auto) sahi kaam karta hai. */
+  #ananya-inline{
+    height:min(68vh,620px);
+    min-height:460px;
+    max-height:none;
+  }
+
   /* ── Mobile: full-screen chat (old floating-widget feel) ──
      Chhote screens par page chrome (header/hero/contact cards) chhupa kar
      chat ko poora viewport de do — bilkul pehle ke floating widget jaisa
      immersive experience. ✕ button chat header mein hi hai jo main page par
-     wapas le jaata hai. */
+     wapas le jaata hai. var(--ananya-vh) keyboard ke saath sync rehta hai
+     (ananya-ai.js ka setupViewportFix) — isliye typing par box grow nahi
+     hota, input keyboard ke upar hi rehta hai. */
   @media (max-width: 480px){
     body{overflow:hidden;}
     .sp-header,.sp-hero,.sp-contact,.sp-foot{display:none;}
     .sp-main{padding:0;max-width:100%;}
-    .sp-chat-box{height:100dvh;height:100vh;max-height:none;border-radius:0;border:none;box-shadow:none;}
-    #ananya-inline{min-height:0;height:100%;}
+    #ananya-inline{
+      height:100vh;
+      height:var(--ananya-vh,100dvh);
+      min-height:0;
+      max-height:none;
+      border-radius:0;
+      border:none;
+      box-shadow:none;
+    }
     #ananya-inline #ananya-widget.ananya-inline-mode{min-height:0;height:100%;}
   }
 </style>
