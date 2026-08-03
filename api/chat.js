@@ -19,8 +19,12 @@ if (!SUPABASE_ANON_KEY) {
   console.error('[ananya] SUPABASE_ANON_KEY environment variable set nahi hai. Vercel dashboard mein set karein.');
 }
 
-const GEMINI_PRIMARY_MODEL = 'gemini-2.0-flash';
-const GEMINI_FALLBACK_MODEL = 'gemini-2.0-flash-lite';
+// BUG FIX (Sept 2026): gemini-2.0-flash / gemini-2.0-flash-lite were RETIRED by
+// Google on 2026-06-01 — every request 429/404'd and Ananya AI was completely
+// broken in production. Moved to the current stable family: gemini-2.5-flash
+// (primary) + gemini-2.5-flash-lite (cheaper fallback).
+const GEMINI_PRIMARY_MODEL = 'gemini-2.5-flash';
+const GEMINI_FALLBACK_MODEL = 'gemini-2.5-flash-lite';
 const GEMINI_TIMEOUT_MS = 12000;
 const SUPABASE_TIMEOUT_MS = 6000;
 
