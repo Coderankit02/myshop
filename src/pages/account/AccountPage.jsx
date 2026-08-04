@@ -536,7 +536,7 @@ function RewardsTab({ state }) {
   const deliveredCount = state.orders.filter(o=>o.status==='delivered').length;
   const pts            = deliveredCount*10;
   const savings        = state.orders.reduce((s,o)=>s+(o.discount||0),0);
-  const refCode        = 'RINKU'+(state.user?.id||'').slice(0,6).toUpperCase();
+  const refCode        = 'RK'+(state.user?.id||'').slice(0,6).toUpperCase();
   const nextTarget     = totalOrders<5?5:totalOrders<20?20:50;
   const progress       = Math.min((totalOrders/nextTarget)*100,100);
   const loyalty        = loyaltyLevel(totalOrders);
