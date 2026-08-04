@@ -160,7 +160,12 @@
       name      : item.name,
       unit      : item.unit,
       emoji     : item.e,
-      category  : item.cat,
+      // BUG FIX: order_items.category has a NOT NULL constraint. Kart items can
+      // legitimately carry a null category (e.g. products fetched from homepage
+      // sections where the categories join isn't included, or old carts restored
+      // from localStorage before categories were stored). Sanitize at the write
+      // boundary so the insert never violates the constraint.
+      category  : item.cat || 'General',
       price     : item.price,
       old_price : item.old || null,
       qty       : item.qty,

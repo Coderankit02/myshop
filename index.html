@@ -9,8 +9,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://cdnjs.cloudflare.com">
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
-<!-- Splash logo: fetch immediately at high priority so it's never blurry/late on first paint -->
-<link rel="preload" href="/icons/app-logo.png" as="image">
+<!-- app-logo.png preload removed: the page logo is rk-logo.svg (or admin-set logo_url),
+     so preloading app-logo.png only produced a "preloaded but not used" console warning.
+     The icon is still cached for PWA offline use via service-worker.js. -->
   <link rel="stylesheet" href="/css/delivery-radius.css"/>
 <link rel="manifest" href="/manifest.json"/>
 <meta name="theme-color" content="#16A34A" id="rk-theme-color"/>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react';
+import { useState, useEffect, useRef, useCallback, useLayoutEffect, Fragment } from 'react';
 import { Search, MapPin, ChevronDown, ShoppingCart, User, Download, Home, ShoppingBag, SlidersHorizontal, X, Zap, Leaf, BadgePercent, ShieldCheck, Package, Headphones, Send, MessageCircle } from 'lucide-react';
 import { supabase } from './lib/supabaseClient';
 import { TICKER, calcDiscount, catEmoji } from './lib/helpers';
@@ -34,6 +34,292 @@ function MobileCatRow({cats,catsLoading,activeCatId,catEmoji,onClick}){
           );
         })
       }
+    </div>
+  );
+}
+
+// ── Module 13: scroll-reset fix ─────────────────────────────
+// These components were previously defined INSIDE App(). App re-renders every
+// 4s (banner autoplay timer) and re-creates inner component types on every
+// render — so React unmounted & remounted the whole homepage each time,
+// wiping every horizontal section's scroll position back to 0 (swipe to item
+// 5 → a few seconds later it snapped back to item 1). Moving them to module
+// level (stable types, same pattern as FlashSale/WhyChooseUs) stops that
+// remount. All state/handlers stay in App and come in as props.
+
+const SORT_OPTIONS=[
+  {v:'default',l:'Recommended'},
+  {v:'price-low',l:'Price: Low to High'},
+  {v:'price-high',l:'Price: High to Low'},
+];
+
+function HeroBanner({banners,bannersLoading,bannerIdx,setBannerIdx,wrapRef,handleBannerClick}){
+  return(
+    <div className="relative rounded-2xl overflow-hidden h-40 md:h-64">
+      <div ref={wrapRef} className="flex h-full overflow-x-auto snap-x snap-mandatory scrollbar-hide">
+        {bannersLoading
+          ?<SkelBanner/>
+          :banners.map(b=>(
+            <div key={b.id} className="relative w-full h-full flex-shrink-0 snap-start cursor-pointer"
+              style={{background:b.bg_gradient||'linear-gradient(135deg,#064E3B,#047857)'}}
+              onClick={()=>handleBannerClick(b)}>
+              {b.image_url&&<img src={b.image_url} alt={b.title} className="absolute inset-0 w-full h-full object-cover opacity-70"/>}
+              {/* Fix #5 (preserved): decorative emoji only when there's no real banner image */}
+              {!b.image_url&&<div className="absolute right-2 bottom-2 text-6xl opacity-20">🛒</div>}
+              <div className="absolute inset-0 p-4 md:p-10 flex flex-col justify-end md:justify-center max-w-md"
+                style={{background:'linear-gradient(0deg, rgba(0,0,0,0.35), transparent 60%)'}}>
+                <span className="inline-block bg-white/20 text-white text-[10px] md:text-xs font-bold font-poppins px-2 py-1 rounded-lg mb-1 w-fit">LIMITED OFFER</span>
+                <p className="text-white font-bold text-base md:text-3xl font-poppins leading-tight">{b.title}</p>
+                {b.subtitle&&<p className="text-white/80 text-xs md:text-base mt-0.5">{b.subtitle}</p>}
+                <button onClick={e=>{e.stopPropagation();handleBannerClick(b);}}
+                  className="mt-2 md:mt-4 inline-flex w-fit items-center gap-1 bg-white text-charcoal text-xs md:text-sm font-bold font-poppins px-3 py-1.5 rounded-xl">
+                  {b.button_text||'Shop Now'} →
+                </button>
+              </div>
+            </div>
+          ))
+        }
+      </div>
+      {banners.length>1&&(
+        <div className="absolute bottom-3 left-4 flex gap-1.5">
+          {banners.map((_,i)=>(
+            <button key={i} aria-label={`Banner ${i+1} dikhayein`} onClick={()=>setBannerIdx(i)}
+              className={`h-1.5 rounded-full transition-all ${i===bannerIdx?'w-5 bg-white':'w-1.5 bg-white/50'}`}/>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CategoryGrid({cats,catsLoading,catEmoji,onPick}){
+  return(
+    <div>
+      <h2 className="text-base md:text-xl font-bold font-poppins" style={{color:'var(--dark)'}}>Shop by Category</h2>
+      <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3 md:gap-4 mt-3">
+        {catsLoading
+          ?[...Array(8)].map((_,i)=>(
+            <div key={i} aria-hidden="true" className="flex flex-col items-center gap-1.5">
+              <div className="w-full aspect-square rounded-2xl animate-pulse" style={{background:'var(--light)'}}/>
+              <div className="h-2.5 w-10 rounded animate-pulse" style={{background:'var(--light)'}}/>
+            </div>
+          ))
+          :cats.map(c=>(
+            <button key={c.id} onClick={()=>onPick(c.id)}
+              className="flex flex-col items-center gap-1.5 group">
+              <div className="w-full aspect-square rounded-2xl flex items-center justify-center text-2xl md:text-3xl overflow-hidden transition-transform group-active:scale-95 group-hover:-translate-y-0.5"
+                style={{background:'var(--primary-light)'}}>
+                {(c.display_image||c.image_url)
+                  ?<img src={c.display_image||c.image_url} alt={c.name} className="w-full h-full object-cover"/>
+                  :<span>{catEmoji(c)}</span>
+                }
+              </div>
+              <span className="text-[10px] md:text-xs font-medium font-poppins text-center leading-tight line-clamp-2" style={{color:'var(--dark)'}}>{c.name}</span>
+            </button>
+          ))
+        }
+      </div>
+    </div>
+  );
+}
+
+function ProductRail({title,loading,products,onSeeAll,cart,addToCart,updQty,onDetail}){
+  if(!loading&&(!products||products.length===0))return null;
+  return(
+    <div className="mt-8">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-base md:text-xl font-bold font-poppins" style={{color:'var(--dark)'}}>{title}</h2>
+        <button onClick={onSeeAll} className="text-xs md:text-sm font-semibold font-poppins flex items-center gap-0.5" style={{color:'var(--primary)'}}>See All →</button>
+      </div>
+      <div className="flex gap-3 md:gap-4 overflow-x-auto pb-1 snap-x scrollbar-hide">
+        {loading||!products
+          ?[...Array(4)].map((_,i)=><div key={i} className="flex-shrink-0 w-36 md:w-44 snap-start"><SkelCard/></div>)
+          :products.map(p=>(
+            <div key={p.id} className="flex-shrink-0 w-36 md:w-44 snap-start">
+              <PCard p={p} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}/>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  );
+}
+
+function DesktopSidebar({allCats,activeCatId,catEmoji,onPick}){
+  return(
+    <div className="sticky rounded-2xl p-3 mr-4 my-4 flex-shrink-0"
+      style={{width:200,background:'var(--card-bg)',top:'var(--header-h)',boxShadow:'0 2px 10px rgba(0,0,0,0.06)',maxHeight:'calc(100vh - var(--header-h) - 20px)',overflowY:'auto'}}>
+      <div className="text-[11px] font-bold font-poppins uppercase tracking-wide pb-2 mb-1.5" style={{color:'var(--gray)',borderBottom:'1px solid var(--border)'}}>Categories</div>
+      {allCats.map(c=>{
+        const active=activeCatId===c.id;
+        return(
+          <div key={c.id} onClick={()=>onPick(c.id)}
+            className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl cursor-pointer text-[13px] font-semibold font-poppins active:scale-[0.97] hover:bg-black/[0.03] transition-colors"
+            style={{color:active?'var(--primary)':'var(--dark)',background:active?'var(--primary-light)':'transparent'}}>
+            {(c.display_image||c.image_url)
+              ?<img src={c.display_image||c.image_url} alt={c.name} className="w-7 h-7 rounded-lg object-cover flex-shrink-0"/>
+              :<div className="w-7 h-7 rounded-lg flex items-center justify-center text-base flex-shrink-0" style={{background:'var(--primary-light)'}}>{catEmoji(c)}</div>
+            }
+            <span className="truncate">{c.name}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function Footer({shopSettings,onNav}){
+  const s=shopSettings;
+  const socials=[
+    s.social_facebook&&{href:s.social_facebook,icon:'📘',label:'Facebook'},
+    s.social_instagram&&{href:s.social_instagram,icon:'📸',label:'Instagram'},
+    s.social_whatsapp&&{href:s.social_whatsapp,icon:'💬',label:'WhatsApp'},
+    s.social_youtube&&{href:s.social_youtube,icon:'▶️',label:'YouTube'},
+  ].filter(Boolean);
+  const legal=[{k:'about',l:'About Us'},{k:'privacy',l:'Privacy Policy'},{k:'terms',l:'Terms'},{k:'shipping',l:'Shipping'},{k:'support',l:'Help & Support'}];
+  return(
+    <div className="text-center font-poppins px-5 py-6 md:px-6 md:py-8 rounded-none md:rounded-2xl mb-0 md:mb-4"
+      style={{background:`linear-gradient(135deg, var(--primary), var(--primary-dark))`,color:'rgba(255,255,255,0.85)',fontSize:'0.78rem',lineHeight:2}}>
+      <div className="flex items-center justify-center gap-2.5" style={{marginBottom:8}}>
+        <img src={s.logo_url||'/icons/rk-logo.svg'} alt={s.shop_name||'RK Grocery Mart'} style={{width:38,height:38,borderRadius:12}}/>
+        <div className="text-left">
+          <div className="text-white font-extrabold font-poppins" style={{fontSize:'1.15rem',lineHeight:1.1}}>{s.shop_name||'RK Grocery Mart'}</div>
+          <div className="text-white/75 font-poppins" style={{fontSize:'0.7rem'}}>{s.footer_text||'हर घर की पसंद'}</div>
+        </div>
+      </div>
+      <div className="flex items-center justify-center gap-4 flex-wrap" style={{margin:'8px 0'}}>
+        <span className="flex items-center gap-1"><span>⚡</span><span className="text-xs">Fast delivery</span></span>
+        <span className="flex items-center gap-1"><span>🌿</span><span className="text-xs">Aapke mohalle ki dukaan</span></span>
+      </div>
+      {s.contact&&<div>📞 Call/WhatsApp: {s.contact}</div>}
+      <div>⏰ {s.open_time||'7:00 AM'} – {s.close_time||'10:00 PM'}</div>
+      {socials.length>0&&(
+        <div className="flex items-center justify-center gap-3" style={{margin:'6px 0'}}>
+          {socials.map(x=>(
+            <a key={x.label} href={x.href} target="_blank" rel="noopener noreferrer" aria-label={x.label}
+              style={{color:'#fff',background:'rgba(255,255,255,0.14)',width:34,height:34,borderRadius:'50%',display:'inline-flex',alignItems:'center',justifyContent:'center',fontSize:'0.95rem'}}>{x.icon}</a>
+          ))}
+        </div>
+      )}
+      <div className="flex items-center justify-center gap-3 flex-wrap" style={{margin:'6px 0'}}>
+        {legal.map(x=>x.k==='support'
+          ?<a key={x.k} href="support.html" style={{color:'#fff',textDecoration:'underline'}}>{x.l}</a>
+          :<button key={x.k} onClick={()=>onNav(x.k)} style={{color:'#fff',textDecoration:'underline',background:'none'}}>{x.l}</button>)}
+      </div>
+      <a href="support.html"
+        style={{display:'inline-flex',alignItems:'center',gap:7,color:'#fff',background:'rgba(255,255,255,0.16)',padding:'9px 20px',borderRadius:50,fontWeight:700,fontSize:'.78rem',textDecoration:'none',marginTop:10,transition:'transform .15s'}}>
+        <MessageCircle size={15}/> Help &amp; Support — Ananya AI
+      </a>
+      <div style={{marginTop:8,opacity:0.7}}>© {new Date().getFullYear()} {s.shop_name||'RK Grocery Mart'} — {s.footer_text||'हर घर की पसंद'}</div>
+    </div>
+  );
+}
+
+function HomeContent({homepageSections,banners,bannersLoading,bannerIdx,setBannerIdx,bannerWrapRef,handleBannerClick,homeSections,homeLoading,cart,addToCart,updQty,onDetail,cats,catsLoading,catEmoji,sectionProds,featLoading,featuredProds,dbReviews,shopSettings,showToast,setPage,onPickCategory}){
+  return(
+    <div className="max-w-site mx-auto px-4 md:px-8 pt-4 pb-6 md:pb-8">
+      {/* Admin Homepage Builder: sections configured order mein + sirf enabled walay */}
+      {(() => {
+        const ordered = homepageSections.length ? homepageSections : DEFAULT_HOMEPAGE_SECTIONS;
+        const sectionsMap = {
+          hero: <HeroBanner banners={banners} bannersLoading={bannersLoading} bannerIdx={bannerIdx} setBannerIdx={setBannerIdx} wrapRef={bannerWrapRef} handleBannerClick={handleBannerClick}/>,
+          flash_sale: <FlashSale prods={homeSections.flash} loading={homeLoading} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}/>,
+          today_deals: <ProductRail title="🔥 Today's Deals" loading={homeLoading} products={homeSections.deals} onSeeAll={()=>setPage('shop')} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}/>,
+          categories: <div className="mt-6 md:mt-8"><CategoryGrid cats={cats} catsLoading={catsLoading} catEmoji={catEmoji} onPick={onPickCategory}/></div>,
+          featured: <ProductRail title="⭐ Featured Products" loading={featLoading} products={featuredProds} onSeeAll={()=>setPage('shop')} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}/>,
+          best_sellers: <ProductRail title="🏆 Best Sellers" loading={homeLoading} products={homeSections.bestSellers} onSeeAll={()=>setPage('shop')} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}/>,
+          new_arrivals: <ProductRail title="✨ New Arrivals" loading={homeLoading} products={homeSections.newArrivals} onSeeAll={()=>setPage('shop')} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}/>,
+          category_sections: cats.slice(0,6).map(c=>{
+            const items=sectionProds[c.id];
+            if(items&&items.length===0)return null;
+            return(
+              <ProductRail key={c.id} title={c.name} loading={!items} products={items}
+                onSeeAll={()=>onPickCategory(c.id)} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}/>
+            );
+          }),
+          why_choose_us: <WhyChooseUs/>,
+          reviews: <CustomerReviews reviews={dbReviews}/>,
+          download_app: <DownloadApp onInstall={()=>{if(window.RKPwa?.promptInstall){window.RKPwa.promptInstall();}else{showToast('Browser ke ⋮ menu se “Add to Home Screen” chunein 📱');}}}/>,
+          newsletter: <Newsletter showToast={showToast}/>,
+          how_it_works: (
+            <div className="mt-8 rounded-2xl p-5 md:p-6" style={{background:'var(--card-bg)'}}>
+              <div className="font-extrabold font-poppins text-sm md:text-base" style={{color:'var(--dark)'}}>How It Works</div>
+              <div className="grid grid-cols-3 gap-3 md:gap-6 mt-4">
+                {[{i:'📱',t:'Open the app',s:'Search what you need'},{i:'🛒',t:'Place an order',s:'Add items to cart & checkout'},{i:'🚴',t:'Get fast delivery',s:'Delivered in 1-2 hours'}].map((h,i)=>(
+                  <div key={i} className="text-center">
+                    <div className="text-2xl md:text-3xl mb-1.5">{h.i}</div>
+                    <div className="font-bold font-poppins text-xs md:text-sm" style={{color:'var(--dark)'}}>{h.t}</div>
+                    <div className="text-[10px] md:text-xs font-poppins mt-0.5" style={{color:'var(--gray)'}}>{h.s}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ),
+        };
+        return ordered.map(key=>{
+          const el=sectionsMap[key];
+          return el?<Fragment key={key}>{el}</Fragment>:null;
+        });
+      })()}
+
+      <div className="mt-4"><Footer shopSettings={shopSettings} onNav={setPage}/></div>
+    </div>
+  );
+}
+
+function DesktopShop({allCats,activeCatId,catEmoji,visibleShopProds,shopIsLoading,isSearchActive,searchResults,shopTotal,inStockOnly,search,sortBy,setSortBy,cart,addToCart,updQty,onDetail,totalPages,shopPage,setShopPage,onSidebarPick}){
+  const prods=visibleShopProds;
+  const isLoading=shopIsLoading;
+  const activeCatName=allCats.find(c=>c.id===activeCatId)?.name||'All Products';
+  const countLabel=isLoading?'Loading…':(inStockOnly?`${prods.length} in stock`:`${isSearchActive?searchResults.length:shopTotal} Products`);
+  return(
+    <div className="flex items-start max-w-site mx-auto px-4 md:px-7">
+      <DesktopSidebar allCats={allCats} activeCatId={activeCatId} catEmoji={catEmoji} onPick={onSidebarPick}/>
+      <div className="flex-1 min-w-0 py-4">
+        <div className="rounded-2xl p-4 md:p-5" style={{background:'var(--card-bg)'}}>
+          <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+            <div className="min-w-0">
+              <div className="font-extrabold font-poppins text-sm" style={{color:'var(--dark)'}}>{countLabel}</div>
+              <div className="text-xs font-poppins truncate" style={{color:'var(--gray)'}}>{activeCatName}{search?` • "${search}"`:''}</div>
+            </div>
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <select value={sortBy} onChange={e=>setSortBy(e.target.value)} aria-label="Sort products"
+                className="text-xs font-poppins font-semibold rounded-xl px-3 py-2 outline-none"
+                style={{border:'1.5px solid var(--border)',background:'var(--page-bg)',color:'var(--dark)'}}>
+                {SORT_OPTIONS.map(o=><option key={o.v} value={o.v}>{o.l}</option>)}
+              </select>
+              <label className="flex items-center gap-1.5 text-xs font-semibold font-poppins cursor-pointer select-none" style={{color:'var(--dark)'}}>
+                <input type="checkbox" checked={inStockOnly} onChange={e=>setInStockOnly(e.target.checked)} style={{accentColor:'var(--primary)',width:15,height:15}}/>
+                In stock only
+              </label>
+            </div>
+          </div>
+          {isLoading
+            ?<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4" aria-busy="true" aria-label="Products load ho rahe hain">{[...Array(8)].map((_,i)=><SkelCard key={i}/>)}</div>
+            :prods.length===0
+              ?<div className="text-center py-16">
+                <div style={{fontSize:'3rem'}}>🔍</div>
+                <p className="mt-2.5 font-semibold font-poppins text-sm" style={{color:'var(--gray)'}}>"{search||activeCatName}" mein koi product nahi mila</p>
+                {inStockOnly&&<button onClick={()=>setInStockOnly(false)} className="text-xs font-bold font-poppins mt-2" style={{color:'var(--primary)'}}>"In stock only" filter hataayein</button>}
+              </div>
+              :<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">{prods.map(p=><PCard key={p.id} p={p} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}/>)}</div>
+          }
+          {!search&&totalPages>1&&(
+            <div className="flex justify-center flex-wrap gap-2 mt-6">
+              {[...Array(totalPages)].map((_,i)=>{
+                const on=shopPage===i+1;
+                return(
+                  <button key={i} onClick={()=>setShopPage(i+1)}
+                    className="w-8 h-8 rounded-lg text-[13px] font-bold font-poppins flex items-center justify-center"
+                    style={{border:`1.5px solid ${on?'var(--primary)':'var(--border)'}`,background:on?'var(--primary)':'transparent',color:on?'#fff':'var(--gray)'}}>
+                    {i+1}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -249,11 +535,6 @@ export default function App(){
   const [sortBy,setSortBy]=useState('default');
   const [inStockOnly,setInStockOnly]=useState(false);
   const [filterDrawerOpen,setFilterDrawerOpen]=useState(false);
-  const SORT_OPTIONS=[
-    {v:'default',l:'Recommended'},
-    {v:'price-low',l:'Price: Low to High'},
-    {v:'price-high',l:'Price: High to Low'},
-  ];
   const sortFilterProds=(list)=>{
     let out=inStockOnly?list.filter(p=>!(p.stock_quantity<=0)):list;
     if(sortBy==='price-low') out=[...out].sort((a,b)=>a.selling_price-b.selling_price);
@@ -572,292 +853,13 @@ export default function App(){
     setPage('shop');setShopPage(1);
   },[cats]);
 
-  // ── HERO BANNER (Module 3: unified Tailwind carousel — same one on mobile
-  //     AND desktop now, replacing the old separate mobile-scroller /
-  //     desktop-3-up-grid split. bannerWrapRef/bannerIdx/handleBannerClick are
-  //     all UNCHANGED state/handlers from before — the existing autoplay +
-  //     scroll-sync effects above still work as-is because this keeps the same
-  //     "scrollable row of full-width slides" DOM shape they depend on. ──
-  const HeroBanner=()=>(
-    <div className="relative rounded-2xl overflow-hidden h-40 md:h-64">
-      <div ref={bannerWrapRef} className="flex h-full overflow-x-auto snap-x snap-mandatory scrollbar-hide">
-        {bannersLoading
-          ?<SkelBanner/>
-          :banners.map(b=>(
-            <div key={b.id} className="relative w-full h-full flex-shrink-0 snap-start cursor-pointer"
-              style={{background:b.bg_gradient||'linear-gradient(135deg,#064E3B,#047857)'}}
-              onClick={()=>handleBannerClick(b)}>
-              {b.image_url&&<img src={b.image_url} alt={b.title} className="absolute inset-0 w-full h-full object-cover opacity-70"/>}
-              {/* Fix #5 (preserved): decorative emoji only when there's no real banner image */}
-              {!b.image_url&&<div className="absolute right-2 bottom-2 text-6xl opacity-20">🛒</div>}
-              <div className="absolute inset-0 p-4 md:p-10 flex flex-col justify-end md:justify-center max-w-md"
-                style={{background:'linear-gradient(0deg, rgba(0,0,0,0.35), transparent 60%)'}}>
-                <span className="inline-block bg-white/20 text-white text-[10px] md:text-xs font-bold font-poppins px-2 py-1 rounded-lg mb-1 w-fit">LIMITED OFFER</span>
-                <p className="text-white font-bold text-base md:text-3xl font-poppins leading-tight">{b.title}</p>
-                {b.subtitle&&<p className="text-white/80 text-xs md:text-base mt-0.5">{b.subtitle}</p>}
-                <button onClick={e=>{e.stopPropagation();handleBannerClick(b);}}
-                  className="mt-2 md:mt-4 inline-flex w-fit items-center gap-1 bg-white text-charcoal text-xs md:text-sm font-bold font-poppins px-3 py-1.5 rounded-xl">
-                  {b.button_text||'Shop Now'} →
-                </button>
-              </div>
-            </div>
-          ))
-        }
-      </div>
-      {banners.length>1&&(
-        <div className="absolute bottom-3 left-4 flex gap-1.5">
-          {banners.map((_,i)=>(
-            <button key={i} aria-label={`Banner ${i+1} dikhayein`} onClick={()=>setBannerIdx(i)}
-              className={`h-1.5 rounded-full transition-all ${i===bannerIdx?'w-5 bg-white':'w-1.5 bg-white/50'}`}/>
-          ))}
-        </div>
-      )}
-    </div>
-  );
+  // HeroBanner & CategoryGrid → hoisted to module level (Module 13: scroll-reset fix).
 
-  // ── SHOP BY CATEGORY (Module 3: unified Tailwind icon grid — replaces the
-  //     old desktop-only .desktop-cat-grid block. Mobile keeps its separate
-  //     horizontal-scroll MobileCatRow, unchanged, for the Shop page. ──
-  const CategoryGrid=()=>(
-    <div>
-      <h2 className="text-base md:text-xl font-bold font-poppins" style={{color:'var(--dark)'}}>Shop by Category</h2>
-      <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3 md:gap-4 mt-3">
-        {catsLoading
-          ?[...Array(8)].map((_,i)=>(
-            <div key={i} aria-hidden="true" className="flex flex-col items-center gap-1.5">
-              <div className="w-full aspect-square rounded-2xl animate-pulse" style={{background:'var(--light)'}}/>
-              <div className="h-2.5 w-10 rounded animate-pulse" style={{background:'var(--light)'}}/>
-            </div>
-          ))
-          :cats.map(c=>(
-            <button key={c.id} onClick={()=>{setActiveCatId(c.id);setPage('shop');setShopPage(1);setSearch('');}}
-              className="flex flex-col items-center gap-1.5 group">
-              <div className="w-full aspect-square rounded-2xl flex items-center justify-center text-2xl md:text-3xl overflow-hidden transition-transform group-active:scale-95 group-hover:-translate-y-0.5"
-                style={{background:'var(--primary-light)'}}>
-                {(c.display_image||c.image_url)
-                  ?<img src={c.display_image||c.image_url} alt={c.name} className="w-full h-full object-cover"/>
-                  :<span>{catEmoji(c)}</span>
-                }
-              </div>
-              <span className="text-[10px] md:text-xs font-medium font-poppins text-center leading-tight line-clamp-2" style={{color:'var(--dark)'}}>{c.name}</span>
-            </button>
-          ))
-        }
-      </div>
-    </div>
-  );
+  // ProductRail & DesktopSidebar → hoisted to module level (Module 13).
 
-  // ── PRODUCT RAIL (Module 3: unified Tailwind horizontal-scroll rail, used
-  //     for both "Featured Products" and each per-category section. Data/props
-  //     (cart, addToCart, updQty, onDetail) are the exact same ones PCard
-  //     already took — no logic changed, only how it's laid out. ──
-  const ProductRail=({title,loading,products,onSeeAll})=>{
-    if(!loading&&(!products||products.length===0))return null;
-    return(
-      <div className="mt-8">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base md:text-xl font-bold font-poppins" style={{color:'var(--dark)'}}>{title}</h2>
-          <button onClick={onSeeAll} className="text-xs md:text-sm font-semibold font-poppins flex items-center gap-0.5" style={{color:'var(--primary)'}}>See All →</button>
-        </div>
-        <div className="flex gap-3 md:gap-4 overflow-x-auto pb-1 snap-x scrollbar-hide">
-          {loading||!products
-            ?[...Array(4)].map((_,i)=><div key={i} className="flex-shrink-0 w-36 md:w-44 snap-start"><SkelCard/></div>)
-            :products.map(p=>(
-              <div key={p.id} className="flex-shrink-0 w-36 md:w-44 snap-start">
-                <PCard p={p} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={openDetail}/>
-              </div>
-            ))
-          }
-        </div>
-      </div>
-    );
-  };
+  // Footer & HomeContent → hoisted to module level (Module 13).
 
-  // ── Desktop Sidebar ───────────────────────────────────
-  // ── Desktop Sidebar (Module 4: Tailwind restyle. Keeps the exact same
-  //     `position:sticky; top:var(--header-h)` mechanism the ResizeObserver
-  //     in the header effect above depends on — only the classnames/colors
-  //     changed, not the layout contract.) ───────────────────
-  const DesktopSidebar=()=>(
-    <div className="sticky rounded-2xl p-3 mr-4 my-4 flex-shrink-0"
-      style={{width:200,background:'var(--card-bg)',top:'var(--header-h)',boxShadow:'0 2px 10px rgba(0,0,0,0.06)',maxHeight:'calc(100vh - var(--header-h) - 20px)',overflowY:'auto'}}>
-      <div className="text-[11px] font-bold font-poppins uppercase tracking-wide pb-2 mb-1.5" style={{color:'var(--gray)',borderBottom:'1px solid var(--border)'}}>Categories</div>
-      {allCats.map(c=>{
-        const active=activeCatId===c.id;
-        return(
-          <div key={c.id} onClick={()=>{setActiveCatId(c.id);setShopPage(1);setSearch('');}}
-            className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl cursor-pointer text-[13px] font-semibold font-poppins active:scale-[0.97] hover:bg-black/[0.03] transition-colors"
-            style={{color:active?'var(--primary)':'var(--dark)',background:active?'var(--primary-light)':'transparent'}}>
-            {(c.display_image||c.image_url)
-              ?<img src={c.display_image||c.image_url} alt={c.name} className="w-7 h-7 rounded-lg object-cover flex-shrink-0"/>
-              :<div className="w-7 h-7 rounded-lg flex items-center justify-center text-base flex-shrink-0" style={{background:'var(--primary-light)'}}>{catEmoji(c)}</div>
-            }
-            <span className="truncate">{c.name}</span>
-          </div>
-        );
-      })}
-    </div>
-  );
-
-  // MobileCatRow — App ke bahar move kar diya (scroll reset fix)
-
-  // ── Footer (admin Settings se: logo, name, contact, timings, social, legal) ──
-  const Footer=()=>{
-    const s=shopSettings;
-    const socials=[
-      s.social_facebook&&{href:s.social_facebook,icon:'📘',label:'Facebook'},
-      s.social_instagram&&{href:s.social_instagram,icon:'📸',label:'Instagram'},
-      s.social_whatsapp&&{href:s.social_whatsapp,icon:'💬',label:'WhatsApp'},
-      s.social_youtube&&{href:s.social_youtube,icon:'▶️',label:'YouTube'},
-    ].filter(Boolean);
-    const legal=[{k:'about',l:'About Us'},{k:'privacy',l:'Privacy Policy'},{k:'terms',l:'Terms'},{k:'shipping',l:'Shipping'},{k:'support',l:'Help & Support'}];
-    return(
-      <div className="text-center font-poppins px-5 py-6 md:px-6 md:py-8 rounded-none md:rounded-2xl mb-0 md:mb-4"
-        style={{background:`linear-gradient(135deg, var(--primary), var(--primary-dark))`,color:'rgba(255,255,255,0.85)',fontSize:'0.78rem',lineHeight:2}}>
-        <div className="flex items-center justify-center gap-2.5" style={{marginBottom:8}}>
-          <img src={s.logo_url||'/icons/rk-logo.svg'} alt={s.shop_name||'RK Grocery Mart'} style={{width:38,height:38,borderRadius:12}}/>
-          <div className="text-left">
-            <div className="text-white font-extrabold font-poppins" style={{fontSize:'1.15rem',lineHeight:1.1}}>{s.shop_name||'RK Grocery Mart'}</div>
-            <div className="text-white/75 font-poppins" style={{fontSize:'0.7rem'}}>{s.footer_text||'हर घर की पसंद'}</div>
-          </div>
-        </div>
-        <div className="flex items-center justify-center gap-4 flex-wrap" style={{margin:'8px 0'}}>
-          <span className="flex items-center gap-1"><span>⚡</span><span className="text-xs">Fast delivery</span></span>
-          <span className="flex items-center gap-1"><span>🌿</span><span className="text-xs">Aapke mohalle ki dukaan</span></span>
-        </div>
-        {s.contact&&<div>📞 Call/WhatsApp: {s.contact}</div>}
-        <div>⏰ {s.open_time||'7:00 AM'} – {s.close_time||'10:00 PM'}</div>
-        {socials.length>0&&(
-          <div className="flex items-center justify-center gap-3" style={{margin:'6px 0'}}>
-            {socials.map(x=>(
-              <a key={x.label} href={x.href} target="_blank" rel="noopener noreferrer" aria-label={x.label}
-                style={{color:'#fff',background:'rgba(255,255,255,0.14)',width:34,height:34,borderRadius:'50%',display:'inline-flex',alignItems:'center',justifyContent:'center',fontSize:'0.95rem'}}>{x.icon}</a>
-            ))}
-          </div>
-        )}
-        <div className="flex items-center justify-center gap-3 flex-wrap" style={{margin:'6px 0'}}>
-          {legal.map(x=>x.k==='support'
-            ?<a key={x.k} href="support.html" style={{color:'#fff',textDecoration:'underline'}}>{x.l}</a>
-            :<button key={x.k} onClick={()=>setPage(x.k)} style={{color:'#fff',textDecoration:'underline',background:'none'}}>{x.l}</button>)}
-        </div>
-        <a href="support.html"
-          style={{display:'inline-flex',alignItems:'center',gap:7,color:'#fff',background:'rgba(255,255,255,0.16)',padding:'9px 20px',borderRadius:50,fontWeight:700,fontSize:'.78rem',textDecoration:'none',marginTop:10,transition:'transform .15s'}}>
-          <MessageCircle size={15}/> Help &amp; Support — Ananya AI
-        </a>
-        <div style={{marginTop:8,opacity:0.7}}>© {new Date().getFullYear()} {s.shop_name||'RK Grocery Mart'} — {s.footer_text||'हर घर की पसंद'}</div>
-      </div>
-    );
-  };
-
-  // ── HOME (Module 3: single unified Tailwind homepage — replaces the old
-  //     separate DesktopHome/mobile-JSX split. Same data hooks as before
-  //     (banners/cats/featuredProds/sectionProds via useBanners/useCategories/
-  //     useProducts), same handlers (handleBannerClick, openDetail, addToCart,
-  //     updQty) — only the layout/markup changed. ──
-  const HomeContent=()=>(
-    <div className="max-w-site mx-auto px-4 md:px-8 pt-4 pb-6 md:pb-8">
-      {/* Admin Homepage Builder: sections configured order mein + sirf enabled walay */}
-      {(() => {
-        const ordered = homepageSections.length ? homepageSections : DEFAULT_HOMEPAGE_SECTIONS;
-        const sectionsMap = {
-          hero: <HeroBanner/>,
-          flash_sale: <FlashSale prods={homeSections.flash} loading={homeLoading} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={openDetail}/>,
-          today_deals: <ProductRail title="🔥 Today's Deals" loading={homeLoading} products={homeSections.deals} onSeeAll={()=>setPage('shop')}/>,
-          categories: <div className="mt-6 md:mt-8"><CategoryGrid/></div>,
-          featured: <ProductRail title="⭐ Featured Products" loading={featLoading} products={featuredProds} onSeeAll={()=>setPage('shop')}/>,
-          best_sellers: <ProductRail title="🏆 Best Sellers" loading={homeLoading} products={homeSections.bestSellers} onSeeAll={()=>setPage('shop')}/>,
-          new_arrivals: <ProductRail title="✨ New Arrivals" loading={homeLoading} products={homeSections.newArrivals} onSeeAll={()=>setPage('shop')}/>,
-          category_sections: cats.slice(0,6).map(c=>{
-            const items=sectionProds[c.id];
-            if(items&&items.length===0)return null;
-            return(
-              <ProductRail key={c.id} title={c.name} loading={!items} products={items}
-                onSeeAll={()=>{setActiveCatId(c.id);setPage('shop');setShopPage(1);setSearch('');}}/>
-            );
-          }),
-          why_choose_us: <WhyChooseUs/>,
-          reviews: <CustomerReviews reviews={dbReviews}/>,
-          download_app: <DownloadApp onInstall={()=>{if(window.RKPwa?.promptInstall){window.RKPwa.promptInstall();}else{showToast('Browser ke ⋮ menu se “Add to Home Screen” chunein 📱');}}}/>,
-          newsletter: <Newsletter showToast={showToast}/>,
-          how_it_works: (
-            <div className="mt-8 rounded-2xl p-5 md:p-6" style={{background:'var(--card-bg)'}}>
-              <div className="font-extrabold font-poppins text-sm md:text-base" style={{color:'var(--dark)'}}>How It Works</div>
-              <div className="grid grid-cols-3 gap-3 md:gap-6 mt-4">
-                {[{i:'📱',t:'Open the app',s:'Search what you need'},{i:'🛒',t:'Place an order',s:'Add items to cart & checkout'},{i:'🚴',t:'Get fast delivery',s:'Delivered in 1-2 hours'}].map((h,i)=>(
-                  <div key={i} className="text-center">
-                    <div className="text-2xl md:text-3xl mb-1.5">{h.i}</div>
-                    <div className="font-bold font-poppins text-xs md:text-sm" style={{color:'var(--dark)'}}>{h.t}</div>
-                    <div className="text-[10px] md:text-xs font-poppins mt-0.5" style={{color:'var(--gray)'}}>{h.s}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ),
-        };
-        return ordered.map((key)=>sectionsMap[key]).filter(Boolean);
-      })()}
-
-      <div className="mt-4"><Footer/></div>
-    </div>
-  );
-
-  // ── Desktop Shop ──────────────────────────────────────
-  const DesktopShop=()=>{
-    const prods=visibleShopProds;
-    const isLoading=shopIsLoading;
-    const activeCatName=allCats.find(c=>c.id===activeCatId)?.name||'All Products';
-    const countLabel=isLoading?'Loading…':(inStockOnly?`${prods.length} in stock`:`${isSearchActive?searchResults.length:shopTotal} Products`);
-    return(
-      <div className="flex items-start max-w-site mx-auto px-4 md:px-7">
-        <DesktopSidebar/>
-        <div className="flex-1 min-w-0 py-4">
-          <div className="rounded-2xl p-4 md:p-5" style={{background:'var(--card-bg)'}}>
-            <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
-              <div className="min-w-0">
-                <div className="font-extrabold font-poppins text-sm" style={{color:'var(--dark)'}}>{countLabel}</div>
-                <div className="text-xs font-poppins truncate" style={{color:'var(--gray)'}}>{activeCatName}{search?` • "${search}"`:''}</div>
-              </div>
-              <div className="flex items-center gap-3 flex-shrink-0">
-                <select value={sortBy} onChange={e=>setSortBy(e.target.value)} aria-label="Sort products"
-                  className="text-xs font-poppins font-semibold rounded-xl px-3 py-2 outline-none"
-                  style={{border:'1.5px solid var(--border)',background:'var(--page-bg)',color:'var(--dark)'}}>
-                  {SORT_OPTIONS.map(o=><option key={o.v} value={o.v}>{o.l}</option>)}
-                </select>
-                <label className="flex items-center gap-1.5 text-xs font-semibold font-poppins cursor-pointer select-none" style={{color:'var(--dark)'}}>
-                  <input type="checkbox" checked={inStockOnly} onChange={e=>setInStockOnly(e.target.checked)} style={{accentColor:'var(--primary)',width:15,height:15}}/>
-                  In stock only
-                </label>
-              </div>
-            </div>
-            {isLoading
-              ?<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4" aria-busy="true" aria-label="Products load ho rahe hain">{[...Array(8)].map((_,i)=><SkelCard key={i}/>)}</div>
-              :prods.length===0
-                ?<div className="text-center py-16">
-                  <div style={{fontSize:'3rem'}}>🔍</div>
-                  <p className="mt-2.5 font-semibold font-poppins text-sm" style={{color:'var(--gray)'}}>"{search||activeCatName}" mein koi product nahi mila</p>
-                  {inStockOnly&&<button onClick={()=>setInStockOnly(false)} className="text-xs font-bold font-poppins mt-2" style={{color:'var(--primary)'}}>"In stock only" filter hataayein</button>}
-                </div>
-                :<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">{prods.map(p=><PCard key={p.id} p={p} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={openDetail}/>)}</div>
-            }
-            {!search&&totalPages>1&&(
-              <div className="flex justify-center flex-wrap gap-2 mt-6">
-                {[...Array(totalPages)].map((_,i)=>{
-                  const on=shopPage===i+1;
-                  return(
-                    <button key={i} onClick={()=>setShopPage(i+1)}
-                      className="w-8 h-8 rounded-lg text-[13px] font-bold font-poppins flex items-center justify-center"
-                      style={{border:`1.5px solid ${on?'var(--primary)':'var(--border)'}`,background:on?'var(--primary)':'transparent',color:on?'#fff':'var(--gray)'}}>
-                      {i+1}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
+  // DesktopShop → hoisted to module level (Module 13).
 
   return(
     <div style={{background:'var(--page-bg)',minHeight:'100vh'}}>
@@ -962,7 +964,19 @@ export default function App(){
       <div className="page-pad">
         {/* ── HOME (Module 3: single unified Tailwind homepage, no more
              separate mobile/desktop markup — see HomeContent above) ── */}
-        {page==='home'&&<HomeContent/>}
+        {page==='home'&&<HomeContent
+          homepageSections={homepageSections}
+          banners={banners} bannersLoading={bannersLoading}
+          bannerIdx={bannerIdx} setBannerIdx={setBannerIdx}
+          bannerWrapRef={bannerWrapRef} handleBannerClick={handleBannerClick}
+          homeSections={homeSections} homeLoading={homeLoading}
+          cart={cart} addToCart={addToCart} updQty={updQty} onDetail={openDetail}
+          cats={cats} catsLoading={catsLoading} catEmoji={catEmoji}
+          sectionProds={sectionProds} featLoading={featLoading} featuredProds={featuredProds}
+          dbReviews={dbReviews} shopSettings={shopSettings} showToast={showToast}
+          setPage={setPage}
+          onPickCategory={(id)=>{setActiveCatId(id);setPage('shop');setShopPage(1);setSearch('');}}
+        />}
         {page==='about'&&<InfoPage title="About Us" body={shopSettings.about_text}/>}
         {page==='privacy'&&<InfoPage title="Privacy Policy" body={shopSettings.privacy_policy}/>}
         {page==='terms'&&<InfoPage title="Terms & Conditions" body={shopSettings.terms_text}/>}
@@ -971,7 +985,16 @@ export default function App(){
         {/* ── SHOP ── */}
         {page==='shop'&&(
           <>
-            <div className="d-view"><DesktopShop/></div>
+            <div className="d-view"><DesktopShop
+              allCats={allCats} activeCatId={activeCatId} catEmoji={catEmoji}
+              visibleShopProds={visibleShopProds} shopIsLoading={shopIsLoading}
+              isSearchActive={isSearchActive} searchResults={searchResults} shopTotal={shopTotal}
+              inStockOnly={inStockOnly} search={search}
+              sortBy={sortBy} setSortBy={setSortBy}
+              cart={cart} addToCart={addToCart} updQty={updQty} onDetail={openDetail}
+              totalPages={totalPages} shopPage={shopPage} setShopPage={setShopPage}
+              onSidebarPick={(id)=>{setActiveCatId(id);setShopPage(1);setSearch('');}}
+            /></div>
             <div className="m-view">
               <div className="px-4 pt-3" style={{background:'var(--card-bg)'}}>
                 <MobileCatRow cats={allCats} catsLoading={catsLoading} activeCatId={activeCatId} catEmoji={catEmoji} onClick={id=>{setActiveCatId(id);setShopPage(1);setSearch('');}}/>

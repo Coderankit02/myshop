@@ -6,6 +6,7 @@ import { calcDiscount } from '../lib/helpers';
 export function useCategories(){
   const [cats,setCats]=useState([]);
   const [loading,setLoading]=useState(true);
+  const instanceId=useRef(Math.random().toString(36).slice(2)).current;
   const fetch=useCallback(async()=>{
     const {data}=await supabase.from('categories').select('*,category_images(id,image_url,is_default,sort_order)').eq('is_active',true).order('sort_order');
     const enrichedCats=(data||[]).map(c=>{const imgs=(c.category_images||[]).slice().sort((a,b)=>a.sort_order-b.sort_order);const defImg=imgs.find(i=>i.is_default)||imgs[0];return{...c,display_image:defImg?.image_url||c.image_url||null};});
@@ -13,7 +14,7 @@ export function useCategories(){
   },[]);
   useEffect(()=>{
     fetch();
-    const ch=supabase.channel('cats-rt').on('postgres_changes',{event:'*',schema:'public',table:'categories'},fetch).subscribe();
+    const ch=supabase.channel(`cats-rt-${instanceId}`).on('postgres_changes',{event:'*',schema:'public',table:'categories'},fetch).subscribe();
     return()=>supabase.removeChannel(ch);
   },[fetch]);
   return{cats,loading};
@@ -22,13 +23,14 @@ export function useCategories(){
 export function useBanners(){
   const [banners,setBanners]=useState([]);
   const [loading,setLoading]=useState(true);
+  const instanceId=useRef(Math.random().toString(36).slice(2)).current;
   const fetch=useCallback(async()=>{
     const {data}=await supabase.from('banners').select('*').eq('is_active',true).order('sort_order');
     setBanners(data||[]);setLoading(false);
   },[]);
   useEffect(()=>{
     fetch();
-    const ch=supabase.channel('banners-rt').on('postgres_changes',{event:'*',schema:'public',table:'banners'},fetch).subscribe();
+    const ch=supabase.channel(`banners-rt-${instanceId}`).on('postgres_changes',{event:'*',schema:'public',table:'banners'},fetch).subscribe();
     return()=>supabase.removeChannel(ch);
   },[fetch]);
   return{banners,loading};
@@ -102,6 +104,11 @@ const SHOP_SETTINGS_DEFAULTS = {
 export function useShopSettings(){
   const [settings,setSettings]=useState(SHOP_SETTINGS_DEFAULTS);
   const [loading,setLoading]=useState(true);
+  // BUG FIX: channel name per-mount unique hona zaroori hai — ye hook App.jsx aur
+  // CheckoutForm.jsx DONO mein ek saath mount hota hai. Supabase same-topic channel
+  // ko reuse karta hai, isliye static naam par 2nd hook .on() ko subscribe() ke baad
+  // call karta tha → 'cannot add postgres_changes callbacks after subscribe()' crash.
+  const instanceId=useRef(Math.random().toString(36).slice(2)).current;
   const fetch=useCallback(async()=>{
     const {data}=await supabase.from('shop_settings').select('*').eq('id',1).maybeSingle();
     if(data){
@@ -134,7 +141,7 @@ export function useShopSettings(){
   },[]);
   useEffect(()=>{
     fetch();
-    const ch=supabase.channel('shop-settings-rt').on('postgres_changes',{event:'*',schema:'public',table:'shop_settings'},fetch).subscribe();
+    const ch=supabase.channel(`shop-settings-rt-${instanceId}`).on('postgres_changes',{event:'*',schema:'public',table:'shop_settings'},fetch).subscribe();
     return()=>supabase.removeChannel(ch);
   },[fetch]);
   return{settings,loading};
@@ -240,6 +247,7 @@ export function useHomepageConfig(){
   const [sections,setSections]=useState(DEFAULT_HOMEPAGE_SECTIONS);
   const [configured,setConfigured]=useState(false);
   const [loading,setLoading]=useState(true);
+  const instanceId=useRef(Math.random().toString(36).slice(2)).current;
   const fetch=useCallback(async()=>{
     try{
       const {data,error}=await supabase.from('homepage_sections')
@@ -261,7 +269,7 @@ export function useHomepageConfig(){
   },[]);
   useEffect(()=>{
     fetch();
-    const ch=supabase.channel('homepage-sections-rt').on('postgres_changes',{event:'*',schema:'public',table:'homepage_sections'},fetch).subscribe();
+    const ch=supabase.channel(`homepage-sections-rt-${instanceId}`).on('postgres_changes',{event:'*',schema:'public',table:'homepage_sections'},fetch).subscribe();
     return()=>supabase.removeChannel(ch);
   },[fetch]);
   return{sections,configured,loading};
