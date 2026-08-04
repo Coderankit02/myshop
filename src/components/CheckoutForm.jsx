@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { UpiPayCard } from './UpiPayCard';
 import { useShopSettings, useCouponValidator } from '../hooks/dataHooks';
 
@@ -37,6 +37,16 @@ export function CheckoutForm({cart,total:cartTotal,showToast,onSuccess,user,onLo
   const [screenshotPreview,setScreenshotPreview]=useState(null);
   const [submittingVerify,setSubmittingVerify]=useState(false);
   const [pendingOrder,setPendingOrder]=useState(null);
+  // ── Razorpay online payment (server-side order + signature verify) ──
+  const [rzpBusy,setRzpBusy]=useState(false);
+  // VITE_RAZORPAY_KEY_ID = public key id (browser-safe). Secret sirf server par.
+  const RZP_KEY_ID=import.meta.env.VITE_RAZORPAY_KEY_ID||'';
+  // Retry par duplicate order na bane — pehli baar create hua order reuse karo.
+  // Cart/amount badalne par ref invalidate ho jaata hai taaki purana (galat)
+  // pending order dobara use na ho.
+  const rzpOrderRef=useRef(null);
+  const rzpAmountRef=useRef(0);
+  useEffect(()=>{rzpOrderRef.current=null;rzpAmountRef.current=0;},[cart]);
   // GPS / delivery-radius state — GPS stays OPTIONAL. If the user denies or
   // it fails, checkout still works with the manually-entered/saved address.
   // It only auto-triggers (asks for permission) once an address is on screen.
@@ -162,6 +172,82 @@ export function CheckoutForm({cart,total:cartTotal,showToast,onSuccess,user,onLo
     setScreenshotFile(file);
     const r=new FileReader();r.onload=()=>setScreenshotPreview(r.result);r.readAsDataURL(file);
   };
+  // Razorpay checkout script ko ek baar load karo (cache karke)
+  const loadRazorpayScript=()=>new Promise((resolve,reject)=>{
+    if(window.Razorpay){resolve();return;}
+    const s=document.createElement('script');
+    s.src='https://checkout.razorpay.com/v1/checkout.js';
+    s.onload=()=>resolve();
+    s.onerror=()=>reject(new Error('Razorpay script load nahi hua'));
+    document.head.appendChild(s);
+  });
+  const handleRazorpayOrder=async(addressPayload,locationPayload)=>{
+    setRzpBusy(true);
+    setOrderError('');
+    try{
+      if(!RZP_KEY_ID){setOrderError('⚠️ Online payment abhi setup nahi hua — UPI QR ya COD chunein.');setRzpBusy(false);return;}
+      // Guest/session expired hone par order record ke bina payment na ho (paisa waste)
+      if(!user){setOrderError('⚠️ Online payment ke liye login zaroori hai. Pehle login karein.');setRzpBusy(false);return;}
+      await loadRazorpayScript();
+      // 1) Order DB mein save karo (payment_status 'pending') — SIRF pehli baar.
+      //    Retry/dismiss par wahi order reuse hota hai, duplicate rows nahi banti.
+      // Pehle se bana order sirf tabhi reuse karo jab amount bilkul same ho
+      // (cart ya delivery charge badal gaya ho to naya order banao).
+      const wantAmount=Math.round(finalAmount*100);
+      let result=(rzpAmountRef.current===wantAmount)?rzpOrderRef.current:null;
+      if(!result){
+        result=await window.RKOrders.createOrder(user.uid,{cart,total,address:addressPayload,paymentMethod:'razorpay',promoCode:appliedCoupon?.code||null,discount,...locationPayload});
+        if(!result){setRzpBusy(false);setOrderError('⚠️ Order save nahi hua. Kripya dobara try karein.');return;}
+        rzpOrderRef.current={orderId:result.orderId,orderNumber:result.orderNumber};
+        rzpAmountRef.current=wantAmount;
+      }
+      const {orderId,orderNumber}=result;
+      // 2) Server se Razorpay order banao (secret server par hai)
+      const r=await fetch('/api/razorpay-order',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({amount:Math.round(finalAmount*100),receipt:orderNumber,notes:{orderNumber,orderId:orderId||''}}),
+      });
+      const o=await r.json().catch(()=>({}));
+      if(!r.ok||!o.orderId){setRzpBusy(false);setOrderError('⚠️ Online payment shuru nahi hua — thodi der baad try karein ya UPI/COD chunein.');return;}
+      // 3) Razorpay checkout kholo
+      const rzp=new window.Razorpay({
+        key:o.keyId||RZP_KEY_ID,
+        amount:o.amount,
+        currency:o.currency||'INR',
+        name:'RK Grocery Mart',
+        description:`Order ${orderNumber}`,
+        order_id:o.orderId,
+        handler:async(resp)=>{
+          // 4) Signature server par verify karo — sirf tabhi order PAID hoga
+          const v=await fetch('/api/razorpay-verify',{
+            method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({
+              orderId,orderNumber,
+              razorpay_order_id:resp.razorpay_order_id,
+              razorpay_payment_id:resp.razorpay_payment_id,
+              razorpay_signature:resp.razorpay_signature,
+              amount:finalAmount,
+              userId:user?.uid||null,
+              customer_name:f.name.trim(),
+              mobile:f.phone.trim(),
+            }),
+          });
+          const vr=await v.json().catch(()=>({}));
+          if(vr.verified){rzpOrderRef.current=null;rzpAmountRef.current=0;if(window.RKCart)window.RKCart.clearCart();setRzpBusy(false);onSuccess(orderNumber,'razorpay');}
+          else{setRzpBusy(false);setOrderError('⚠️ Payment verify nahi hua — order pending hai, admin se confirm karwayein.');}
+        },
+        modal:{ondismiss:()=>{setRzpBusy(false);showToast('Payment window band hua — order pending hai, dobara try kar sakte hain');}},
+        theme:{color:'#15803D'},
+        prefill:{name:f.name.trim(),contact:f.phone.trim(),email:user?.email||''},
+      });
+      rzp.on('payment.failed',(resp)=>{setRzpBusy(false);setOrderError('⚠️ Payment fail hui — kripya dobara try karein.');});
+      rzp.open();
+    }catch(err){
+      console.error('[CheckoutForm] razorpay:',err?.message||err);
+      setRzpBusy(false);
+      setOrderError('⚠️ Online payment mein error — UPI QR ya COD chunein.');
+    }
+  };
   const handlePlaceOrder=async()=>{
     setPhoneTouched(true);
     setOrderError('');
@@ -183,6 +269,9 @@ export function CheckoutForm({cart,total:cartTotal,showToast,onSuccess,user,onLo
       if(!validation.valid){
         showToast('📍 Out of service area — your order is confirmed after admin verification.',4500);
       }
+    }
+    if(pay==='razorpay'){
+      return handleRazorpayOrder(addressPayload,locationPayload);
     }
     if(pay==='cod'){
       setPlacing(true);
@@ -432,12 +521,12 @@ export function CheckoutForm({cart,total:cartTotal,showToast,onSuccess,user,onLo
 
       <div className={`co-card ${cardCls}`} style={cardStyle}>
         <div className="co-card-title font-extrabold font-poppins text-sm mb-2.5" style={{color:'var(--dark)'}}>💳 Payment Method</div>
-        <div className="grid grid-cols-2 gap-2.5">
-          <div onClick={()=>setPay('cod')} className="rounded-xl p-3 text-center cursor-pointer"
-            style={{border:`1.5px solid ${pay==='cod'?'var(--primary)':'var(--border)'}`,background:pay==='cod'?'var(--primary-light)':'transparent'}}>
-            <div className="text-2xl">💵</div>
-            <div className="text-xs font-bold font-poppins mt-1" style={{color:'var(--dark)'}}>Cash on Delivery</div>
-            <div className="text-[10px] font-poppins" style={{color:'var(--gray)'}}>Ghar pe cash dena</div>
+        <div className="grid grid-cols-3 gap-2.5">
+          <div onClick={()=>setPay('razorpay')} className="rounded-xl p-3 text-center cursor-pointer"
+            style={{border:`1.5px solid ${pay==='razorpay'?'var(--primary)':'var(--border)'}`,background:pay==='razorpay'?'var(--primary-light)':'transparent'}}>
+            <div className="text-2xl">💳</div>
+            <div className="text-xs font-bold font-poppins mt-1" style={{color:'var(--dark)'}}>Online Payment</div>
+            <div className="text-[10px] font-poppins" style={{color:'var(--gray)'}}>Card / UPI / NetBanking</div>
           </div>
           <div onClick={()=>setPay('upi')} className="rounded-xl p-3 text-center cursor-pointer"
             style={{border:`1.5px solid ${pay==='upi'?'var(--primary)':'var(--border)'}`,background:pay==='upi'?'var(--primary-light)':'transparent'}}>
@@ -445,7 +534,18 @@ export function CheckoutForm({cart,total:cartTotal,showToast,onSuccess,user,onLo
             <div className="text-xs font-bold font-poppins mt-1" style={{color:'var(--dark)'}}>UPI / QR Code</div>
             <div className="text-[10px] font-poppins" style={{color:'var(--gray)'}}>Scan karke pay karo</div>
           </div>
+          <div onClick={()=>setPay('cod')} className="rounded-xl p-3 text-center cursor-pointer"
+            style={{border:`1.5px solid ${pay==='cod'?'var(--primary)':'var(--border)'}`,background:pay==='cod'?'var(--primary-light)':'transparent'}}>
+            <div className="text-2xl">💵</div>
+            <div className="text-xs font-bold font-poppins mt-1" style={{color:'var(--dark)'}}>Cash on Delivery</div>
+            <div className="text-[10px] font-poppins" style={{color:'var(--gray)'}}>Ghar pe cash dena</div>
+          </div>
         </div>
+        {pay==='razorpay'&&(
+          <div className="flex items-center gap-2 rounded-xl px-3 py-2.5 mt-2.5 text-[11px] font-poppins font-semibold" style={{background:'#EFF6FF',color:'#1D4ED8',border:'1px solid #BFDBFE'}}>
+            🔒 Online payment Razorpay se — UPI, cards, netbanking. Payment confirm hote hi order confirm hoga.
+          </div>
+        )}
       </div>
 
       {orderError&&<div className="rounded-xl px-3.5 py-2.5 mb-3 text-xs font-poppins font-semibold" role="alert" style={{background:'#FEE2E2',color:'#B91C1C'}}>⚠️ {orderError.replace(/^⚠️\s*/,'')}</div>}
@@ -457,8 +557,8 @@ export function CheckoutForm({cart,total:cartTotal,showToast,onSuccess,user,onLo
       )}
       <button className="place-order-btn w-full text-white font-extrabold font-poppins rounded-2xl py-3.5 text-sm"
         style={{background:'linear-gradient(135deg, var(--primary), var(--primary-dark))',boxShadow:'0 6px 16px rgba(22,163,74,0.35)'}}
-        disabled={placing} onClick={handlePlaceOrder}>
-        {placing?'⏳ Order Place Ho Raha Hai...':(pay==='upi'?'📲 Order Confirm Karein':'🚚 Order Place Karo')} →
+        disabled={placing||rzpBusy} onClick={handlePlaceOrder}>
+        {placing||rzpBusy?'⏳ Process Ho Raha Hai...':(pay==='razorpay'?'💳 Pay Now — Online':'📲 Order Confirm Karein')} →
       </button>
     </>
   );

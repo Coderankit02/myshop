@@ -27,7 +27,7 @@
 
 // BUG FIX (Info #13): Version string ab comments mein clearly marked hai.
 // Har deploy par yahan ka number badhao agar OPTION C use kar rahe ho.
-const CACHE_VERSION = "v16"; // ← scroll-reset fix (module-level sections) + RT channel fix
+const CACHE_VERSION = "v17"; // ← Razorpay online payment + UPI QR fix + AuthModal tabs
 const CACHE_NAME = `rk-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = "/offline.html";
 

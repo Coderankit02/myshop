@@ -1096,7 +1096,7 @@ export default function App(){
             <div className="success-anim">🎉</div>
             <h2>Order Place Ho Gaya!</h2>
             <div className="order-pill">Order #{success.id}</div>
-            <p>{success.pay==='cod'?'💵 Delivery par cash dena':'⏳ Payment verify ho rahi hai — 10-15 min mein confirm ho jayega'}</p>
+            <p>{success.pay==='cod'?'💵 Delivery par cash dena':success.pay==='razorpay'?'💳 Online payment successful — order confirm ho gaya!':'⏳ Payment verify ho rahi hai — 10-15 min mein confirm ho jayega'}</p>
             <p>⏰ 1-2 ghante mein delivery hogi</p>
             <button className="home-btn" onClick={()=>{setSuccess(null);setPage('home');}}>🏠 Home Par Jao</button>
           </div>

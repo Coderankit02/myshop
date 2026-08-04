@@ -121,7 +121,11 @@
       delivery_status : 'unknown',
     };
 
-    const finalAmount = total - discount + (locationFields.delivery_charge || 0);
+    // BUG FIX (2026-08): Math.max(0, ...) clamp — discount subtotal se zyada
+    // ho to negative final_amount store ho jaata tha (Razorpay amount check
+    // aur reporting dono toot jaati thin). CheckoutForm already clamps; ab
+    // DB-side bhi consistent.
+    const finalAmount = Math.max(0, total - discount + (locationFields.delivery_charge || 0));
 
     // BUG FIX (Critical #2): payment_status ab hamesha 'pending' start hota hai.
     // Pehle: paymentMethod === 'upi' ? 'paid' : 'pending'

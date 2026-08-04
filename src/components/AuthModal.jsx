@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { X, Mail, Lock, Eye, EyeOff, User as UserIcon, Phone, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
@@ -148,15 +148,36 @@ export default function AuthModal({ mode, onClose, onSwitchMode }) {
 
   const switchTo = (m) => { setError(null); setSuccess(''); setEmailSent(false); onSwitchMode(m); };
 
+  // Scroll container ko mode change par top par le aao — signup form (lambi)
+  // khulte hi user ko uski shuruaat dikhe, beech/bottom se nahi.
+  const scrollRef = useRef(null);
+  useEffect(() => {
+    scrollRef.current?.scrollTo?.({ top: 0, left: 0 });
+  }, [mode, emailSent]);
+
   return (
-    <div className="fixed inset-0 z-[80] flex items-end md:items-center justify-center"
+    <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center"
       style={{ background: 'rgba(0,0,0,0.45)' }} role="dialog" aria-modal="true" aria-label={isLogin ? 'Login' : 'Signup'}
       onClick={onClose}>
-      <div className="w-full md:max-w-sm max-h-[92vh] overflow-y-auto rounded-t-2xl md:rounded-2xl"
+      <div ref={scrollRef} className="w-full sm:max-w-sm max-h-[92vh] overflow-y-auto overscroll-contain rounded-t-2xl sm:rounded-2xl"
         style={{ background: 'var(--card-bg)' }} onClick={e => e.stopPropagation()}>
 
+        {/* Login/Signup Tabs — signup hamesha ek tap door (mobile par bhi) */}
+        <div className="grid grid-cols-2 gap-1.5 px-5 pt-4 pb-3 sticky top-0 z-10" style={{ background: 'var(--card-bg)', borderBottom: '1px solid var(--border)' }}>
+          <button type="button" onClick={() => switchTo('login')}
+            className={`rounded-xl py-2 text-xs font-extrabold font-poppins transition-colors ${isLogin ? '' : 'opacity-60'}`}
+            style={{ background: isLogin ? 'var(--primary-light)' : 'transparent', color: isLogin ? 'var(--primary-dark)' : 'var(--gray)' }}>
+            🔑 Login
+          </button>
+          <button type="button" onClick={() => switchTo('signup')}
+            className={`rounded-xl py-2 text-xs font-extrabold font-poppins transition-colors ${!isLogin ? '' : 'opacity-60'}`}
+            style={{ background: !isLogin ? 'var(--primary-light)' : 'transparent', color: !isLogin ? 'var(--primary-dark)' : 'var(--gray)' }}>
+            ✨ Signup
+          </button>
+        </div>
+
         {/* Header */}
-        <div className="flex items-center justify-between px-5 pt-4 pb-3 sticky top-0 z-10" style={{ background: 'var(--card-bg)', borderBottom: '1px solid var(--border)' }}>
+        <div className="flex items-center justify-between px-5 pt-4 pb-3">
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg" style={{ background: 'var(--primary-light)' }}>
               {isLogin ? '🔑' : '✨'}
