@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react
 import { Search, MapPin, ChevronDown, ShoppingCart, User, Download, Home, ShoppingBag, SlidersHorizontal, X, Zap, Leaf, BadgePercent, ShieldCheck, Package, Headphones, Send, MessageCircle } from 'lucide-react';
 import { supabase } from './lib/supabaseClient';
 import { TICKER, calcDiscount, catEmoji } from './lib/helpers';
-import { useCategories, useBanners, useProducts, useSearch, useHomeSections } from './hooks/dataHooks';
+import { useCategories, useBanners, useProducts, useSearch, useHomeSections, useHomepageConfig, useReviews, useShopSettings, DEFAULT_HOMEPAGE_SECTIONS } from './hooks/dataHooks';
 import { SkelCard, SkelBanner, SkelCat } from './components/Skeletons';
 import { PCard } from './components/PCard';
 import { ProductDetail } from './components/ProductDetail';
@@ -124,14 +124,19 @@ function WhyChooseUs(){
   );
 }
 
-// ⭐ Customer Reviews — curated testimonial grid
-function CustomerReviews(){
-  const reviews=[
+// ⭐ Customer Reviews — admin-approved reviews (reviews table) with fallback grid
+function CustomerReviews({reviews=[]}){
+  const fallback=[
     {name:'Priya Sharma',place:'Jaunpur',stars:5,text:'Roj ka saman ab online — fresh sabziyan aur 1-2 ghante mein delivery! Bahut badhiya service.'},
     {name:'Rahul Verma',place:'Safiabad',stars:5,text:'Rate market se kam hain aur coupons se aur bachat. UPI payment ekdum aasaan.'},
     {name:'Sunita Devi',place:'Shahganj',stars:4,text:'Ananya AI se pooch kar order kiya — bilkul sahi product mila. Highly recommended!'},
     {name:'Amit Yadav',place:'Machhlishahr',stars:5,text:'COD option hone se ghar walon ko bhi bharosa hai. RK Grocery Mart = ghar ki dukaan.'},
   ];
+  // Admin ke Reviews page par APPROVED reviews hi yahan aate hain; agar koi
+  // nahi hai to purana curated fallback dikhta hai (khaali section kabhi nahi).
+  const list=reviews.length
+    ?reviews.map(r=>({name:r.customer_name||'Customer',place:'Verified ✓',stars:Math.max(1,Math.min(5,r.rating||5)),text:r.comment||'',reply:r.admin_reply}))
+    :fallback;
   return(
     <div className="mt-8">
       <div className="flex items-center justify-between mb-3">
@@ -204,6 +209,18 @@ function Newsletter({showToast}){
           <Send size={15}/> Subscribe
         </button>
       </form>
+    </div>
+  );
+}
+
+// ℹ️ Static pages (About / Privacy / Terms / Shipping) — content admin Settings se
+function InfoPage({title,body}){
+  return(
+    <div className="max-w-site mx-auto px-4 md:px-8 py-8">
+      <div className="rounded-3xl p-6 md:p-8" style={{background:'var(--card-bg)',boxShadow:'0 2px 10px rgba(0,0,0,0.06)'}}>
+        <h1 className="font-extrabold font-poppins text-lg md:text-2xl mb-4" style={{color:'var(--dark)'}}>{title}</h1>
+        <div className="text-sm font-poppins leading-relaxed whitespace-pre-wrap" style={{color:'var(--text)'}}>{body||'Content abhi add nahi hua — admin Settings se update hota hai.'}</div>
+      </div>
     </div>
   );
 }
@@ -309,6 +326,10 @@ export default function App(){
 
   // Module 12: premium homepage sections (flash sale / deals / best sellers / new arrivals)
   const {sections:homeSections,loading:homeLoading}=useHomeSections();
+  // Admin Homepage Builder: section order/visibility + approved reviews + live shop settings
+  const {sections:homepageSections}=useHomepageConfig();
+  const {reviews:dbReviews}=useReviews();
+  const {settings:shopSettings}=useShopSettings();
 
   // Section products per category (first 3 cats)
   const [sectionProds,setSectionProds]=useState({});
@@ -381,9 +402,13 @@ export default function App(){
   useEffect(()=>{
     document.documentElement.setAttribute('data-theme',theme);
     try{localStorage.setItem('rk_theme',theme);}catch(e){}
+    // Admin Settings se theme color (agar set ho to) site accent par apply karo
+    if(shopSettings.theme_color&&/^#[0-9a-fA-F]{6}$/.test(shopSettings.theme_color)){
+      document.documentElement.style.setProperty('--primary',shopSettings.theme_color);
+    }
     const m=document.querySelector('meta[name="theme-color"]');
-    if(m)m.setAttribute('content',theme==='dark'?'#0F1521':'#15803D');
-  },[theme]);
+    if(m)m.setAttribute('content',theme==='dark'?'#0F1521':(shopSettings.theme_color||'#15803D'));
+  },[theme,shopSettings.theme_color]);
 
   useEffect(()=>{
     if(window.RKCart)window.RKCart.init();
@@ -676,30 +701,53 @@ export default function App(){
 
   // MobileCatRow — App ke bahar move kar diya (scroll reset fix)
 
-  // ── Footer (Module 2/3: Tailwind restyle, same info as before — no new/fake links) ──
-  const Footer=()=>(
-    <div className="text-center font-poppins px-5 py-6 md:px-6 md:py-8 rounded-none md:rounded-2xl mb-0 md:mb-4"
-      style={{background:`linear-gradient(135deg, var(--primary), var(--primary-dark))`,color:'rgba(255,255,255,0.85)',fontSize:'0.78rem',lineHeight:2}}>
-      <div className="flex items-center justify-center gap-2.5" style={{marginBottom:8}}>
-        <img src="/icons/rk-logo.svg" alt="RK Grocery Mart" style={{width:38,height:38,borderRadius:12}}/>
-        <div className="text-left">
-          <div className="text-white font-extrabold font-poppins" style={{fontSize:'1.15rem',lineHeight:1.1}}>RK Grocery Mart</div>
-          <div className="text-white/75 font-poppins" style={{fontSize:'0.7rem'}}>हर घर की पसंद</div>
+  // ── Footer (admin Settings se: logo, name, contact, timings, social, legal) ──
+  const Footer=()=>{
+    const s=shopSettings;
+    const socials=[
+      s.social_facebook&&{href:s.social_facebook,icon:'📘',label:'Facebook'},
+      s.social_instagram&&{href:s.social_instagram,icon:'📸',label:'Instagram'},
+      s.social_whatsapp&&{href:s.social_whatsapp,icon:'💬',label:'WhatsApp'},
+      s.social_youtube&&{href:s.social_youtube,icon:'▶️',label:'YouTube'},
+    ].filter(Boolean);
+    const legal=[{k:'about',l:'About Us'},{k:'privacy',l:'Privacy Policy'},{k:'terms',l:'Terms'},{k:'shipping',l:'Shipping'},{k:'support',l:'Help & Support'}];
+    return(
+      <div className="text-center font-poppins px-5 py-6 md:px-6 md:py-8 rounded-none md:rounded-2xl mb-0 md:mb-4"
+        style={{background:`linear-gradient(135deg, var(--primary), var(--primary-dark))`,color:'rgba(255,255,255,0.85)',fontSize:'0.78rem',lineHeight:2}}>
+        <div className="flex items-center justify-center gap-2.5" style={{marginBottom:8}}>
+          <img src={s.logo_url||'/icons/rk-logo.svg'} alt={s.shop_name||'RK Grocery Mart'} style={{width:38,height:38,borderRadius:12}}/>
+          <div className="text-left">
+            <div className="text-white font-extrabold font-poppins" style={{fontSize:'1.15rem',lineHeight:1.1}}>{s.shop_name||'RK Grocery Mart'}</div>
+            <div className="text-white/75 font-poppins" style={{fontSize:'0.7rem'}}>{s.footer_text||'हर घर की पसंद'}</div>
+          </div>
         </div>
+        <div className="flex items-center justify-center gap-4 flex-wrap" style={{margin:'8px 0'}}>
+          <span className="flex items-center gap-1"><span>⚡</span><span className="text-xs">Fast delivery</span></span>
+          <span className="flex items-center gap-1"><span>🌿</span><span className="text-xs">Aapke mohalle ki dukaan</span></span>
+        </div>
+        {s.contact&&<div>📞 Call/WhatsApp: {s.contact}</div>}
+        <div>⏰ {s.open_time||'7:00 AM'} – {s.close_time||'10:00 PM'}</div>
+        {socials.length>0&&(
+          <div className="flex items-center justify-center gap-3" style={{margin:'6px 0'}}>
+            {socials.map(x=>(
+              <a key={x.label} href={x.href} target="_blank" rel="noopener noreferrer" aria-label={x.label}
+                style={{color:'#fff',background:'rgba(255,255,255,0.14)',width:34,height:34,borderRadius:'50%',display:'inline-flex',alignItems:'center',justifyContent:'center',fontSize:'0.95rem'}}>{x.icon}</a>
+            ))}
+          </div>
+        )}
+        <div className="flex items-center justify-center gap-3 flex-wrap" style={{margin:'6px 0'}}>
+          {legal.map(x=>x.k==='support'
+            ?<a key={x.k} href="support.html" style={{color:'#fff',textDecoration:'underline'}}>{x.l}</a>
+            :<button key={x.k} onClick={()=>setPage(x.k)} style={{color:'#fff',textDecoration:'underline',background:'none'}}>{x.l}</button>)}
+        </div>
+        <a href="support.html"
+          style={{display:'inline-flex',alignItems:'center',gap:7,color:'#fff',background:'rgba(255,255,255,0.16)',padding:'9px 20px',borderRadius:50,fontWeight:700,fontSize:'.78rem',textDecoration:'none',marginTop:10,transition:'transform .15s'}}>
+          <MessageCircle size={15}/> Help &amp; Support — Ananya AI
+        </a>
+        <div style={{marginTop:8,opacity:0.7}}>© {new Date().getFullYear()} {s.shop_name||'RK Grocery Mart'} — {s.footer_text||'हर घर की पसंद'}</div>
       </div>
-      <div className="flex items-center justify-center gap-4 flex-wrap" style={{margin:'8px 0'}}>
-        <span className="flex items-center gap-1"><span>⚡</span><span className="text-xs">Fast delivery</span></span>
-        <span className="flex items-center gap-1"><span>🌿</span><span className="text-xs">Aapke mohalle ki dukaan</span></span>
-      </div>
-      <div>📞 Call/WhatsApp: 6393196765</div>
-      <div>⏰ Subah 7am – Raat 10pm</div>
-      <a href="support.html"
-        style={{display:'inline-flex',alignItems:'center',gap:7,color:'#fff',background:'rgba(255,255,255,0.16)',padding:'9px 20px',borderRadius:50,fontWeight:700,fontSize:'.78rem',textDecoration:'none',marginTop:10,transition:'transform .15s'}}>
-        <MessageCircle size={15}/> Help &amp; Support — Ananya AI
-      </a>
-      <div style={{marginTop:8,opacity:0.7}}>© {new Date().getFullYear()} RK Grocery Mart — हर घर की पसंद</div>
-    </div>
-  );
+    );
+  };
 
   // ── HOME (Module 3: single unified Tailwind homepage — replaces the old
   //     separate DesktopHome/mobile-JSX split. Same data hooks as before
@@ -708,60 +756,46 @@ export default function App(){
   //     updQty) — only the layout/markup changed. ──
   const HomeContent=()=>(
     <div className="max-w-site mx-auto px-4 md:px-8 pt-4 pb-6 md:pb-8">
-      <HeroBanner/>
-
-      {/* ⚡ Flash Sale (Module 12) — real discounted products + midnight countdown */}
-      <FlashSale prods={homeSections.flash} loading={homeLoading} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={openDetail}/>
-
-      {/* 🔥 Today's Deals */}
-      <ProductRail title="🔥 Today's Deals" loading={homeLoading} products={homeSections.deals} onSeeAll={()=>setPage('shop')}/>
-
-      <div className="mt-6 md:mt-8"><CategoryGrid/></div>
-
-      {/* Featured */}
-      <ProductRail title="⭐ Featured Products" loading={featLoading} products={featuredProds} onSeeAll={()=>setPage('shop')}/>
-
-      {/* Best Sellers */}
-      <ProductRail title="🏆 Best Sellers" loading={homeLoading} products={homeSections.bestSellers} onSeeAll={()=>setPage('shop')}/>
-
-      {/* New Arrivals */}
-      <ProductRail title="✨ New Arrivals" loading={homeLoading} products={homeSections.newArrivals} onSeeAll={()=>setPage('shop')}/>
-
-      {/* Category sections */}
-      {cats.slice(0,6).map(c=>{
-        const items=sectionProds[c.id];
-        if(items&&items.length===0)return null;
-        return(
-          <ProductRail key={c.id} title={c.name} loading={!items} products={items}
-            onSeeAll={()=>{setActiveCatId(c.id);setPage('shop');setShopPage(1);setSearch('');}}/>
-        );
-      })}
-
-      {/* Why Choose Us */}
-      <WhyChooseUs/>
-
-      {/* Customer Reviews */}
-      <CustomerReviews/>
-
-      {/* Download App */}
-      <DownloadApp onInstall={()=>{if(window.RKPwa?.promptInstall){window.RKPwa.promptInstall();}else{showToast('Browser ke ⋮ menu se “Add to Home Screen” chunein 📱');}}}/>
-
-      {/* Newsletter */}
-      <Newsletter showToast={showToast}/>
-
-      {/* How It Works */}
-      <div className="mt-8 rounded-2xl p-5 md:p-6" style={{background:'var(--card-bg)'}}>
-        <div className="font-extrabold font-poppins text-sm md:text-base" style={{color:'var(--dark)'}}>How It Works</div>
-        <div className="grid grid-cols-3 gap-3 md:gap-6 mt-4">
-          {[{i:'📱',t:'Open the app',s:'Search what you need'},{i:'🛒',t:'Place an order',s:'Add items to cart & checkout'},{i:'🚴',t:'Get fast delivery',s:'Delivered in 1-2 hours'}].map((h,i)=>(
-            <div key={i} className="text-center">
-              <div className="text-2xl md:text-3xl mb-1.5">{h.i}</div>
-              <div className="font-bold font-poppins text-xs md:text-sm" style={{color:'var(--dark)'}}>{h.t}</div>
-              <div className="text-[10px] md:text-xs font-poppins mt-0.5" style={{color:'var(--gray)'}}>{h.s}</div>
+      {/* Admin Homepage Builder: sections configured order mein + sirf enabled walay */}
+      {(() => {
+        const ordered = homepageSections.length ? homepageSections : DEFAULT_HOMEPAGE_SECTIONS;
+        const sectionsMap = {
+          hero: <HeroBanner/>,
+          flash_sale: <FlashSale prods={homeSections.flash} loading={homeLoading} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={openDetail}/>,
+          today_deals: <ProductRail title="🔥 Today's Deals" loading={homeLoading} products={homeSections.deals} onSeeAll={()=>setPage('shop')}/>,
+          categories: <div className="mt-6 md:mt-8"><CategoryGrid/></div>,
+          featured: <ProductRail title="⭐ Featured Products" loading={featLoading} products={featuredProds} onSeeAll={()=>setPage('shop')}/>,
+          best_sellers: <ProductRail title="🏆 Best Sellers" loading={homeLoading} products={homeSections.bestSellers} onSeeAll={()=>setPage('shop')}/>,
+          new_arrivals: <ProductRail title="✨ New Arrivals" loading={homeLoading} products={homeSections.newArrivals} onSeeAll={()=>setPage('shop')}/>,
+          category_sections: cats.slice(0,6).map(c=>{
+            const items=sectionProds[c.id];
+            if(items&&items.length===0)return null;
+            return(
+              <ProductRail key={c.id} title={c.name} loading={!items} products={items}
+                onSeeAll={()=>{setActiveCatId(c.id);setPage('shop');setShopPage(1);setSearch('');}}/>
+            );
+          }),
+          why_choose_us: <WhyChooseUs/>,
+          reviews: <CustomerReviews reviews={dbReviews}/>,
+          download_app: <DownloadApp onInstall={()=>{if(window.RKPwa?.promptInstall){window.RKPwa.promptInstall();}else{showToast('Browser ke ⋮ menu se “Add to Home Screen” chunein 📱');}}}/>,
+          newsletter: <Newsletter showToast={showToast}/>,
+          how_it_works: (
+            <div className="mt-8 rounded-2xl p-5 md:p-6" style={{background:'var(--card-bg)'}}>
+              <div className="font-extrabold font-poppins text-sm md:text-base" style={{color:'var(--dark)'}}>How It Works</div>
+              <div className="grid grid-cols-3 gap-3 md:gap-6 mt-4">
+                {[{i:'📱',t:'Open the app',s:'Search what you need'},{i:'🛒',t:'Place an order',s:'Add items to cart & checkout'},{i:'🚴',t:'Get fast delivery',s:'Delivered in 1-2 hours'}].map((h,i)=>(
+                  <div key={i} className="text-center">
+                    <div className="text-2xl md:text-3xl mb-1.5">{h.i}</div>
+                    <div className="font-bold font-poppins text-xs md:text-sm" style={{color:'var(--dark)'}}>{h.t}</div>
+                    <div className="text-[10px] md:text-xs font-poppins mt-0.5" style={{color:'var(--gray)'}}>{h.s}</div>
+                  </div>
+                ))}
+              </div>
             </div>
-          ))}
-        </div>
-      </div>
+          ),
+        };
+        return ordered.map((key)=>sectionsMap[key]).filter(Boolean);
+      })()}
 
       <div className="mt-4"><Footer/></div>
     </div>
@@ -842,11 +876,10 @@ export default function App(){
             {/* Logo + location */}
             <div className="min-w-0 flex-shrink-0">
               <button onClick={()=>setPage('home')} className="flex items-center gap-2 text-left" style={{background:'none'}}>
-                <img src="/icons/rk-logo.svg" alt="RK Grocery Mart" className="w-9 h-9 md:w-10 md:h-10 rounded-xl flex-shrink-0"/>
-                {/* V4.1: brand title + tagline now visible on mobile too (was hidden sm:flex) */}
+                <img src={shopSettings.logo_url||'/icons/rk-logo.svg'} alt={shopSettings.shop_name||'RK Grocery Mart'} className="w-9 h-9 md:w-10 md:h-10 rounded-xl flex-shrink-0"/>
                 <span className="flex flex-col min-w-0">
-                  <span className="text-[13px] sm:text-base md:text-lg font-extrabold font-poppins leading-none truncate" style={{color:'var(--dark)'}}>RK Grocery Mart</span>
-                  <span className="text-[8px] sm:text-[9px] md:text-[10px] font-poppins font-medium mt-0.5 truncate" style={{color:'var(--primary)'}}>हर घर की पसंद</span>
+                  <span className="text-[13px] sm:text-base md:text-lg font-extrabold font-poppins leading-none truncate" style={{color:'var(--dark)'}}>{shopSettings.shop_name||'RK Grocery Mart'}</span>
+                  <span className="text-[8px] sm:text-[9px] md:text-[10px] font-poppins font-medium mt-0.5 truncate" style={{color:'var(--primary)'}}>{shopSettings.footer_text||'हर घर की पसंद'}</span>
                 </span>
               </button>
               <button className="flex items-center gap-1 mt-0.5 max-w-[150px] sm:max-w-[220px]" style={{background:'none'}}
@@ -919,7 +952,10 @@ export default function App(){
       {/* Ticker */}
       <div className="ticker">
         <div className="ticker-track">
-          {[...TICKER,...TICKER].map((t,i)=><span key={i} className="ticker-item">✦ {t}</span>)}
+          {(shopSettings.announcement
+            ?[shopSettings.announcement,shopSettings.announcement]
+            :[...TICKER,...TICKER]
+          ).map((t,i)=><span key={i} className="ticker-item">✦ {t}</span>)}
         </div>
       </div>
 
@@ -927,6 +963,10 @@ export default function App(){
         {/* ── HOME (Module 3: single unified Tailwind homepage, no more
              separate mobile/desktop markup — see HomeContent above) ── */}
         {page==='home'&&<HomeContent/>}
+        {page==='about'&&<InfoPage title="About Us" body={shopSettings.about_text}/>}
+        {page==='privacy'&&<InfoPage title="Privacy Policy" body={shopSettings.privacy_policy}/>}
+        {page==='terms'&&<InfoPage title="Terms & Conditions" body={shopSettings.terms_text}/>}
+        {page==='shipping'&&<InfoPage title="Delivery & Shipping" body={shopSettings.shipping_rules}/>}
 
         {/* ── SHOP ── */}
         {page==='shop'&&(

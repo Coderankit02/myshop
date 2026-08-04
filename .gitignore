@@ -4,3 +4,5 @@ dist/
 .env
 .vercel
 .env*
+!.env.example
+scripts/upload-results.json

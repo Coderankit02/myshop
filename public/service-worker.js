@@ -40,6 +40,7 @@ const PRECACHE_URLS = [
   "/icons/icon-192.png",
   "/icons/icon-512.png",
   "/icons/rk-logo.svg",
+  "/js/analytics.js",
 ];
 
 // ── INSTALL ───────────────────────────────────

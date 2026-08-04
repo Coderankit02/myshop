@@ -75,6 +75,7 @@ export function useProducts(options={}){
 // pehle sirf DB mein save hota tha — customer site kabhi padhta hi nahi tha
 // (UPI ID checkout mein hardcoded thi). Ye hook live shop_settings row deta hai,
 // jise CheckoutForm aur baaki jagah use kiya ja sakta hai.
+// Ab branding + social + footer + legal fields bhi isi se aate hain (admin Settings).
 const SHOP_SETTINGS_DEFAULTS = {
   shop_name: 'RK Grocery Mart',
   contact: '',
@@ -84,6 +85,19 @@ const SHOP_SETTINGS_DEFAULTS = {
   delivery_charge: 30,
   open_time: '08:00',
   close_time: '21:00',
+  logo_url: '',
+  favicon_url: '',
+  theme_color: '',
+  social_facebook: '',
+  social_instagram: '',
+  social_whatsapp: '',
+  social_youtube: '',
+  footer_text: '',
+  about_text: '',
+  privacy_policy: '',
+  terms_text: '',
+  shipping_rules: '',
+  announcement: '',
 };
 export function useShopSettings(){
   const [settings,setSettings]=useState(SHOP_SETTINGS_DEFAULTS);
@@ -92,6 +106,7 @@ export function useShopSettings(){
     const {data}=await supabase.from('shop_settings').select('*').eq('id',1).maybeSingle();
     if(data){
       setSettings({
+        ...SHOP_SETTINGS_DEFAULTS,
         shop_name:data.shop_name||SHOP_SETTINGS_DEFAULTS.shop_name,
         contact:data.contact||'',
         whatsapp:data.whatsapp||'',
@@ -100,6 +115,19 @@ export function useShopSettings(){
         delivery_charge:data.delivery_charge??SHOP_SETTINGS_DEFAULTS.delivery_charge,
         open_time:data.open_time||SHOP_SETTINGS_DEFAULTS.open_time,
         close_time:data.close_time||SHOP_SETTINGS_DEFAULTS.close_time,
+        logo_url:data.logo_url||'',
+        favicon_url:data.favicon_url||'',
+        theme_color:data.theme_color||'',
+        social_facebook:data.social_facebook||'',
+        social_instagram:data.social_instagram||'',
+        social_whatsapp:data.social_whatsapp||'',
+        social_youtube:data.social_youtube||'',
+        footer_text:data.footer_text||'',
+        about_text:data.about_text||'',
+        privacy_policy:data.privacy_policy||'',
+        terms_text:data.terms_text||'',
+        shipping_rules:data.shipping_rules||'',
+        announcement:data.announcement||'',
       });
     }
     setLoading(false);
@@ -115,9 +143,11 @@ export function useShopSettings(){
 // BUG FIX (Critical #3): Coupon validation hook — customer checkout mein pehle
 // koi coupon code input hi nahi tha. Ye hook ek code ko coupons table ke against
 // validate karta hai (active, expiry, min_order, usage_limit) aur discount value deta hai.
+// Ab customer/product/category-specific targeting bhi check hota hai (admin Coupons page).
+// `ctx` = { userId, productIds[] } — checkout se milta hai.
 export function useCouponValidator(){
   const [checking,setChecking]=useState(false);
-  const validate=useCallback(async(code,orderTotal)=>{
+  const validate=useCallback(async(code,orderTotal,ctx={})=>{
     const clean=(code||'').trim().toUpperCase();
     if(!clean) return{valid:false,reason:'Coupon code daalein'};
     setChecking(true);
@@ -127,6 +157,25 @@ export function useCouponValidator(){
     if(data.expiry_date&&new Date(data.expiry_date)<new Date(new Date().toDateString())) return{valid:false,reason:'Coupon expire ho chuka hai'};
     if(data.usage_limit!=null&&(data.used_count||0)>=data.usage_limit) return{valid:false,reason:'Coupon ki usage limit khatam ho gayi'};
     if(data.min_order&&orderTotal<data.min_order) return{valid:false,reason:`Minimum order ₹${data.min_order} hona chahiye`};
+
+    // ── Targeting (customer / product / category specific) ──
+    const customerIds=data.customer_ids||[];
+    if(customerIds.length){
+      if(!ctx.userId||!customerIds.includes(ctx.userId)) return{valid:false,reason:'Ye coupon aapke account ke liye nahi hai'};
+    }
+    const productIds=ctx.productIds||[];
+    const catIds=[];
+    if((data.product_ids||[]).length||(data.category_ids||[]).length){
+      if(!productIds.length) return{valid:false,reason:'Ye coupon specific products ke liye hai — cart mein kuch daalein'};
+      if((data.category_ids||[]).length){
+        const {data:prods}=await supabase.from('products').select('id,category_id').in('id',productIds);
+        (prods||[]).forEach(p=>{if(p.category_id)catIds.push(p.category_id);});
+      }
+      const inProducts=(data.product_ids||[]).length?productIds.some(id=>(data.product_ids||[]).includes(id)):true;
+      const inCats=(data.category_ids||[]).length?catIds.some(id=>(data.category_ids||[]).includes(id)):true;
+      if(!inProducts||!inCats) return{valid:false,reason:'Ye coupon aapke cart ke items par nahi chalta'};
+    }
+
     const discount=data.discount_type==='percent'?Math.round(orderTotal*(data.discount_value/100)):data.discount_value;
     const finalDiscount=Math.min(discount,orderTotal);
     return{valid:true,code:data.code,discount:finalDiscount,coupon:data};
@@ -160,17 +209,82 @@ export function useHomeSections(){
         };
       });
       const inStock=enriched.filter(p=>p.stock_quantity>0);
+      // Flash Sale: admin ke is_flash_sale flag wale products (preferred);
+      // agar koi flag nahi to purana behaviour — 20%+ discount wale.
+      const flaggedFlash=inStock.filter(p=>p.is_flash_sale);
+      const flashSource=flaggedFlash.length?flaggedFlash:inStock.filter(p=>p.discount>=20);
       setSections({
-        flash:inStock.filter(p=>p.discount>=20).sort((a,b)=>b.discount-a.discount).slice(0,8),
+        flash:flashSource.sort((a,b)=>b.discount-a.discount).slice(0,8),
         deals:inStock.filter(p=>p.discount>0).sort((a,b)=>b.discount-a.discount).slice(0,8),
-        bestSellers:inStock.slice(0,8),
-        newArrivals:[...enriched].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,8),
+        bestSellers:inStock.filter(p=>p.is_bestseller||p.is_trending).length?[...inStock.filter(p=>p.is_bestseller||p.is_trending),...inStock].slice(0,8):inStock.slice(0,8),
+        newArrivals:(enriched.some(p=>p.is_new_arrival)?enriched.filter(p=>p.is_new_arrival):enriched).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,8),
       });
     }catch(e){/* keep previous sections; just stop the loader */}
     setLoading(false);
   },[]);
   useEffect(()=>{fetch();},[fetch]);
   return{sections,loading};
+}
+
+// ── Homepage Builder (Module: admin control) ─────────────────────────────
+// Admin ka Homepage Builder page `homepage_sections` table se sections ka
+// order/visibility control karta hai. Ye hook wahi config deta hai — agar
+// table missing/empty ho to DEFAULT order (sab sections on) fallback hota hai,
+// taaki site kabhi tooti na dikhe.
+export const DEFAULT_HOMEPAGE_SECTIONS = [
+  'hero','flash_sale','today_deals','categories','featured','best_sellers',
+  'new_arrivals','category_sections','why_choose_us','reviews',
+  'download_app','newsletter','how_it_works',
+];
+export function useHomepageConfig(){
+  const [sections,setSections]=useState(DEFAULT_HOMEPAGE_SECTIONS);
+  const [configured,setConfigured]=useState(false);
+  const [loading,setLoading]=useState(true);
+  const fetch=useCallback(async()=>{
+    try{
+      const {data,error}=await supabase.from('homepage_sections')
+        .select('section_key,enabled,sort_order')
+        .eq('enabled',true)
+        .order('sort_order');
+      if(!error&&data&&data.length){
+        setSections(data.map(s=>s.section_key));
+        setConfigured(true);
+      }else{
+        setSections(DEFAULT_HOMEPAGE_SECTIONS);
+        setConfigured(false);
+      }
+    }catch(_){
+      setSections(DEFAULT_HOMEPAGE_SECTIONS);
+      setConfigured(false);
+    }
+    setLoading(false);
+  },[]);
+  useEffect(()=>{
+    fetch();
+    const ch=supabase.channel('homepage-sections-rt').on('postgres_changes',{event:'*',schema:'public',table:'homepage_sections'},fetch).subscribe();
+    return()=>supabase.removeChannel(ch);
+  },[fetch]);
+  return{sections,configured,loading};
+}
+
+// ── Customer Reviews (admin approved) ────────────────────────────────────
+// Admin ke Reviews page par APPROVED reviews hi public dikhte hain.
+export function useReviews(){
+  const [reviews,setReviews]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const fetch=useCallback(async()=>{
+    try{
+      const {data,error}=await supabase.from('reviews')
+        .select('customer_name,rating,comment,admin_reply,products(name)')
+        .eq('status','approved')
+        .order('created_at',{ascending:false})
+        .limit(12);
+      if(!error)setReviews(data||[]);
+    }catch(_){/* keep [] */}
+    setLoading(false);
+  },[]);
+  useEffect(()=>{fetch();},[fetch]);
+  return{reviews,loading};
 }
 
 export function useSearch(query,active){
