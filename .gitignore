@@ -6,3 +6,6 @@ dist/
 .env*
 !.env.example
 scripts/upload-results.json
+
+__pycache__/
+*.pyc
