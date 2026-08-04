@@ -9,3 +9,6 @@ scripts/upload-results.json
 
 __pycache__/
 *.pyc
+
+# Supabase CLI temp/cache files
+supabase/.temp/
