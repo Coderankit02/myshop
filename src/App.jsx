@@ -874,7 +874,7 @@ export default function App(){
         <div className="max-w-site mx-auto px-4 md:px-8 pt-3 md:pt-4 pb-3">
           <div className="flex items-center justify-between gap-3 md:gap-6">
             {/* Logo + location */}
-            <div className="min-w-0 flex-shrink-0">
+            <div className="min-w-0">
               <button onClick={()=>setPage('home')} className="flex items-center gap-2 text-left" style={{background:'none'}}>
                 <img src={shopSettings.logo_url||'/icons/rk-logo.svg'} alt={shopSettings.shop_name||'RK Grocery Mart'} className="w-9 h-9 md:w-10 md:h-10 rounded-xl flex-shrink-0"/>
                 <span className="flex flex-col min-w-0">
