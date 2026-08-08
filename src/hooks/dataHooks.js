@@ -50,7 +50,9 @@ export function useProducts(options={}){
     if(categoryId&&categoryId!=='all') q=q.eq('category_id',categoryId);
     if(featured) q=q.eq('is_featured',true);
     if(search&&search.trim().length>1)
-      q=q.or(`name.ilike.%${search.trim()}%,description.ilike.%${search.trim()}%`);
+      // BUG FIX: double-quote wrap (PostgREST) — parentheses wale naam (e.g. "Adrak (Ginger)")
+      // pehle or() parser ko tod dete the → product search me nahi aata tha.
+      q=q.or(`name.ilike."%${search.trim()}%",description.ilike."%${search.trim()}%"`);
     const from=(page-1)*pageSize;
     q=q.range(from,from+pageSize-1);
     const {data,count}=await q;
@@ -309,7 +311,8 @@ export function useSearch(query,active){
       const {data}=await supabase.from('products')
         .select('*,categories(name),product_images(id,image_url,is_default,sort_order)')
         .eq('is_active',true)
-        .or(`name.ilike.%${query.trim()}%,description.ilike.%${query.trim()}%`)
+        // BUG FIX: double-quote wrap (PostgREST) — parentheses wale naam sahi search ho sakein
+        .or(`name.ilike."%${query.trim()}%",description.ilike."%${query.trim()}%"`)
         .limit(40);
       setResults((data||[]).map(p=>({
         ...p,
