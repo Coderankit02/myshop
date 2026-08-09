@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useLayoutEffect, Fragment } from 'react';
+import { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react';
 import { Search, MapPin, ChevronDown, ShoppingCart, User, Download, Home, ShoppingBag, SlidersHorizontal, X, Zap, Leaf, BadgePercent, ShieldCheck, Package, Headphones, Send, MessageCircle } from 'lucide-react';
 import { supabase } from './lib/supabaseClient';
 import { TICKER, calcDiscount, catEmoji } from './lib/helpers';
@@ -126,7 +126,7 @@ function CategoryGrid({cats,catsLoading,catEmoji,onPick}){
 function ProductRail({title,loading,products,onSeeAll,cart,addToCart,updQty,onDetail}){
   if(!loading&&(!products||products.length===0))return null;
   return(
-    <div className="mt-8">
+    <div>
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-base md:text-xl font-bold font-poppins" style={{color:'var(--dark)'}}>{title}</h2>
         <button onClick={onSeeAll} className="text-xs md:text-sm font-semibold font-poppins flex items-center gap-0.5" style={{color:'var(--primary)'}}>See All →</button>
@@ -225,7 +225,7 @@ function HomeContent({homepageSections,banners,bannersLoading,bannerIdx,setBanne
           hero: <HeroBanner banners={banners} bannersLoading={bannersLoading} bannerIdx={bannerIdx} setBannerIdx={setBannerIdx} wrapRef={bannerWrapRef} handleBannerClick={handleBannerClick}/>,
           flash_sale: <FlashSale prods={homeSections.flash} loading={homeLoading} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}/>,
           today_deals: <ProductRail title="🔥 Today's Deals" loading={homeLoading} products={homeSections.deals} onSeeAll={()=>setPage('shop')} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}/>,
-          categories: <div className="mt-6 md:mt-8"><CategoryGrid cats={cats} catsLoading={catsLoading} catEmoji={catEmoji} onPick={onPickCategory}/></div>,
+          categories: <div><CategoryGrid cats={cats} catsLoading={catsLoading} catEmoji={catEmoji} onPick={onPickCategory}/></div>,
           featured: <ProductRail title="⭐ Featured Products" loading={featLoading} products={featuredProds} onSeeAll={()=>setPage('shop')} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}/>,
           best_sellers: <ProductRail title="🏆 Best Sellers" loading={homeLoading} products={homeSections.bestSellers} onSeeAll={()=>setPage('shop')} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}/>,
           new_arrivals: <ProductRail title="✨ New Arrivals" loading={homeLoading} products={homeSections.newArrivals} onSeeAll={()=>setPage('shop')} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}/>,
@@ -237,7 +237,7 @@ function HomeContent({homepageSections,banners,bannersLoading,bannerIdx,setBanne
             const items=sectionProds[c.id];
             if(sectionProdsReady&&(!items||items.length===0)){
               return(
-                <div key={c.id} className="mt-8 rounded-2xl p-5 text-center" style={{background:'var(--card-bg)'}}>
+                <div key={c.id} className="rounded-2xl p-5 text-center" style={{background:'var(--card-bg)'}}>
                   <div className="font-extrabold font-poppins text-sm md:text-base" style={{color:'var(--dark)'}}>{c.name}</div>
                   <p className="text-xs font-poppins mt-1.5" style={{color:'var(--gray)'}}>Is category ke products jald aa rahe hain 🛒</p>
                 </div>
@@ -253,7 +253,7 @@ function HomeContent({homepageSections,banners,bannersLoading,bannerIdx,setBanne
           download_app: <DownloadApp onInstall={()=>{if(window.RKPwa?.promptInstall){window.RKPwa.promptInstall();}else{showToast('Browser ke ⋮ menu se “Add to Home Screen” chunein 📱');}}}/>,
           newsletter: <Newsletter showToast={showToast}/>,
           how_it_works: (
-            <div className="mt-8 rounded-2xl p-5 md:p-6" style={{background:'var(--card-bg)'}}>
+            <div className="rounded-2xl p-5 md:p-6" style={{background:'var(--card-bg)'}}>
               <div className="font-extrabold font-poppins text-sm md:text-base" style={{color:'var(--dark)'}}>How It Works</div>
               <div className="grid grid-cols-3 gap-3 md:gap-6 mt-4">
                 {[{i:'📱',t:'Open the app',s:'Search what you need'},{i:'🛒',t:'Place an order',s:'Add items to cart & checkout'},{i:'🚴',t:'Get fast delivery',s:'Delivered in 1-2 hours'}].map((h,i)=>(
@@ -267,13 +267,30 @@ function HomeContent({homepageSections,banners,bannersLoading,bannerIdx,setBanne
             </div>
           ),
         };
+        let firstSection=true;
         return ordered.map(key=>{
           const el=sectionsMap[key];
-          return el?<Fragment key={key}>{el}</Fragment>:null;
+          if(!el)return null;
+          // UNIFORM SECTION GAP: pehla section container ke pt-4 par flush rehta
+          // hai, baaki har section ko SAME top margin (mt-6 md:mt-8) milta hai.
+          // Pehle har section ka apna baked-in margin tha (flash mt-5, rails mt-8,
+          // hero 0) — isliye Homepage Builder me reorder karne par kabhi gap
+          // jyada hota tha (flash upar to), kabhi carousel 'sata' dikhta tha
+          // (hero kisi section ke turant neeche). Ab kisi bhi order me spacing
+          // hamesha consistent.
+          // category_sections ek ARRAY hai (har category ka rail) — flatten karke
+          // HAR rail ko apna gap wrapper mile, warna saare rails ek div ke andar
+          // bina margin ke atak jate.
+          const items=Array.isArray(el)?el:[el];
+          return items.map((item,i)=>{
+            const cls=firstSection?'':'mt-6 md:mt-8 empty:hidden';
+            firstSection=false;
+            return <div key={`${key}-${i}`} className={cls}>{item}</div>;
+          });
         });
       })()}
 
-      <div className="mt-4"><Footer shopSettings={shopSettings} onNav={setPage}/></div>
+      <div className="mt-6 md:mt-8"><Footer shopSettings={shopSettings} onNav={setPage}/></div>
     </div>
   );
 }
@@ -357,7 +374,7 @@ function FlashSale({prods,loading,cart,addToCart,updQty,onDetail}){
   const h=Math.floor(left/3.6e6),m=Math.floor(left%3.6e6/6e4),s=Math.floor(left%6e4/1e3);
   const chips=[{v:h,l:'Hours'},{v:m,l:'Min'},{v:s,l:'Sec'}];
   return(
-    <div className="mt-5 md:mt-7 rounded-3xl p-4 md:p-6"
+    <div className="rounded-3xl p-4 md:p-6"
       style={{background:'linear-gradient(120deg,#14532D,#15803D 55%,#166534)',boxShadow:'0 10px 30px rgba(21,128,61,0.35)'}}>
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2">
@@ -400,7 +417,7 @@ function WhyChooseUs(){
     {icon:Headphones,title:'24x7 Support',desc:'Ananya AI + WhatsApp — kabhi bhi help'},
   ];
   return(
-    <div className="mt-8">
+    <div>
       <h2 className="text-base md:text-xl font-bold font-poppins" style={{color:'var(--dark)'}}>Why Choose <span style={{color:'var(--primary)'}}>RK Grocery Mart?</span></h2>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 mt-4">
         {feats.map(f=>{
@@ -435,7 +452,7 @@ function CustomerReviews({reviews=[]}){
     ?reviews.map(r=>({name:r.customer_name||'Customer',place:'Verified ✓',stars:Math.max(1,Math.min(5,r.rating||5)),text:r.comment||'',reply:r.admin_reply}))
     :fallback;
   return(
-    <div className="mt-8">
+    <div>
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-base md:text-xl font-bold font-poppins" style={{color:'var(--dark)'}}>Kya Kehte Hain <span style={{color:'var(--primary)'}}>Hamare Customers?</span></h2>
         <span className="hidden md:flex items-center gap-1 text-xs font-bold font-poppins px-3 py-1.5 rounded-full" style={{background:'var(--primary-light)',color:'var(--primary-dark)'}}>⭐ 4.8/5 average</span>
@@ -462,7 +479,7 @@ function CustomerReviews({reviews=[]}){
 // 📱 Download App — PWA install CTA
 function DownloadApp({onInstall}){
   return(
-    <div className="mt-8 rounded-3xl p-5 md:p-8 flex flex-col md:flex-row items-center gap-5 md:gap-8"
+    <div className="rounded-3xl p-5 md:p-8 flex flex-col md:flex-row items-center gap-5 md:gap-8"
       style={{background:'linear-gradient(135deg,#16A34A,#15803D)'}}>
       <div className="flex-1 text-center md:text-left">
         <h2 className="text-white font-extrabold font-poppins text-lg md:text-2xl">App Install Karein 📱</h2>
@@ -494,7 +511,7 @@ function Newsletter({showToast}){
     showToast('Subscribe ho gaye! Offers aapke inbox mein 🎉');
   };
   return(
-    <div className="mt-8 rounded-3xl p-5 md:p-8 text-center" style={{background:'var(--primary-light)'}}>
+    <div className="rounded-3xl p-5 md:p-8 text-center" style={{background:'var(--primary-light)'}}>
       <h2 className="font-extrabold font-poppins text-base md:text-xl" style={{color:'var(--primary-dark)'}}>Weekly Offers &amp; Deals 📬</h2>
       <p className="text-xs md:text-sm font-poppins mt-1" style={{color:'var(--gray)'}}>Register karein — har hafte naye coupons aur flash sale alerts seedha inbox mein.</p>
       <form onSubmit={submit} className="mt-4 flex flex-col sm:flex-row gap-2.5 max-w-md mx-auto">
