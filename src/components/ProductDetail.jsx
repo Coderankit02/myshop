@@ -9,21 +9,28 @@ import { useProducts } from '../hooks/dataHooks';
 //    add-to-cart, and stock-guard logic as before. Only new *data* usage is
 //    "related products", which reuses the exact same useProducts(categoryId)
 //    hook the Shop page already calls elsewhere — no new query shape. ──
+// Gallery images build karta hai: sort_order se sorted, phir admin ka ⭐ DEFAULT
+// image PEHLI position par (taaki overview me default image pehli dikhe — beech me
+// nahi). Baaki images apne sorted order me hi rehti hain (thumbnails/swipe).
+function buildGalleryImages(product){
+  const imgs=product.images&&product.images.length
+    ?[...product.images].sort((a,b)=>(a.sort_order||0)-(b.sort_order||0))
+    :(product.primary_image?[{image_url:product.primary_image,is_default:true,sort_order:0}]:[]);
+  if(imgs.length<2) return imgs;
+  const defIdx=imgs.findIndex(i=>i.is_default);
+  if(defIdx>0){
+    const def=imgs.splice(defIdx,1)[0];
+    imgs.unshift(def); // default ko front par
+  }
+  return imgs;
+}
+
 export function ProductDetail({product,cart,addToCart,updQty,onBack,onDetail}){
-  // NOTE: images/rawImages niche computed hote hain (primary_image fallback ke
-  // saath) — par selImg initializer yahan component body ke start mein hi hai,
-  // isliye same fallback logic yahan bhi apply hota hai.
-  // BUG FIX: overview HAMESHA admin ke ⭐ DEFAULT image se start hoti hai
-  // (is_default flag). Gallery order sort_order ke hisaab se sorted rehta hai
-  // (admin ka 'site par same order'), par jo image admin ne default banayi hai
-  // wahi pehli dikhti hai — user baaki images thumbnails/swipe se scroll karta hai.
-  const [selImg,setSelImg]=useState(()=>{
-    const imgs=product.images&&product.images.length
-      ?[...product.images].sort((a,b)=>(a.sort_order||0)-(b.sort_order||0))
-      :(product.primary_image?[{image_url:product.primary_image,is_default:true,sort_order:0}]:[]);
-    const defIdx=imgs.findIndex(i=>i.is_default);
-    return defIdx>=0?defIdx:0;
-  });
+  // BUG FIX: overview HAMESHA admin ke ⭐ DEFAULT image se start hoti hai —
+  // buildGalleryImages default ko pehli position par rakhti hai (isliye selImg 0).
+  // Example: 'लहसुन' ke 6 images hain, default sort position 3 par thi → pehle
+  // beech wali dikhti thi. Ab default pehli dikhti hai, baaki sorted order me.
+  const [selImg,setSelImg]=useState(0);
   const inC=cart.find(i=>i.id===product.id);
   const disc=product.discount;
   const oos=product.stock_quantity<=0;
@@ -36,11 +43,8 @@ export function ProductDetail({product,cart,addToCart,updQty,onBack,onDetail}){
   // BUG FIX (safety net): kuch flows (purane data, kisi dusre page se click)
   // product.images nahi bhejte — sirf primary_image. Agar images khaali ho to
   // primary_image se ek single-image gallery bana do, taaki detail page par
-  // kabhi bhi image missing na dikhe (🛒 placeholder).
-  const rawImages=product.images&&product.images.length
-    ?[...product.images].sort((a,b)=>(a.sort_order||0)-(b.sort_order||0))
-    :(product.primary_image?[{image_url:product.primary_image,is_default:true,sort_order:0}]:[]);
-  const images=rawImages;
+  // kabhi bhi image missing na dikhe (🛒 placeholder). Default image front par.
+  const images=buildGalleryImages(product);
   const mainSrc=images[selImg]?.image_url||null;
 
   // Component is remounted (via key={product.id} at the call site) whenever a
