@@ -27,7 +27,7 @@
 
 // BUG FIX (Info #13): Version string ab comments mein clearly marked hai.
 // Har deploy par yahan ka number badhao agar OPTION C use kar rahe ho.
-const CACHE_VERSION = "v17"; // ← Razorpay online payment + UPI QR fix + AuthModal tabs
+const CACHE_VERSION = "v18"; // ← precache main vanilla JS (offline cart/orders) + audit fixes
 const CACHE_NAME = `rk-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = "/offline.html";
 
@@ -41,6 +41,10 @@ const PRECACHE_URLS = [
   "/icons/icon-512.png",
   "/icons/rk-logo.svg",
   "/js/analytics.js",
+  "/js/cart.js",
+  "/js/orders.js",
+  "/js/payment.js",
+  "/js/profile.js",
 ];
 
 // ── INSTALL ───────────────────────────────────

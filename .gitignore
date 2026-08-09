@@ -10,5 +10,5 @@ scripts/upload-results.json
 __pycache__/
 *.pyc
 
-# Supabase CLI temp/cache files
-supabase/.temp/
+# Supabase CLI temp/cache files (pura supabase/ dir — CLI artifacts, nested .temp bhi)
+supabase/

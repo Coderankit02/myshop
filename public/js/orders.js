@@ -57,25 +57,41 @@
     }
   }
 
-  // BUG FIX (Critical #4): Order place hone par stock_quantity kabhi kam nahi hota tha,
-  // isliye Inventory page hamesha manually update karni padti thi aur overselling
-  // (2 customers ek hi aakhri item order kar saken) ho sakta tha. Ab har order item ke
-  // liye stock_quantity ko qty se ghata dete hain (0 se neeche kabhi nahi jaane dete).
+  // BUG FIX (Critical #4): Order place hone par stock_quantity kam hota hai
+  // (overselling se bachne ke liye).
+  // BUG FIX (SECURITY — CRITICAL, 2026-08-09): stock decrement pehle direct
+  // products.update() se hota tha — jiske liye RLS me authenticated users ko
+  // products par broad UPDATE/DELETE policy chahiye thi → LIVE VERIFIED: koi bhi
+  // normal customer product ki price change / product delete kar sakta tha.
+  // Ab tightly-scoped Postgres function (decrement_stock) call karte hain jo
+  // SIRF stock_quantity kam karta hai. SQL: supabase/security-fix-migration.sql
+  // run karna zaroori hai. Jab tak SQL na chala ho, fallback (direct update)
+  // chalega taaki orders na tootein — SQL run karte hi broad policy hat jaati hai.
   async function _decrementStock(cartItems) {
     for (const item of cartItems) {
       if (!item?.id || !item?.qty) continue;
       try {
-        const { data: prod, error: fetchErr } = await getDB()
-          .from('products')
-          .select('id,stock_quantity')
-          .eq('id', item.id)
-          .single();
-        if (fetchErr || !prod) continue;
-        const newQty = Math.max(0, (prod.stock_quantity || 0) - item.qty);
-        await getDB()
-          .from('products')
-          .update({ stock_quantity: newQty, updated_at: new Date().toISOString() })
-          .eq('id', item.id);
+        const { error } = await getDB().rpc('decrement_stock', { p_product_id: item.id, p_qty: item.qty });
+        if (error) {
+          // Function missing = PostgREST PGRST202 deta hai (andar Postgres 42883),
+          // dono check karo taaki migration run hone tak fallback chale.
+          if (String(error.code) === '42883' || String(error.code) === 'PGRST202') {
+            // Function abhi DB me nahi hai (migration run nahi hua) → fallback
+            const { data: prod, error: fetchErr } = await getDB()
+              .from('products')
+              .select('id,stock_quantity')
+              .eq('id', item.id)
+              .single();
+            if (fetchErr || !prod) continue;
+            const newQty = Math.max(0, (prod.stock_quantity || 0) - item.qty);
+            await getDB()
+              .from('products')
+              .update({ stock_quantity: newQty, updated_at: new Date().toISOString() })
+              .eq('id', item.id);
+          } else {
+            console.error('[RKOrders] _decrementStock (rpc):', error.message);
+          }
+        }
       } catch (e) {
         console.error('[RKOrders] _decrementStock:', item.id, e.message);
       }

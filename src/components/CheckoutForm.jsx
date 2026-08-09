@@ -205,7 +205,9 @@ export function CheckoutForm({cart,total:cartTotal,showToast,onSuccess,user,onLo
       // 2) Server se Razorpay order banao (secret server par hai)
       const r=await fetch('/api/razorpay-order',{
         method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({amount:Math.round(finalAmount*100),receipt:orderNumber,notes:{orderNumber,orderId:orderId||''}}),
+        // orderId server ko bhi bhejo — server DB se total verify karta hai
+        // (security: client cart/amount tamper hone par order reject hota hai)
+        body:JSON.stringify({amount:Math.round(finalAmount*100),receipt:orderNumber,orderId,notes:{orderNumber,orderId:orderId||''}}),
       });
       const o=await r.json().catch(()=>({}));
       if(!r.ok||!o.orderId){setRzpBusy(false);setOrderError('⚠️ Online payment shuru nahi hua — thodi der baad try karein ya UPI/COD chunein.');return;}
@@ -264,6 +266,9 @@ export function CheckoutForm({cart,total:cartTotal,showToast,onSuccess,user,onLo
       const validation=window.RKDelivery.validate(deliveryInfo.lat,deliveryInfo.lng);
       locationPayload={
         latitude:deliveryInfo.lat,longitude:deliveryInfo.lng,distance_km:deliveryInfo.distanceKm,
+        // delivery_charge bhi store karo — server-side total verify (razorpay-order)
+        // isi order row se delivery fee add karta hai, warna fee wale orders reject ho jaate
+        delivery_charge:deliveryInfo.charge||0,
         delivery_status:deliveryInfo.tier.id,admin_review_needed:!validation.valid,
       };
       if(!validation.valid){

@@ -13,7 +13,10 @@ export default function LoginPage() {
 
   // V4.1: support page redirects here with ?next=support.html so the user lands
   // back on the chat after logging in (default stays index.html).
-  const next = new URLSearchParams(window.location.search).get('next') || 'index.html';
+  // SECURITY (open-redirect fix): sirf relative paths allow — ?next=https://evil.com
+  // ya //evil.com se login ke baad bahar redirect nahi hoga (phishing risk bnd).
+  const _nextRaw = new URLSearchParams(window.location.search).get('next') || 'index.html';
+  const next = (_nextRaw.startsWith('/') && !_nextRaw.startsWith('//')) ? _nextRaw : 'index.html';
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {

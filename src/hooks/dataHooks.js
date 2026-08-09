@@ -42,7 +42,12 @@ export function useProducts(options={}){
   const [loading,setLoading]=useState(true);
   const [total,setTotal]=useState(0);
   const instanceId=useRef(Math.random().toString(36).slice(2)).current;
+  // BUG FIX: stale-response guard — search/category jaldi badalne par purana
+  // (dheema) response naye response ko overwrite nahi karega (admin Products.jsx
+  // jaisa hi pattern).
+  const loadId=useRef(0);
   const fetch=useCallback(async()=>{
+    const fid=++loadId.current;
     setLoading(true);
     let q=supabase.from('products')
       .select('*,categories(id,name,slug),product_images(id,image_url,is_default,sort_order)',{count:'exact'})
@@ -56,6 +61,7 @@ export function useProducts(options={}){
     const from=(page-1)*pageSize;
     q=q.range(from,from+pageSize-1);
     const {data,count}=await q;
+    if(fid!==loadId.current) return; // purana response — ignore
     const enriched=(data||[]).map(p=>({
       ...p,
       discount:calcDiscount(p.selling_price,p.original_price),
