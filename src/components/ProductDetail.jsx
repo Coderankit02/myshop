@@ -31,11 +31,22 @@ export function ProductDetail({product,cart,addToCart,updQty,onBack,onDetail,wis
   // Example: 'लहसुन' ke 6 images hain, default sort position 3 par thi → pehle
   // beech wali dikhti thi. Ab default pehli dikhti hai, baaki sorted order me.
   const [selImg,setSelImg]=useState(0);
-  const inC=cart.find(i=>i.id===product.id);
+  // Multi-unit (2026-08): products.units = [{label,price,mrp,stock}]. Chips se
+  // unit choose hota hai — selected unit ki price/stock/add-use hoti hai.
+  const units=(product.units&&Array.isArray(product.units)&&product.units.length)?product.units:null;
+  const [selUnit,setSelUnit]=useState(0);
+  const sel=units&&units[selUnit]?units[selUnit]:null;
+  const lineKey=sel?`${product.id}::${sel.label}`:product.id;
+  const inC=cart.find(i=>(i.k||i.id)===lineKey);
+  const price=sel?sel.price:product.selling_price;
+  const mrp=sel?sel.mrp:product.original_price;
+  const unitLabel=sel?sel.label:product.unit_value;
+  const stockQty=sel?(typeof sel.stock==='number'?sel.stock:product.stock_quantity):product.stock_quantity;
   const disc=product.discount;
-  const oos=product.stock_quantity<=0;
-  const atMax=inC&&typeof product.stock_quantity==='number'&&inC.qty>=product.stock_quantity;
-  const savings=product.original_price&&product.original_price>product.selling_price?product.original_price-product.selling_price:0;
+  const oos=stockQty<=0;
+  const atMax=inC&&typeof stockQty==='number'&&inC.qty>=stockQty;
+  const savings=mrp&&mrp>price?mrp-price:0;
+  const addPayload=sel?{...product,_variant:sel.label,selling_price:sel.price,unit_value:sel.label,original_price:sel.mrp??product.original_price,stock_quantity:stockQty}:product;
   const touchStartX=useRef(null);
   const touchStartY=useRef(null);
   const isDragging=useRef(false);
@@ -99,17 +110,17 @@ export function ProductDetail({product,cart,addToCart,updQty,onBack,onDetail,wis
   const AddToCartControl=({full})=>(
     inC
       ?<div className={`flex items-center rounded-xl overflow-hidden flex-shrink-0 ${full?'flex-1':''}`} style={{border:'2px solid var(--primary)'}}>
-        <button aria-label="Quantity kam karein" onClick={()=>updQty(product.id,-1)}
+        <button aria-label="Quantity kam karein" onClick={()=>updQty(product.id,-1,null,lineKey)}
           className="w-11 h-11 flex items-center justify-center text-white flex-shrink-0" style={{background:'var(--primary)'}}>
           <Minus size={17}/>
         </button>
         <span className="flex-1 text-center font-extrabold font-poppins text-base" style={{color:'var(--dark)'}}>{inC.qty}</span>
-        <button aria-label="Quantity badhayein" disabled={atMax} onClick={()=>!atMax&&updQty(product.id,1,product.stock_quantity)}
+        <button aria-label="Quantity badhayein" disabled={atMax} onClick={()=>!atMax&&updQty(product.id,1,stockQty,lineKey)}
           className="w-11 h-11 flex items-center justify-center text-white flex-shrink-0 disabled:opacity-40" style={{background:'var(--primary)'}}>
           <Plus size={17}/>
         </button>
       </div>
-      :<button onClick={()=>addToCart(product)}
+      :<button onClick={()=>addToCart(addPayload)}
         className={`font-bold font-poppins text-white rounded-xl px-6 py-3.5 flex items-center justify-center gap-2 ${full?'flex-1':''}`}
         style={{background:'linear-gradient(135deg, var(--primary), var(--primary-dark))'}}>
         🛒 Cart Mein Add Karo
@@ -184,13 +195,40 @@ export function ProductDetail({product,cart,addToCart,updQty,onBack,onDetail,wis
         <div className="min-w-0">
           {product.categories&&<div className="text-[11px] font-bold font-poppins uppercase tracking-wide mb-1.5" style={{color:'var(--primary)'}}>{product.categories.name}</div>}
           <h1 className="text-xl md:text-2xl font-extrabold font-poppins leading-snug" style={{color:'var(--dark)'}}>{product.name}</h1>
-          <div className="text-xs font-poppins mt-1" style={{color:'var(--gray)'}}>{product.unit_value}</div>
+          <div className="text-xs font-poppins mt-1" style={{color:'var(--gray)'}}>{unitLabel}</div>
+
+          {/* Unit selector — multi-unit products ke liye chips */}
+          {units&&units.length>1&&(
+            <div className="mt-4">
+              <div className="text-xs font-bold font-poppins mb-2" style={{color:'var(--gray)'}}>Size / Pack chunein:</div>
+              <div className="flex flex-wrap gap-2">
+                {units.map((u,i)=>{
+                  const uStock=typeof u.stock==='number'?u.stock:product.stock_quantity;
+                  const active=i===selUnit;
+                  const uOos=uStock<=0;
+                  return(
+                    <button key={i} disabled={uOos} onClick={()=>{setSelUnit(i);}}
+                      className="rounded-xl px-3.5 py-2 text-left transition-all disabled:opacity-45"
+                      style={active
+                        ?{background:'var(--primary)',color:'#fff',boxShadow:'0 4px 12px rgba(22,163,74,0.3)'}
+                        :{background:'var(--light)',color:'var(--dark)',border:'1.5px solid var(--border)'}}>
+                      <div className="text-xs font-extrabold font-poppins">{u.label}</div>
+                      <div className="text-[11px] font-bold font-poppins" style={{color:active?'rgba(255,255,255,0.9)':'var(--primary)'}}>
+                        ₹{u.price}{u.mrp&&u.mrp>u.price?<span className="line-through ml-1 font-normal" style={{color:active?'rgba(255,255,255,0.7)':'var(--gray)'}}>₹{u.mrp}</span>:null}
+                      </div>
+                      {uOos&&<div className="text-[9px] font-bold mt-0.5" style={{color:active?'rgba(255,255,255,0.85)':'var(--red)'}}>Out of stock</div>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <div className="flex items-baseline gap-2 mt-4 flex-wrap">
-            <span className="text-2xl md:text-3xl font-extrabold font-poppins" style={{color:'var(--dark)'}}>₹{product.selling_price}</span>
-            {product.original_price&&product.original_price>product.selling_price&&(
+            <span className="text-2xl md:text-3xl font-extrabold font-poppins" style={{color:'var(--dark)'}}>₹{price}</span>
+            {mrp&&mrp>price&&(
               <>
-                <span className="text-sm font-poppins line-through" style={{color:'var(--gray)'}}>₹{product.original_price}</span>
+                <span className="text-sm font-poppins line-through" style={{color:'var(--gray)'}}>₹{mrp}</span>
                 {savings>0&&<span className="text-sm font-bold font-poppins" style={{color:'var(--primary)'}}>Save ₹{savings}</span>}
               </>
             )}
@@ -200,7 +238,7 @@ export function ProductDetail({product,cart,addToCart,updQty,onBack,onDetail,wis
           <div className="mt-3">
             {oos
               ?<span className="text-xs font-bold font-poppins" style={{color:'var(--red)'}}>⚠️ Out of Stock</span>
-              :<span className="text-xs font-bold font-poppins" style={{color:'var(--primary)'}}>✓ In Stock ({product.stock_quantity} left)</span>
+              :<span className="text-xs font-bold font-poppins" style={{color:'var(--primary)'}}>✓ In Stock ({stockQty} left)</span>
             }
           </div>
 
@@ -255,9 +293,9 @@ export function ProductDetail({product,cart,addToCart,updQty,onBack,onDetail,wis
           style={{background:'var(--card-bg)',borderTop:'1px solid var(--border)',bottom:'max(70px, calc(70px + env(safe-area-inset-bottom, 0px)))',boxShadow:'0 -4px 16px rgba(0,0,0,0.08)'}}>
           <AddToCartControl full/>
           <div className="text-right flex-shrink-0">
-            <div className="font-extrabold font-poppins text-base" style={{color:'var(--primary)'}}>₹{product.selling_price}</div>
-            {product.original_price&&product.original_price>product.selling_price&&
-              <div className="text-[10px] font-poppins line-through" style={{color:'var(--gray)'}}>₹{product.original_price}</div>}
+            <div className="font-extrabold font-poppins text-base" style={{color:'var(--primary)'}}>₹{price}</div>
+            {mrp&&mrp>price&&
+              <div className="text-[10px] font-poppins line-through" style={{color:'var(--gray)'}}>₹{mrp}</div>}
           </div>
         </div>
       )}

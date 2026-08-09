@@ -936,8 +936,12 @@ export default function App(){
   },[shopProds,featuredProds,sectionProds]);
 
   const addToCart=p=>{
-    if(window.RKCart)window.RKCart.addToCart({id:p.id,name:p.name,price:p.selling_price,unit:p.unit_value,image:p.primary_image,e:p.emoji||null,cat:p.categories?.name||null,old:p.original_price||null});
-    else setCart(prev=>{const ex=prev.find(i=>i.id===p.id);return ex?prev.map(i=>i.id===p.id?{...i,qty:i.qty+1}:i):[...prev,{id:p.id,name:p.name,price:p.selling_price,unit:p.unit_value,image:p.primary_image,e:p.emoji||null,cat:p.categories?.name||null,old:p.original_price||null,qty:1}];});
+    // Multi-unit (2026-08): PDP unit-selector se aane par p._variant + p.selling_price/
+    // p.unit_value us selected variant ke hote hain. k = line key (variant ke saath).
+    const variant=p._variant||null;
+    const k=variant?`${p.id}::${variant}`:p.id;
+    if(window.RKCart)window.RKCart.addToCart({id:p.id,k,name:p.name,price:p.selling_price,unit:p.unit_value,image:p.primary_image,e:p.emoji||null,cat:p.categories?.name||null,old:p.original_price||null,variant});
+    else setCart(prev=>{const ex=prev.find(i=>(i.k||i.id)===k);return ex?prev.map(i=>(i.k||i.id)===k?{...i,qty:i.qty+1}:i):[...prev,{id:p.id,k,name:p.name,price:p.selling_price,unit:p.unit_value,image:p.primary_image,e:p.emoji||null,cat:p.categories?.name||null,old:p.original_price||null,variant,qty:1}];});
     showToast(`${p.name} cart mein add hua! 🛒`);
   };
 
@@ -1021,7 +1025,7 @@ export default function App(){
     if(!user){openLogin();showToast('Wishlist ke liye login karein 🔐');return;}
     const existing=wishlist.find(w=>w.product_id===item.id);
     if(existing){
-      if(window.RKCart)await window.RKCart.removeFromCart(item.id);
+      if(window.RKCart)await window.RKCart.removeFromCart(item.id,item.k||item.id);
       showToast('Cart se nikal kar wishlist mein save ho gaya 🔖');
       return;
     }
@@ -1033,7 +1037,7 @@ export default function App(){
     }).select();
     if(!error&&data&&data[0]){
       setWishlist(l=>[...l,data[0]]);
-      if(window.RKCart)await window.RKCart.removeFromCart(item.id);
+      if(window.RKCart)await window.RKCart.removeFromCart(item.id,item.k||item.id);
       showToast('Cart se nikal kar wishlist mein save ho gaya 🔖');
     }else{
       showToast('Wishlist mein save nahi hua — dobara try karein');
@@ -1044,17 +1048,29 @@ export default function App(){
   // Bug fix #1: when no explicit stockLimit is passed (as from the cart drawer's '+'
   // button), fall back to looking up the known stock_quantity for that product id so the
   // same guard applies everywhere quantity can be changed, not just on product cards/PDP.
-  const updQty=(id,d,stockLimit)=>{
-    const limit=typeof stockLimit==='number'?stockLimit:productById.current[id]?.stock_quantity;
+  const updQty=(id,d,stockLimit,k)=>{
+    const key=k||id;
+    // Multi-unit: line key me variant ho to us variant ka stock limit (taaki
+    // create_order ke variant stock check ke saath consistent rahe).
+    let varStock;
+    if(key&&String(key).includes('::')){
+      const variant=String(key).split('::')[1];
+      const prod=productById.current[id];
+      if(prod&&Array.isArray(prod.units)){
+        const u=prod.units.find(x=>x.label===variant);
+        varStock=typeof u?.stock==='number'?u.stock:undefined;
+      }
+    }
+    const limit=typeof stockLimit==='number'?stockLimit:(typeof varStock==='number'?varStock:productById.current[id]?.stock_quantity);
     if(d>0&&typeof limit==='number'){
-      const existing=cart.find(i=>i.id===id);
+      const existing=cart.find(i=>(i.k||i.id)===key);
       if(existing&&existing.qty>=limit){
         showToast(`Sirf ${limit} stock mein hai`);
         return;
       }
     }
-    if(window.RKCart)window.RKCart.updateQuantity(id,d);
-    else setCart(prev=>prev.map(i=>i.id===id?{...i,qty:i.qty+d}:i).filter(i=>i.qty>0));
+    if(window.RKCart)window.RKCart.updateQuantity(id,d,key);
+    else setCart(prev=>prev.map(i=>(i.k||i.id)===key?{...i,qty:i.qty+d}:i).filter(i=>i.qty>0));
   };
 
   const total=cart.reduce((s,i)=>s+(i.price||0)*(i.qty||1),0);
@@ -1380,10 +1396,17 @@ export default function App(){
                   // Bug fix #1 (preserved): resolve a known stock_quantity for this cart
                   // line so the '+' button here respects the same stock ceiling as the
                   // product card / PDP.
-                  const knownStock=productById.current[i.id]?.stock_quantity;
+                  // Multi-unit: line ka variant hain to us variant ka stock use karo
+                  // (product-level stock se nahi — create_order bhi variant stock check
+                  // karta hai, dono consistent rahein).
+                  const prod=productById.current[i.id];
+                  const varStock=i.variant&&prod&&Array.isArray(prod.units)
+                    ?(prod.units.find(u=>u.label===i.variant)?.stock)
+                    :undefined;
+                  const knownStock=typeof varStock==='number'?varStock:prod?.stock_quantity;
                   const atMax=typeof knownStock==='number'&&i.qty>=knownStock;
                   return(
-                    <div key={i.id} className="flex items-center gap-3 py-2.5" style={{borderBottom:'1px solid var(--border)'}}>
+                    <div key={i.k||i.id} className="flex items-center gap-3 py-2.5" style={{borderBottom:'1px solid var(--border)'}}>
                       {i.image
                         ?<img src={i.image} alt={i.name} className="w-11 h-11 rounded-xl object-cover flex-shrink-0" style={{background:'var(--light)'}}/>
                         :<div className="w-11 h-11 rounded-xl flex items-center justify-center text-2xl flex-shrink-0" style={{background:'var(--light)'}}>🛒</div>}
@@ -1394,10 +1417,10 @@ export default function App(){
                         <button onClick={()=>saveForLater(i)} className="text-[10px] font-semibold font-poppins mt-1 flex items-center gap-0.5 rounded-md px-2 py-1 transition-colors" style={{color:'var(--gray)',background:'var(--light)',border:'1px solid var(--border)'}}>🔖 Save for Later</button>
                       </div>
                       <div className="flex items-center rounded-lg overflow-hidden flex-shrink-0" style={{border:'1.5px solid var(--primary)'}}>
-                        <button aria-label="Quantity kam karein" onClick={()=>updQty(i.id,-1)}
+                        <button aria-label="Quantity kam karein" onClick={()=>updQty(i.id,-1,null,i.k||i.id)}
                           className="w-7 h-7 flex items-center justify-center text-white font-bold" style={{background:'var(--primary)'}}>−</button>
                         <span className="w-6 text-center text-xs font-bold font-poppins" style={{color:'var(--dark)'}}>{i.qty}</span>
-                        <button aria-label="Quantity badhayein" disabled={atMax} onClick={()=>!atMax&&updQty(i.id,1,knownStock)}
+                        <button aria-label="Quantity badhayein" disabled={atMax} onClick={()=>!atMax&&updQty(i.id,1,knownStock,i.k||i.id)}
                           className="w-7 h-7 flex items-center justify-center text-white font-bold disabled:opacity-40" style={{background:'var(--primary)'}}>+</button>
                       </div>
                     </div>

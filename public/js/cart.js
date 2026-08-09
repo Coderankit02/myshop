@@ -20,6 +20,14 @@
   let _cart = [];
   let _userId = null;
 
+  // Multi-unit (2026-08): ek hi product ke alag units alag cart lines hain.
+  // Line key = product.id (single-unit) ya product.id + '::' + variant label.
+  function lineKey(item) {
+    if (item && item.k) return item.k;
+    if (item && item.variant) return item.id + '::' + item.variant;
+    return item ? String(item.id) : '';
+  }
+
   function lsSave(cart) {
     try { localStorage.setItem(LS_KEY, JSON.stringify(cart)); } catch (_) {}
   }
@@ -42,6 +50,10 @@
       // dikhe — pehle image DB me store nahi hoti thi, isliye logged-in cart
       // DB se load hote hi image gayab ho jati thi.
       image: r.image || null,
+      // Multi-unit (2026-08): variant = products.units[].label; line key usi
+      // par alag banta hai taaki 1/2kg aur 1kg ek saath cart me reh sakein.
+      variant: r.variant || '',
+      k: r.variant ? r.product_id + '::' + r.variant : r.product_id,
     }));
   }
 
@@ -51,14 +63,15 @@
       unit: item.unit, price: item.price, old_price: item.old || null,
       emoji: item.e, category: item.cat, bg_color: item.bg || null,
       qty: item.qty, image: item.image || null,
+      variant: item.variant || '',
       updated_at: new Date().toISOString(),
-    }, { onConflict: 'user_id,product_id' });
+    }, { onConflict: 'user_id,product_id,variant' });
     if (error) console.error('[RKCart] dbUpsert:', error.message);
   }
 
-  async function dbDelete(userId, productId) {
+  async function dbDelete(userId, productId, variant) {
     const { error } = await getDB().from('cart_items').delete()
-      .eq('user_id', userId).eq('product_id', productId);
+      .eq('user_id', userId).eq('product_id', productId).eq('variant', variant || '');
     if (error) console.error('[RKCart] dbDelete:', error.message);
   }
 
@@ -82,7 +95,8 @@
 
     const merged = [...dbItems];
     for (const g of guestItems) {
-      const existing = merged.find(i => i.id === g.id);
+      // lineKey se merge — multi-unit me alag variants alag lines rehti hain
+      const existing = merged.find(i => lineKey(i) === lineKey(g));
       if (existing) {
         existing.qty = Math.max(existing.qty, g.qty);
       } else {
@@ -128,28 +142,33 @@
   }
 
   async function addToCart(product) {
-    const idx = _cart.findIndex(i => i.id === product.id);
+    const k = lineKey(product);
+    const idx = _cart.findIndex(i => lineKey(i) === k);
     if (idx > -1) {
       _cart[idx].qty += 1;
     } else {
-      _cart = [..._cart, { ...product, qty: 1 }];
+      _cart = [..._cart, { ...product, k, qty: 1 }];
     }
-    _persist(_userId ? _cart.find(i => i.id === product.id) : null, product.id);
+    _persist(_userId ? _cart.find(i => lineKey(i) === k) : null, product.id);
     notify(_cart);
   }
 
-  async function removeFromCart(productId) {
-    _cart = _cart.filter(i => i.id !== productId);
-    if (_userId) { await dbDelete(_userId, productId); }
+  async function removeFromCart(productId, k) {
+    const key = k || lineKey({ id: productId });
+    const item = _cart.find(i => lineKey(i) === key);
+    const variant = item && item.variant ? item.variant : '';
+    _cart = _cart.filter(i => lineKey(i) !== key);
+    if (_userId) { await dbDelete(_userId, productId, variant); }
     else { lsSave(_cart); }
     notify(_cart);
   }
 
-  async function updateQuantity(productId, delta) {
-    const idx = _cart.findIndex(i => i.id === productId);
+  async function updateQuantity(productId, delta, k) {
+    const key = k || productId;
+    const idx = _cart.findIndex(i => lineKey(i) === key);
     if (idx === -1) return;
     _cart[idx].qty += delta;
-    if (_cart[idx].qty <= 0) { await removeFromCart(productId); return; }
+    if (_cart[idx].qty <= 0) { await removeFromCart(productId, key); return; }
     _persist(_cart[idx], productId);
     notify(_cart);
   }

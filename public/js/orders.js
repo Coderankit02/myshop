@@ -206,7 +206,7 @@
       // SECURITY: server-side verified order creation (prices/coupon/stock sab DB side)
       const { data, error } = await getDB().rpc('create_order', {
         p_user_id        : userId || null,
-        p_cart           : cart.map(i => ({ id: i.id, qty: i.qty, e: i.e || null })),
+        p_cart           : cart.map(i => ({ id: i.id, qty: i.qty, e: i.e || null, unit: i.unit || i.variant || null })),
         p_address        : {
           name    : address.name,
           phone   : address.phone,
@@ -296,7 +296,7 @@
     if (productIds.length) {
       const { data: freshProducts } = await getDB()
         .from('products')
-        .select('id,name,selling_price,unit_value,is_active,stock_quantity,product_images(image_url,is_default,sort_order)')
+        .select('id,name,selling_price,unit_value,is_active,stock_quantity,units,product_images(image_url,is_default,sort_order)')
         .in('id', productIds);
 
       (freshProducts || []).forEach(p => { freshPrices[p.id] = p; });
@@ -304,17 +304,26 @@
 
     const products = order.items.map(i => {
       const fresh = freshPrices[i.product_id];
-      const stock = fresh ? (fresh.stock_quantity ?? 0) : 0;
+      // Multi-unit: saved order unit (i.unit) agar product ke units me match kare
+      // to us variant ki fresh price/stock use karo — warna product-level default.
+      const savedUnit = i.unit || '';
+      const unitMatch = (fresh?.units && Array.isArray(fresh.units))
+        ? fresh.units.find(u => String(u.label || '') === savedUnit)
+        : null;
+      const stock = unitMatch
+        ? (typeof unitMatch.stock === 'number' ? unitMatch.stock : (fresh?.stock_quantity ?? 0))
+        : (fresh ? (fresh.stock_quantity ?? 0) : 0);
       // Primary image (is_default first, warna sort_order) — cart drawer me image dikhe
       const imgs = (fresh?.product_images || []).slice().sort((a, b) => a.sort_order - b.sort_order);
       const img = (imgs.find(x => x.is_default) || imgs[0])?.image_url || null;
       return {
         id   : i.product_id,
         name : fresh?.name || i.name,
-        unit : fresh?.unit_value || i.unit,
+        unit : unitMatch ? unitMatch.label : (fresh?.unit_value || i.unit),
+        variant: unitMatch ? unitMatch.label : null,
         // Use fresh price — fall back to saved price only if product no longer in DB
-        price: fresh?.selling_price ?? i.price,
-        old  : i.old_price,
+        price: unitMatch ? unitMatch.price : (fresh?.selling_price ?? i.price),
+        old  : unitMatch?.mrp || i.old_price,
         e    : i.emoji,
         cat  : i.category,
         image: img,

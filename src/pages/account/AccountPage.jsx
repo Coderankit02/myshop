@@ -474,13 +474,22 @@ function WishlistTab({ state, setState, showToast, priceAlerts, toggleAlert }) {
   async function addToCart(w) {
     if (!window.RKCart) return;
     // Wishlist snapshot me image nahi hoti — fresh product se primary image le lo
-    // (taaki cart drawer me bhi product ka image dikhe, not 🛒 fallback)
+    // (taaki cart drawer me bhi product ka image dikhe, not 🛒 fallback).
+    // Multi-unit: units ho to FIRST variant (units[0]) default unit/price use karo.
     let image=w.image||null;
-    if(!image){
-      const {data}=await supabase.from('products').select('product_images(image_url,is_default,sort_order)').eq('id',w.product_id).maybeSingle();
-      image=primaryImgOf(data);
+    let unit=w.unit, price=w.price, variant=null;
+    const {data}=await supabase.from('products').select('product_images(image_url,is_default,sort_order),units,unit_value,selling_price').eq('id',w.product_id).maybeSingle();
+    image=image||primaryImgOf(data);
+    const units=(data&&Array.isArray(data.units)&&data.units.length)?data.units:null;
+    if(units){
+      variant=units[0].label;
+      unit=units[0].label;
+      price=units[0].price??w.price;
+    }else if(data){
+      unit=data.unit_value||w.unit;
+      price=data.selling_price??w.price;
     }
-    await window.RKCart.addToCart({id:w.product_id,name:w.name,unit:w.unit,price:w.price,e:w.emoji,cat:w.category,image});
+    await window.RKCart.addToCart({id:w.product_id,k:variant?`${w.product_id}::${variant}`:w.product_id,name:w.name,unit,price,e:w.emoji,cat:w.category,image,variant});
     showToast(`${w.name} cart mein add! 🛒`);
   }
   async function addAll() {
@@ -489,15 +498,23 @@ function WishlistTab({ state, setState, showToast, priceAlerts, toggleAlert }) {
     // Buy Again ki tarah FRESH data use karo — stale price/inactive/OOS items
     // cart me mat daalo (checkout ka create_order reject kar deta).
     const ids = state.wishlist.map(w=>w.product_id);
-    // product_images bhi le lo taaki cart me product image bhi jaye (drawer me dikhe)
-    const {data:prods}=await supabase.from('products').select('id,name,selling_price,unit_value,is_active,stock_quantity,product_images(image_url,is_default,sort_order)').in('id',ids);
+    // product_images + units bhi le lo taaki cart me product image bhi jaye
+    // (drawer me dikhe) aur multi-unit products ka FIRST variant use ho.
+    const {data:prods}=await supabase.from('products').select('id,name,selling_price,unit_value,is_active,stock_quantity,units,product_images(image_url,is_default,sort_order)').in('id',ids);
     const fresh={}; (prods||[]).forEach(p=>{fresh[p.id]=p;});
     let added=0, skipped=0;
     for (const w of state.wishlist) {
-      if (inCart.includes(w.product_id)) continue; // pehle se cart mein hai
+      const key=(f)=>{
+        const units=(f&&Array.isArray(f.units)&&f.units.length)?f.units:null;
+        if(units)return `${f.id}::${units[0].label}`;
+        return f.id;
+      };
       const f=fresh[w.product_id];
+      if(inCart.includes(key(f))) continue; // pehle se cart mein hai
       if(!f||!f.is_active||(f.stock_quantity??0)<=0){ skipped++; continue; }
-      await window.RKCart.addToCart({id:w.product_id,name:f.name||w.name,unit:f.unit_value||w.unit,price:f.selling_price??w.price,e:w.emoji,cat:w.category,image:primaryImgOf(f)});
+      const units=(f.units&&Array.isArray(f.units)&&f.units.length)?f.units:null;
+      const variant=units?units[0].label:null;
+      await window.RKCart.addToCart({id:w.product_id,k:key(f),name:f.name||w.name,unit:units?units[0].label:(f.unit_value||w.unit),price:units?(units[0].price??f.selling_price):(f.selling_price??w.price),e:w.emoji,cat:w.category,image:primaryImgOf(f),variant});
       added++;
     }
     showToast(added?`${added} items cart mein add! 🛒`:(skipped?`${skipped} items stock mein nahi hain`:'Sab items pehle se cart mein hain ✅'));
