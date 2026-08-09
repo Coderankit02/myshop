@@ -164,6 +164,25 @@ function HeroBanner({banners,bannersLoading,bannerIdx,setBannerIdx,wrapRef,handl
 
 
 
+// 💎 TitlePill — category naam ke text ke around PREMIUM designer pill:
+// layered gradient (theme-aware) + glass shine (diagonal white overlay) +
+// soft glow + inner highlight + subtle border. Sirf text ka background,
+// layout kuch nahi badalta. Module-level (Module 13 pattern).
+function TitlePill({children}){
+  return(
+    <span className="inline-block rounded-full font-extrabold font-poppins text-sm md:text-lg text-white leading-tight px-4 py-1.5 md:px-5 md:py-2"
+      style={{
+        background:'linear-gradient(115deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0) 45%, rgba(255,255,255,0) 100%), linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)',
+        boxShadow:'0 6px 18px rgba(22,163,74,0.32), inset 0 1px 0 rgba(255,255,255,0.25), inset 0 -1px 0 rgba(0,0,0,0.08)',
+        border:'1px solid rgba(255,255,255,0.18)',
+        textShadow:'0 1px 3px rgba(0,0,0,0.22)',
+        letterSpacing:'0.01em',
+      }}>
+      {children}
+    </span>
+  );
+}
+
 // Category section titles: titlePill ho to sirf TITLE TEXT ke around designer
 // gradient pill (baki layout bilkul same — See All right, products neeche).
 function ProductRail({title,loading,products,onSeeAll,cart,addToCart,updQty,onDetail,titlePill}){
@@ -171,12 +190,9 @@ function ProductRail({title,loading,products,onSeeAll,cart,addToCart,updQty,onDe
   return(
     <div>
       <div className="flex items-center justify-between mb-3">
-        <h2 className={titlePill
-          ?"inline-block text-sm md:text-lg font-extrabold font-poppins px-4 py-1.5 md:px-5 md:py-2 rounded-full text-white leading-tight"
-          :"text-base md:text-xl font-bold font-poppins"}
-          style={titlePill
-            ?{background:'linear-gradient(120deg,var(--primary-dark),var(--primary))',boxShadow:'0 4px 14px rgba(22,163,74,0.30)'}
-            :{color:'var(--dark)'}}>{title}</h2>
+        {titlePill
+          ?<h2><TitlePill>{title}</TitlePill></h2>
+          :<h2 className="text-base md:text-xl font-bold font-poppins" style={{color:'var(--dark)'}}>{title}</h2>}
         <button onClick={onSeeAll} className="text-xs md:text-sm font-semibold font-poppins flex items-center gap-0.5" style={{color:'var(--primary)'}}>See All →</button>
       </div>
       <div className="flex gap-3 md:gap-4 overflow-x-auto pb-1 snap-x scrollbar-hide">
@@ -289,8 +305,7 @@ function HomeContent({homepageSections,banners,bannersLoading,bannerIdx,setBanne
             if(sectionProdsReady&&(!items||items.length===0)){
               return(
                 <div key={c.id}>
-                  <h2 className="inline-block text-sm md:text-lg font-extrabold font-poppins px-4 py-1.5 md:px-5 md:py-2 rounded-full text-white leading-tight mb-3"
-                    style={{background:'linear-gradient(120deg,var(--primary-dark),var(--primary))',boxShadow:'0 4px 14px rgba(22,163,74,0.30)'}}>{c.name}</h2>
+                  <h2 className="mb-3"><TitlePill>{c.name}</TitlePill></h2>
                   <div className="rounded-2xl p-5 text-center" style={{background:'var(--card-bg)'}}>
                     <p className="text-xs font-poppins" style={{color:'var(--gray)'}}>Is category ke products jald aa rahe hain 🛒</p>
                   </div>
