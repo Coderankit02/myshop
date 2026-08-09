@@ -632,6 +632,12 @@ export default function App(){
         return{
           ...pr,
           discount:calcDiscount(pr.selling_price,pr.original_price),
+          // BUG FIX: `images` array yahan set nahi hota tha — sirf primary_image.
+          // ProductDetail component `product.images` padhta hai (gallery + thumbnails
+          // + swipe ke liye), isliye homepage category rails se product click karne
+          // par detail page par image kabhi dikhti hi nahi thi (🛒 placeholder).
+          // Ab dataHooks.js jaisa hi shape — images + primary_image dono.
+          images:imgs,
           primary_image:defImg?.image_url||null,
         };
       })}));

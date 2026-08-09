@@ -10,8 +10,13 @@ import { useProducts } from '../hooks/dataHooks';
 //    "related products", which reuses the exact same useProducts(categoryId)
 //    hook the Shop page already calls elsewhere — no new query shape. ──
 export function ProductDetail({product,cart,addToCart,updQty,onBack,onDetail}){
+  // NOTE: images/rawImages niche computed hote hain (primary_image fallback ke
+  // saath) — par selImg initializer yahan component body ke start mein hi hai,
+  // isliye same fallback logic yahan bhi apply hota hai.
   const [selImg,setSelImg]=useState(()=>{
-    const imgs=product.images||[];
+    const imgs=product.images&&product.images.length
+      ?product.images
+      :(product.primary_image?[{image_url:product.primary_image,is_default:true,sort_order:0}]:[]);
     const defIdx=imgs.findIndex(i=>i.is_default);
     return defIdx>=0?defIdx:0;
   });
@@ -24,7 +29,14 @@ export function ProductDetail({product,cart,addToCart,updQty,onBack,onDetail}){
   const touchStartY=useRef(null);
   const isDragging=useRef(false);
 
-  const images=product.images||[];
+  // BUG FIX (safety net): kuch flows (purane data, kisi dusre page se click)
+  // product.images nahi bhejte — sirf primary_image. Agar images khaali ho to
+  // primary_image se ek single-image gallery bana do, taaki detail page par
+  // kabhi bhi image missing na dikhe (🛒 placeholder).
+  const rawImages=product.images&&product.images.length
+    ?product.images
+    :(product.primary_image?[{image_url:product.primary_image,is_default:true,sort_order:0}]:[]);
+  const images=rawImages;
   const mainSrc=images[selImg]?.image_url||null;
 
   // Component is remounted (via key={product.id} at the call site) whenever a
