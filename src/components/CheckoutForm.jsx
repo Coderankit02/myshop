@@ -400,8 +400,14 @@ export function CheckoutForm({cart,total:cartTotal,showToast,onSuccess,user,onLo
       <div className={`co-card ${cardCls}`} style={cardStyle}>
         <div className="co-card-title font-extrabold font-poppins text-sm mb-2.5" style={{color:'var(--dark)'}}>📋 Order Summary</div>
         {cart.slice(0,4).map(i=>(
-          <div key={i.id} className="osi flex justify-between text-xs font-poppins py-1" style={{color:'var(--dark)'}}>
-            <span>{i.name} ×{i.qty}</span><span><b>₹{(i.price*i.qty).toFixed(0)}</b></span>
+          <div key={i.id} className="osi flex justify-between items-center gap-2 text-xs font-poppins py-1" style={{color:'var(--dark)'}}>
+            <span className="flex items-center gap-2 min-w-0">
+              {i.image
+                ?<img src={i.image} alt={i.name} className="w-8 h-8 rounded-lg object-cover flex-shrink-0" style={{background:'var(--light)'}}/>
+                :<div className="w-8 h-8 rounded-lg flex items-center justify-center text-base flex-shrink-0" style={{background:'var(--light)'}}>🛒</div>}
+              <span className="truncate">{i.name} ×{i.qty}</span>
+            </span>
+            <span className="flex-shrink-0"><b>₹{(i.price*i.qty).toFixed(0)}</b></span>
           </div>
         ))}
         {cart.length>4&&<div className="text-[11px] font-poppins" style={{color:'var(--gray)'}}>+{cart.length-4} more items</div>}

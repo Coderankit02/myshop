@@ -977,6 +977,8 @@ export default function App(){
         const {data,error}=await supabase.from('wishlist').insert({
           user_id:user.uid,product_id:p.id,name:p.name,unit:p.unit_value,
           price:p.selling_price,emoji:null,category:p.categories?.name||null,
+          // Wishlist rows me product ka image bhi (Account → Wishlist me dikhe)
+          image:p.primary_image||null,
         }).select();
         if(!error&&data&&data[0]){setWishlist(l=>[...l,data[0]]);showToast(`${p.name} wishlist mein add ho gaya ❤️`);}
         else showToast('Wishlist update nahi hua — dobara try karein');
@@ -1026,6 +1028,8 @@ export default function App(){
     const {data,error}=await supabase.from('wishlist').insert({
       user_id:user.uid,product_id:item.id,name:item.name,unit:item.unit,
       price:item.price,emoji:item.e||null,category:item.cat||null,
+      // Save for Later se wishlist me jane par image bhi store karo
+      image:item.image||null,
     }).select();
     if(!error&&data&&data[0]){
       setWishlist(l=>[...l,data[0]]);

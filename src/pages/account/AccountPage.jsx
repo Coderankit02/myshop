@@ -515,7 +515,11 @@ function WishlistTab({ state, setState, showToast, priceAlerts, toggleAlert }) {
           const alerted=(priceAlerts||[]).includes(w.product_id);
           return (
             <div key={w.id} className="flex gap-3 items-center px-4 md:px-5 py-3.5 last:border-b-0" style={{borderBottom:'1px solid var(--border)'}}>
-              <div className="w-[52px] h-[52px] rounded-xl flex items-center justify-center text-2xl flex-shrink-0" style={{background:'var(--light)', border:'1.5px solid var(--border)'}}>{w.emoji||'🛒'}</div>
+              <div className="w-[52px] h-[52px] rounded-xl flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden" style={{background:'var(--light)', border:'1.5px solid var(--border)'}}>
+                {w.image
+                  ?<img src={w.image} alt={w.name} className="w-full h-full object-cover"/>
+                  :<span>{w.emoji||'🛒'}</span>}
+              </div>
               <div className="flex-1 min-w-0">
                 <div className="text-[13px] font-bold font-poppins" style={{color:'var(--dark)'}}>{w.name}</div>
                 <div className="text-[11px] font-poppins mt-0.5" style={{color:'var(--muted)'}}>{w.unit||''}</div>
