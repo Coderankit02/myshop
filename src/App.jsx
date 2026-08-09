@@ -96,17 +96,20 @@ function CategoryGrid({cats,catsLoading,catEmoji,onPick}){
   return(
     <div>
       <h2 className="text-base md:text-xl font-bold font-poppins" style={{color:'var(--dark)'}}>Shop by Category</h2>
-      <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3 md:gap-4 mt-3">
+      {/* Single row + horizontal scroll — 16 categories ab wrap nahi hongi, ek
+          hi line me scroll karke saari dikhengi (ProductRail/MobileCatRow jaisa
+          hi pattern: flex + overflow-x-auto + snap + scrollbar-hide). */}
+      <div className="flex gap-3 md:gap-4 overflow-x-auto pb-1 snap-x scrollbar-hide mt-3">
         {catsLoading
           ?[...Array(8)].map((_,i)=>(
-            <div key={i} aria-hidden="true" className="flex flex-col items-center gap-1.5">
+            <div key={i} aria-hidden="true" className="flex-shrink-0 w-16 md:w-20 flex flex-col items-center gap-1.5">
               <div className="w-full aspect-square rounded-2xl animate-pulse" style={{background:'var(--light)'}}/>
               <div className="h-2.5 w-10 rounded animate-pulse" style={{background:'var(--light)'}}/>
             </div>
           ))
           :cats.map(c=>(
-            <button key={c.id} onClick={()=>onPick(c.id)}
-              className="flex flex-col items-center gap-1.5 group">
+            <button key={c.id} onClick={()=>onPick(c.id)} title={c.name}
+              className="flex-shrink-0 w-16 md:w-20 snap-start flex flex-col items-center gap-1.5 group">
               <div className="w-full aspect-square rounded-2xl flex items-center justify-center text-2xl md:text-3xl overflow-hidden transition-transform group-active:scale-95 group-hover:-translate-y-0.5"
                 style={{background:'var(--primary-light)'}}>
                 {(c.display_image||c.image_url)
