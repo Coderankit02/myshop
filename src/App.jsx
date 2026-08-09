@@ -164,52 +164,21 @@ function HeroBanner({banners,bannersLoading,bannerIdx,setBannerIdx,wrapRef,handl
 
 
 
-// 🎨 Category Section Header — har category ke naam ka designer banner:
-// gradient background + emoji/image badge + item count + See All pill.
-// Module-level (Module 13 pattern) — App re-render par remount nahi hota.
-function CatSectionHeader({name,icon,img,count,onSeeAll}){
-  return(
-    <div className="relative overflow-hidden rounded-2xl md:rounded-3xl px-4 md:px-6 py-4 md:py-5 mb-3 flex items-center justify-between gap-3"
-      style={{background:'linear-gradient(120deg,var(--primary-dark),var(--primary) 60%,var(--primary))',boxShadow:'0 8px 24px rgba(22,163,74,0.30)'}}>
-      <div className="absolute -right-8 -top-12 w-36 h-36 rounded-full bg-white/10 pointer-events-none"/>
-      <div className="absolute right-24 -bottom-14 w-28 h-28 rounded-full bg-white/[0.06] pointer-events-none"/>
-      <div className="absolute left-1/2 -top-8 w-24 h-24 rounded-full bg-white/[0.07] pointer-events-none"/>
-      <div className="relative flex items-center gap-3 min-w-0">
-        <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center text-2xl md:text-3xl overflow-hidden flex-shrink-0"
-          style={{boxShadow:'inset 0 2px 6px rgba(0,0,0,0.15)'}}>
-          {img
-            ?<img src={img} alt={name} className="w-full h-full object-cover"/>
-            :icon
-          }
-        </div>
-        <div className="min-w-0">
-          <h2 className="text-white font-extrabold font-poppins text-base md:text-xl truncate leading-tight" style={{textShadow:'0 2px 8px rgba(0,0,0,0.25)'}}>{name}</h2>
-          {count!=null&&(
-            <span className="inline-block text-white/80 text-[10px] md:text-xs font-poppins font-semibold mt-0.5">{count} {count===1?'item':'items'} 🛒</span>
-          )}
-        </div>
-      </div>
-      {onSeeAll&&(
-        <button onClick={onSeeAll}
-          className="relative flex-shrink-0 bg-white text-[11px] md:text-sm font-bold font-poppins px-3.5 md:px-5 py-2 md:py-2.5 rounded-full flex items-center gap-1 shadow-md transition-transform hover:scale-105 active:scale-95"
-          style={{color:'var(--primary-dark)'}}>
-          See All <span className="text-[10px] md:text-xs">→</span>
-        </button>
-      )}
-    </div>
-  );
-}
-
-function ProductRail({title,loading,products,onSeeAll,cart,addToCart,updQty,onDetail,header}){
+// Category section titles: titlePill ho to sirf TITLE TEXT ke around designer
+// gradient pill (baki layout bilkul same — See All right, products neeche).
+function ProductRail({title,loading,products,onSeeAll,cart,addToCart,updQty,onDetail,titlePill}){
   if(!loading&&(!products||products.length===0))return null;
   return(
     <div>
-      {header||(
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base md:text-xl font-bold font-poppins" style={{color:'var(--dark)'}}>{title}</h2>
-          <button onClick={onSeeAll} className="text-xs md:text-sm font-semibold font-poppins flex items-center gap-0.5" style={{color:'var(--primary)'}}>See All →</button>
-        </div>
-      )}
+      <div className="flex items-center justify-between mb-3">
+        <h2 className={titlePill
+          ?"inline-block text-sm md:text-lg font-extrabold font-poppins px-4 py-1.5 md:px-5 md:py-2 rounded-full text-white leading-tight"
+          :"text-base md:text-xl font-bold font-poppins"}
+          style={titlePill
+            ?{background:'linear-gradient(120deg,var(--primary-dark),var(--primary))',boxShadow:'0 4px 14px rgba(22,163,74,0.30)'}
+            :{color:'var(--dark)'}}>{title}</h2>
+        <button onClick={onSeeAll} className="text-xs md:text-sm font-semibold font-poppins flex items-center gap-0.5" style={{color:'var(--primary)'}}>See All →</button>
+      </div>
       <div className="flex gap-3 md:gap-4 overflow-x-auto pb-1 snap-x scrollbar-hide">
         {loading||!products
           ?[...Array(4)].map((_,i)=><div key={i} className="flex-shrink-0 w-36 md:w-44 snap-start"><SkelCard/></div>)
@@ -320,8 +289,9 @@ function HomeContent({homepageSections,banners,bannersLoading,bannerIdx,setBanne
             if(sectionProdsReady&&(!items||items.length===0)){
               return(
                 <div key={c.id}>
-                  <CatSectionHeader name={c.name} icon={catEmoji(c)} img={c.display_image||c.image_url} onSeeAll={()=>onPickCategory(c.id)}/>
-                  <div className="rounded-2xl p-5 text-center mt-3" style={{background:'var(--card-bg)'}}>
+                  <h2 className="inline-block text-sm md:text-lg font-extrabold font-poppins px-4 py-1.5 md:px-5 md:py-2 rounded-full text-white leading-tight mb-3"
+                    style={{background:'linear-gradient(120deg,var(--primary-dark),var(--primary))',boxShadow:'0 4px 14px rgba(22,163,74,0.30)'}}>{c.name}</h2>
+                  <div className="rounded-2xl p-5 text-center" style={{background:'var(--card-bg)'}}>
                     <p className="text-xs font-poppins" style={{color:'var(--gray)'}}>Is category ke products jald aa rahe hain 🛒</p>
                   </div>
                 </div>
@@ -330,8 +300,7 @@ function HomeContent({homepageSections,banners,bannersLoading,bannerIdx,setBanne
             return(
               <ProductRail key={c.id} title={c.name} loading={!sectionProdsReady} products={items}
                 onSeeAll={()=>onPickCategory(c.id)} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}
-                header={<CatSectionHeader name={c.name} icon={catEmoji(c)} img={c.display_image||c.image_url}
-                  count={items&&items.length>0?items.length:undefined} onSeeAll={()=>onPickCategory(c.id)}/>}/>
+                titlePill/>
             );
           }),
           why_choose_us: <WhyChooseUs/>,
