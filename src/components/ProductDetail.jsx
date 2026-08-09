@@ -103,7 +103,11 @@ export function ProductDetail({product,cart,addToCart,updQty,onBack,onDetail}){
 
       <div className="grid md:grid-cols-2 gap-6 md:gap-10">
         {/* ── Gallery ── */}
-        <div>
+        {/* Fix: grid child par min-w-0 (Tailwind default 'auto' nahi) — warna
+            image ki intrinsic sizing grid track ko 440px tak kheench deti thi
+            (grid 358px hota hua bhi), jisse detail page mobile par horizontal
+            overflow hota tha aur poori page shrink ho jaati thi. */}
+        <div className="min-w-0">
           <div className="relative aspect-square rounded-2xl overflow-hidden select-none"
             style={{background:'var(--light)',border:'1.5px solid var(--border)'}}
             onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}
@@ -133,7 +137,9 @@ export function ProductDetail({product,cart,addToCart,updQty,onBack,onDetail}){
                 <button key={img.id||i} onClick={()=>setSelImg(i)}
                   className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0"
                   style={{border:`2px solid ${selImg===i?'var(--primary)':'var(--border)'}`}}>
-                  <ProdImg src={img.image_url} alt={`${product.name} ${i+1}`}/>
+                  {/* thumbnails: fixed h-14 + overflow-hidden — portrait images yahan bhi
+                      container ko nahi kheench sakti */}
+                  <div className="w-full h-full"><ProdImg src={img.image_url} alt={`${product.name} ${i+1}`}/></div>
                 </button>
               ))}
             </div>
@@ -151,7 +157,7 @@ export function ProductDetail({product,cart,addToCart,updQty,onBack,onDetail}){
         </div>
 
         {/* ── Info ── */}
-        <div>
+        <div className="min-w-0">
           {product.categories&&<div className="text-[11px] font-bold font-poppins uppercase tracking-wide mb-1.5" style={{color:'var(--primary)'}}>{product.categories.name}</div>}
           <h1 className="text-xl md:text-2xl font-extrabold font-poppins leading-snug" style={{color:'var(--dark)'}}>{product.name}</h1>
           <div className="text-xs font-poppins mt-1" style={{color:'var(--gray)'}}>{product.unit_value}</div>
@@ -198,7 +204,7 @@ export function ProductDetail({product,cart,addToCart,updQty,onBack,onDetail}){
             {relatedLoading
               ?[...Array(4)].map((_,i)=><div key={i} className="flex-shrink-0 w-36 md:w-44 snap-start"><SkelCard/></div>)
               :related.map(p=>(
-                <div key={p.id} className="flex-shrink-0 w-36 md:w-44 snap-start">
+                <div key={p.id} className="flex-shrink-0 w-36 md:w-44 snap-start min-w-0">
                   <PCard p={p} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}/>
                 </div>
               ))

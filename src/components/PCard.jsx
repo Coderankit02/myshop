@@ -10,7 +10,11 @@ export function PCard({p,cart,addToCart,updQty,onDetail}){
     <div className="rounded-2xl overflow-hidden cursor-pointer flex flex-col h-full"
       style={{background:'var(--card-bg)',boxShadow:'0 2px 10px rgba(0,0,0,0.06)'}}
       onClick={()=>onDetail&&onDetail(p)}>
-      <div className="relative aspect-square" style={{background:'var(--light)'}}>
+      {/* Fix: overflow-hidden — image apni natural aspect-ratio se container ko
+          kheench kar non-square (144x151/144x199) na bana de. Iske bina 3:4
+          portrait images se cards alag-size dikhte the + detail page par
+          horizontal overflow hota tha. */}
+      <div className="relative aspect-square overflow-hidden" style={{background:'var(--light)'}}>
         {/* Fix #7 (preserved): no discount tag on a card already covered by the out-of-stock overlay */}
         {disc&&!oos&&(
           <span className="absolute top-2 left-2 z-10 text-white text-[10px] font-bold font-poppins px-1.5 py-0.5 rounded-md"
