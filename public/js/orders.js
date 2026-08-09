@@ -99,28 +99,13 @@
   }
 
   /**
-   * Create a new order.
-   * @param {string|null} userId   null = guest order
-   * @param {{
-   *   cart, total, address, paymentMethod,
-   *   promoCode?, discount?, latitude?, longitude?,
-   *   distance_km?, delivery_charge?, delivery_status?,
-   *   maps_link?, maps_nav_link?, location_accuracy?
-   * }} opts
-   * @returns {{ orderId, orderNumber } | null}
+   * LEGACY direct-insert path (sirf tab jab create_order RPC DB me maujood na ho).
+   * RLS hardening part-2 migration ke baad direct INSERT policies orders/
+   * order_items par hata di gayi hain — isliye ye path sirf pre-migration
+   * environment ke liye fallback hai.
    */
-  async function createOrder(userId, opts) {
+  async function _legacyCreateOrder(userId, opts) {
     const { cart, total, address, paymentMethod, promoCode = null, discount = 0 } = opts;
-
-    if (!cart?.length) { console.error('[RKOrders] createOrder: empty cart'); return null; }
-
-    // BUG FIX (Critical #3): Block check before anything else.
-    const isBlocked = await _checkUserBlocked(userId);
-    if (isBlocked) {
-      console.warn('[RKOrders] createOrder: user is blocked');
-      return { blocked: true }; // caller should show error to user
-    }
-
     const orderNumber = _genOrderNumber();
 
     const locationFields = opts.latitude != null ? {
@@ -137,16 +122,8 @@
       delivery_status : 'unknown',
     };
 
-    // BUG FIX (2026-08): Math.max(0, ...) clamp — discount subtotal se zyada
-    // ho to negative final_amount store ho jaata tha (Razorpay amount check
-    // aur reporting dono toot jaati thin). CheckoutForm already clamps; ab
-    // DB-side bhi consistent.
     const finalAmount = Math.max(0, total - discount + (locationFields.delivery_charge || 0));
 
-    // BUG FIX (Critical #2): payment_status ab hamesha 'pending' start hota hai.
-    // Pehle: paymentMethod === 'upi' ? 'paid' : 'pending'
-    // Ye galat tha — order place hote hi UPI "paid" mark ho jaata tha.
-    // Sahi flow: customer screenshot submit kare → admin approve kare → tab 'paid'.
     const { data: order, error: oErr } = await getDB()
       .from('orders')
       .insert({
@@ -154,7 +131,7 @@
         order_number   : orderNumber,
         status         : 'pending',
         payment_method : paymentMethod,
-        payment_status : 'pending', // always pending until admin/webhook confirms
+        payment_status : 'pending',
         subtotal       : total,
         discount,
         promo_code     : promoCode,
@@ -172,7 +149,7 @@
       .select()
       .single();
 
-    if (oErr) { console.error('[RKOrders] createOrder (header):', oErr.message); return null; }
+    if (oErr) { console.error('[RKOrders] _legacyCreateOrder (header):', oErr.message); return null; }
 
     const items = cart.map(item => ({
       order_id  : order.id,
@@ -180,11 +157,6 @@
       name      : item.name,
       unit      : item.unit,
       emoji     : item.e,
-      // BUG FIX: order_items.category has a NOT NULL constraint. Kart items can
-      // legitimately carry a null category (e.g. products fetched from homepage
-      // sections where the categories join isn't included, or old carts restored
-      // from localStorage before categories were stored). Sanitize at the write
-      // boundary so the insert never violates the constraint.
       category  : item.cat || 'General',
       price     : item.price,
       old_price : item.old || null,
@@ -193,17 +165,93 @@
     }));
 
     const { error: iErr } = await getDB().from('order_items').insert(items);
-    if (iErr) { console.error('[RKOrders] createOrder (items):', iErr.message); }
+    if (iErr) { console.error('[RKOrders] _legacyCreateOrder (items):', iErr.message); }
 
-    // BUG FIX (Critical #4): order confirm hote hi stock kam karo.
-    _decrementStock(cart); // fire-and-forget; don't block order confirmation for the customer
-
-    // BUG FIX (Medium #10): Coupon use count badhao.
-    if (promoCode) {
-      _incrementCouponUsage(promoCode); // fire-and-forget; don't block order confirmation
-    }
+    _decrementStock(cart);
+    if (promoCode) _incrementCouponUsage(promoCode);
 
     return { orderId: order.id, orderNumber };
+  }
+
+  /**
+   * Create a new order.
+   * SECURITY (audit follow-up, 2026-08-09): ab order SIRF create_order() RPC se
+   * banta hai — server-side DB selling_price se subtotal recompute hota hai aur
+   * coupon server-side validate hota hai. Client cart total/price tamper karne
+   * par order reject ho jaata hai. (Pehle client direct orders/order_items
+   * insert karta tha jisse koi bhi ₹1 ka order bana sakta tha.)
+   *
+   * @param {string|null} userId   null = guest order
+   * @param {{
+   *   cart, total, address, paymentMethod,
+   *   promoCode?, discount?, latitude?, longitude?,
+   *   distance_km?, delivery_charge?, delivery_status?,
+   *   maps_link?, maps_nav_link?, location_accuracy?
+   * }} opts
+   * @returns {{ orderId, orderNumber } | null}
+   */
+  async function createOrder(userId, opts) {
+    const { cart, address, paymentMethod, promoCode = null } = opts;
+
+    if (!cart?.length) { console.error('[RKOrders] createOrder: empty cart'); return null; }
+
+    // BUG FIX (Critical #3): Block check before anything else.
+    const isBlocked = await _checkUserBlocked(userId);
+    if (isBlocked) {
+      console.warn('[RKOrders] createOrder: user is blocked');
+      return { blocked: true }; // caller should show error to user
+    }
+
+    try {
+      // SECURITY: server-side verified order creation (prices/coupon/stock sab DB side)
+      const { data, error } = await getDB().rpc('create_order', {
+        p_user_id        : userId || null,
+        p_cart           : cart.map(i => ({ id: i.id, qty: i.qty, e: i.e || null })),
+        p_address        : {
+          name    : address.name,
+          phone   : address.phone,
+          line1   : address.line1,
+          line2   : address.line2 || '',
+          city    : address.city || 'Prayagraj',
+          pincode : address.pincode || '',
+        },
+        p_payment_method : paymentMethod,
+        p_promo_code     : promoCode || null,
+        p_latitude       : opts.latitude ?? null,
+        p_longitude      : opts.longitude ?? null,
+        p_distance_km    : opts.distance_km ?? null,
+        p_delivery_charge: opts.delivery_charge || 0,
+        p_delivery_status: opts.delivery_status || 'unknown',
+        p_maps_link      : opts.maps_link || null,
+        p_maps_nav_link  : opts.maps_nav_link || null,
+        p_location_accuracy: opts.location_accuracy ?? null,
+      });
+
+      if (error) {
+        // RPC abhi DB me deploy nahi hua (migration pending) → legacy path
+        if (String(error.code) === '42883' || String(error.code) === 'PGRST202') {
+          console.warn('[RKOrders] create_order RPC missing — legacy path fallback');
+          return _legacyCreateOrder(userId, opts);
+        }
+        // Server-side validation failed (price tamper, coupon invalid, stock...)
+        console.error('[RKOrders] createOrder (rpc):', error.message);
+        return null;
+      }
+
+      // Server-side computed amounts bhi return karo — caller (CheckoutForm)
+      // inhe use karke client display ko server total se sync kar sakta hai
+      // (DB price badal gayi ho to display mismatch na ho).
+      return {
+        orderId     : data.order_id,
+        orderNumber : data.order_number,
+        subtotal    : data.subtotal,
+        discount    : data.discount,
+        finalAmount : data.final_amount,
+      };
+    } catch (e) {
+      console.error('[RKOrders] createOrder (rpc exception):', e.message);
+      return null;
+    }
   }
 
   async function loadOrderHistory(userId, limit = 20) {
