@@ -66,7 +66,10 @@ export function useProducts(options={}){
       ...p,
       discount:calcDiscount(p.selling_price,p.original_price),
       images:(p.product_images||[]).sort((a,b)=>a.sort_order-b.sort_order),
-      primary_image:(()=>{const imgs=(p.product_images||[]).slice().sort((a,b)=>a.sort_order-b.sort_order);return(imgs.find(i=>i.is_default)||imgs[0])?.image_url||null;})(),
+      // BUG FIX: primary_image ab pehli (sort_order se) image hai, is_default flag nahi
+      // — kai products me default flag beech/aakhri image par hai, isliye pehle cards
+      // par bhi galat image dikhti thi.
+      primary_image:(()=>{const imgs=(p.product_images||[]).slice().sort((a,b)=>a.sort_order-b.sort_order);return imgs[0]?.image_url||null;})(),
     }));
     setProducts(enriched);setTotal(count||0);setLoading(false);
   },[categoryId,featured,search,page,pageSize]);
@@ -220,7 +223,8 @@ export function useHomeSections(){
           ...p,
           discount:calcDiscount(p.selling_price,p.original_price),
           images:imgs,
-          primary_image:(imgs.find(i=>i.is_default)||imgs[0])?.image_url||null,
+          // BUG FIX: primary_image = pehli sorted image (is_default nahi).
+          primary_image:imgs[0]?.image_url||null,
         };
       });
       const inStock=enriched.filter(p=>p.stock_quantity>0);
@@ -324,7 +328,8 @@ export function useSearch(query,active){
         ...p,
         discount:calcDiscount(p.selling_price,p.original_price),
         images:(p.product_images||[]).slice().sort((a,b)=>a.sort_order-b.sort_order),
-        primary_image:(()=>{const imgs=(p.product_images||[]).slice().sort((a,b)=>a.sort_order-b.sort_order);return(imgs.find(i=>i.is_default)||imgs[0])?.image_url||null;})(),
+        // BUG FIX: same as useProducts — primary_image = pehli sorted image.
+        primary_image:(()=>{const imgs=(p.product_images||[]).slice().sort((a,b)=>a.sort_order-b.sort_order);return imgs[0]?.image_url||null;})(),
       })));
       setLoading(false);
     },350);

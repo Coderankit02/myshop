@@ -624,11 +624,11 @@ export default function App(){
         .order('is_featured',{ascending:false})
         .limit(8);
       setSectionProds(p=>({...p,[c.id]:(data||[]).map(pr=>{
-        // BUG FIX: pehle yahan sirf sort_order ke hisaab se pehli image le li jaati thi,
-        // admin ka "⭐ Default" (is_default) flag ignore ho jaata tha. Ab dataHooks.js
-        // jaisa hi logic — is_default wali image ko priority milti hai.
+        // BUG FIX: images sorted by sort_order; primary_image = PEHLI image
+        // (dataHooks.js jaisa hi shape). Pehle is_default flag wali image lete the,
+        // par kai products me default flag beech/aakhri image par set hai — isliye
+        // cards/detail dono par galat (beech wali) image dikhti thi.
         const imgs=(pr.product_images||[]).slice().sort((a,b)=>a.sort_order-b.sort_order);
-        const defImg=imgs.find(i=>i.is_default)||imgs[0];
         return{
           ...pr,
           discount:calcDiscount(pr.selling_price,pr.original_price),
@@ -638,7 +638,7 @@ export default function App(){
           // par detail page par image kabhi dikhti hi nahi thi (🛒 placeholder).
           // Ab dataHooks.js jaisa hi shape — images + primary_image dono.
           images:imgs,
-          primary_image:defImg?.image_url||null,
+          primary_image:imgs[0]?.image_url||null,
         };
       })}));
     });

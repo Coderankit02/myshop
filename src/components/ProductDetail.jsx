@@ -13,13 +13,12 @@ export function ProductDetail({product,cart,addToCart,updQty,onBack,onDetail}){
   // NOTE: images/rawImages niche computed hote hain (primary_image fallback ke
   // saath) — par selImg initializer yahan component body ke start mein hi hai,
   // isliye same fallback logic yahan bhi apply hota hai.
-  const [selImg,setSelImg]=useState(()=>{
-    const imgs=product.images&&product.images.length
-      ?product.images
-      :(product.primary_image?[{image_url:product.primary_image,is_default:true,sort_order:0}]:[]);
-    const defIdx=imgs.findIndex(i=>i.is_default);
-    return defIdx>=0?defIdx:0;
-  });
+  // BUG FIX: gallery HAMESHA first image (sort_order 0) se start hoti hai.
+  // Pehle `is_default` flag wali image select hoti thi, par kai products mein
+  // default flag beech/aakhri image par set hai — isliye overview par beech ki
+  // image dikhti thi (e.g. lehsun). Ab user first image dekhta hai aur baaki
+  // thumbnails/swipe se scroll kar sakta hai.
+  const [selImg,setSelImg]=useState(0);
   const inC=cart.find(i=>i.id===product.id);
   const disc=product.discount;
   const oos=product.stock_quantity<=0;
@@ -34,7 +33,7 @@ export function ProductDetail({product,cart,addToCart,updQty,onBack,onDetail}){
   // primary_image se ek single-image gallery bana do, taaki detail page par
   // kabhi bhi image missing na dikhe (🛒 placeholder).
   const rawImages=product.images&&product.images.length
-    ?product.images
+    ?[...product.images].sort((a,b)=>(a.sort_order||0)-(b.sort_order||0))
     :(product.primary_image?[{image_url:product.primary_image,is_default:true,sort_order:0}]:[]);
   const images=rawImages;
   const mainSrc=images[selImg]?.image_url||null;
@@ -108,7 +107,10 @@ export function ProductDetail({product,cart,addToCart,updQty,onBack,onDetail}){
   );
 
   return(
-    <div className="max-w-site mx-auto px-4 md:px-8 pt-4 pb-8">
+    // pb-32 (128px) mobile: sticky add-to-cart bar (bottom:70px+bar height)
+    // 'Aapko Ye Bhi Pasand Aa Sakta Hai' ke aakhri cards ko kabhi na chhupaye.
+    // Desktop (md): normal pb-8 — wahan sticky bar hidden hai.
+    <div className="max-w-site mx-auto px-4 md:px-8 pt-4 pb-32 md:pb-8">
       <button onClick={onBack} className="flex items-center gap-1 text-sm font-poppins font-semibold mb-3" style={{color:'var(--gray)'}}>
         <ChevronLeft size={16}/> Wapas Jao
       </button>
