@@ -30,7 +30,7 @@ export function UpiPayCard({ total, upiId }) {
       '&tn=' + encodeURIComponent('Order Payment');
     QRCode.toDataURL(link, {
       width: 480,
-      margin: 2,             // quiet zone — QR kabhi edge se cut nahi hoga
+      margin: 4,             // quiet zone (spec: 4 modules) — QR kabhi edge se cut nahi hoga
       errorCorrectionLevel: 'M',
       color: { dark: '#000000', light: '#FFFFFF' },
     })
@@ -59,7 +59,7 @@ export function UpiPayCard({ total, upiId }) {
           <span className="w-2 h-2" style={{ background: '#16A34A' }} />
         </div>
         <div className="p-3 rounded-2xl" style={{ background: 'var(--light)', border: '1px solid var(--border)' }}>
-          <div className="w-48 h-48 rounded-xl overflow-hidden bg-white flex items-center justify-center">
+          <div className="w-52 h-52 rounded-xl overflow-hidden bg-white flex items-center justify-center">
             {qrErr || !qrUrl ? (
               <div className="text-[10px] font-poppins text-center px-2" style={{ color: 'var(--gray)' }}>
                 QR generate nahi hua.<br />UPI ID se manually pay karein<br />

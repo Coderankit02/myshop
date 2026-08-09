@@ -349,18 +349,26 @@ export function CheckoutForm({cart,total:cartTotal,showToast,onSuccess,user,onLo
           <div className={`font-poppins font-bold text-xs px-2.5 py-1 rounded-lg ${remainingSec<=60?'animate-pulse':''}`}
             style={{background:remainingSec<=60?'var(--tint-red-bg)':'var(--primary-light)',color:remainingSec<=60?'var(--tint-red-text)':'var(--primary-dark)'}}>⏱ {fmtTime(remainingSec)}</div>
         </div>
-        <div className="flex-1 overflow-y-auto px-4 py-5 flex flex-col items-center">
-          <div className="text-xs font-poppins font-semibold text-center" style={{color:'var(--gray)'}}>
+        {/* FIX (2026-08): scroll container ke saare children par `shrink-0` — pehle
+            flexbox inhe chhote viewports par compress kar deta tha (UpiPayCard ka
+            overflow-hidden uski min-height 0 kar deta hai, isliye wo sabse pehle
+            shrink hota tha) → QR card clip hota tha aur content 'squeeze' hone se
+            scrollHeight==clientHeight reh jata tha → screen 'frozen' lagti thi, scroll
+            karna impossible. Ab content kabhi compress nahi hota — chhote screens par
+            container proper scroll karta hai. + overscroll-contain (mobile par scroll
+            chaining se page 'fixed' feel na ho) + -webkit-overflow-scrolling:touch. */}
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-5 flex flex-col items-center" style={{WebkitOverflowScrolling:'touch'}}>
+          <div className="shrink-0 text-xs font-poppins font-semibold text-center" style={{color:'var(--gray)'}}>
             {orderInfo?.orderNumber?`Order #${orderInfo.orderNumber}`:'Order pending — verification ke baad confirm hoga'}
           </div>
-          <div className="text-3xl font-extrabold font-poppins mt-1 mb-4" style={{color:'var(--dark)'}}>₹{finalAmount}</div>
-          <UpiPayCard total={finalAmount} upiId={UPI_ID}/>
+          <div className="shrink-0 text-3xl font-extrabold font-poppins mt-1 mb-4" style={{color:'var(--dark)'}}>₹{finalAmount}</div>
+          <div className="shrink-0 w-full flex justify-center"><UpiPayCard total={finalAmount} upiId={UPI_ID}/></div>
           {showWaitHint&&(
-            <div className="flex items-center gap-2 rounded-xl px-3 py-2.5 mt-4 text-xs font-poppins font-semibold w-full max-w-sm" style={{background:'var(--tint-yellow-bg)',border:'1px solid var(--tint-yellow-border)',color:'var(--tint-yellow-text)'}}>
+            <div className="shrink-0 flex items-center gap-2 rounded-xl px-3 py-2.5 mt-4 text-xs font-poppins font-semibold w-full max-w-sm" style={{background:'var(--tint-yellow-bg)',border:'1px solid var(--tint-yellow-border)',color:'var(--tint-yellow-text)'}}>
               <span>⏰</span><span>QR dobara scan karein ya UPI ID <b>{UPI_ID}</b> par manually pay karein</span>
             </div>
           )}
-          <div className={`${cardCls} w-full max-w-sm mt-3.5`} style={cardStyle}>
+          <div className={`shrink-0 ${cardCls} w-full max-w-sm mt-3.5`} style={cardStyle}>
             <div className="font-extrabold font-poppins text-sm mb-2" style={{color:'var(--dark)'}}>🧾 Payment Verification</div>
             <label className={labelCls} htmlFor="utr-input" style={{color:'var(--gray)'}}>UTR / Transaction ID</label>
             <input id="utr-input" className={inputCls} style={inputStyle} placeholder="UTR / Transaction ID *" value={utr} onChange={e=>setUtr(e.target.value.replace(/\s/g,''))}/>
@@ -377,7 +385,7 @@ export function CheckoutForm({cart,total:cartTotal,showToast,onSuccess,user,onLo
               }
             </label>
           </div>
-          <button className="place-order-btn w-full max-w-sm mt-3.5 text-white font-extrabold font-poppins rounded-2xl py-3.5 text-sm"
+          <button className="shrink-0 place-order-btn w-full max-w-sm mt-3.5 text-white font-extrabold font-poppins rounded-2xl py-3.5 text-sm"
             style={{background:'linear-gradient(135deg, var(--primary), var(--primary-dark))'}}
             disabled={submittingVerify} onClick={handleSubmitVerification}>
             {submittingVerify?'⏳ Submitting...':'✅ Verification Submit Karein'}
