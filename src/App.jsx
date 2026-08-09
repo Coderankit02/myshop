@@ -624,10 +624,9 @@ export default function App(){
         .order('is_featured',{ascending:false})
         .limit(8);
       setSectionProds(p=>({...p,[c.id]:(data||[]).map(pr=>{
-        // BUG FIX: images sorted by sort_order; primary_image = PEHLI image
-        // (dataHooks.js jaisa hi shape). Pehle is_default flag wali image lete the,
-        // par kai products me default flag beech/aakhri image par set hai — isliye
-        // cards/detail dono par galat (beech wali) image dikhti thi.
+        // BUG FIX: images sorted by sort_order; primary_image = admin ka ⭐ DEFAULT
+        // (is_default flag) — dataHooks.js jaisa hi shape. Default nahi hai to
+        // pehli sorted image fallback.
         const imgs=(pr.product_images||[]).slice().sort((a,b)=>a.sort_order-b.sort_order);
         return{
           ...pr,
@@ -638,7 +637,7 @@ export default function App(){
           // par detail page par image kabhi dikhti hi nahi thi (🛒 placeholder).
           // Ab dataHooks.js jaisa hi shape — images + primary_image dono.
           images:imgs,
-          primary_image:imgs[0]?.image_url||null,
+          primary_image:(imgs.find(i=>i.is_default)||imgs[0])?.image_url||null,
         };
       })}));
     });

@@ -13,12 +13,17 @@ export function ProductDetail({product,cart,addToCart,updQty,onBack,onDetail}){
   // NOTE: images/rawImages niche computed hote hain (primary_image fallback ke
   // saath) — par selImg initializer yahan component body ke start mein hi hai,
   // isliye same fallback logic yahan bhi apply hota hai.
-  // BUG FIX: gallery HAMESHA first image (sort_order 0) se start hoti hai.
-  // Pehle `is_default` flag wali image select hoti thi, par kai products mein
-  // default flag beech/aakhri image par set hai — isliye overview par beech ki
-  // image dikhti thi (e.g. lehsun). Ab user first image dekhta hai aur baaki
-  // thumbnails/swipe se scroll kar sakta hai.
-  const [selImg,setSelImg]=useState(0);
+  // BUG FIX: overview HAMESHA admin ke ⭐ DEFAULT image se start hoti hai
+  // (is_default flag). Gallery order sort_order ke hisaab se sorted rehta hai
+  // (admin ka 'site par same order'), par jo image admin ne default banayi hai
+  // wahi pehli dikhti hai — user baaki images thumbnails/swipe se scroll karta hai.
+  const [selImg,setSelImg]=useState(()=>{
+    const imgs=product.images&&product.images.length
+      ?[...product.images].sort((a,b)=>(a.sort_order||0)-(b.sort_order||0))
+      :(product.primary_image?[{image_url:product.primary_image,is_default:true,sort_order:0}]:[]);
+    const defIdx=imgs.findIndex(i=>i.is_default);
+    return defIdx>=0?defIdx:0;
+  });
   const inC=cart.find(i=>i.id===product.id);
   const disc=product.discount;
   const oos=product.stock_quantity<=0;
