@@ -296,7 +296,7 @@
     if (productIds.length) {
       const { data: freshProducts } = await getDB()
         .from('products')
-        .select('id,name,selling_price,unit_value,is_active,stock_quantity')
+        .select('id,name,selling_price,unit_value,is_active,stock_quantity,product_images(image_url,is_default,sort_order)')
         .in('id', productIds);
 
       (freshProducts || []).forEach(p => { freshPrices[p.id] = p; });
@@ -305,6 +305,9 @@
     const products = order.items.map(i => {
       const fresh = freshPrices[i.product_id];
       const stock = fresh ? (fresh.stock_quantity ?? 0) : 0;
+      // Primary image (is_default first, warna sort_order) — cart drawer me image dikhe
+      const imgs = (fresh?.product_images || []).slice().sort((a, b) => a.sort_order - b.sort_order);
+      const img = (imgs.find(x => x.is_default) || imgs[0])?.image_url || null;
       return {
         id   : i.product_id,
         name : fresh?.name || i.name,
@@ -314,6 +317,7 @@
         old  : i.old_price,
         e    : i.emoji,
         cat  : i.category,
+        image: img,
         qty  : i.qty || 1,
         // Deleted/inactive/OOS product = unavailable (checkout create_order reject karega)
         _unavailable: !fresh || !fresh.is_active || stock <= 0,

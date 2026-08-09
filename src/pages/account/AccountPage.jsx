@@ -57,6 +57,11 @@ const labelCls  = "text-[10px] font-bold font-poppins uppercase tracking-wide bl
 const btnPrimaryStyle   = { background:'linear-gradient(135deg, var(--primary), var(--primary-dark))', boxShadow:'0 4px 16px rgba(22,163,74,0.3)' };
 const btnSecondaryStyle = { background:'var(--light)', color:'var(--gray)', border:'1.5px solid var(--border)' };
 const btnDangerStyle    = { background:'var(--tint-red-bg)', color:'var(--red)', border:'1.5px solid var(--tint-red-border)' };
+// Product ka primary image (dataHooks.js jaisa hi logic): is_default first, warna sort_order se pehli
+const primaryImgOf = p => {
+  const imgs = (p?.product_images || []).slice().sort((a, b) => a.sort_order - b.sort_order);
+  return (imgs.find(i => i.is_default) || imgs[0])?.image_url || null;
+};
 
 function Card({ title, icon, action, children, noBody }) {
   return (
@@ -468,7 +473,14 @@ function ProfileTab({ state, setState, showToast }) {
 function WishlistTab({ state, setState, showToast, priceAlerts, toggleAlert }) {
   async function addToCart(w) {
     if (!window.RKCart) return;
-    await window.RKCart.addToCart({id:w.product_id,name:w.name,unit:w.unit,price:w.price,e:w.emoji,cat:w.category});
+    // Wishlist snapshot me image nahi hoti — fresh product se primary image le lo
+    // (taaki cart drawer me bhi product ka image dikhe, not 🛒 fallback)
+    let image=w.image||null;
+    if(!image){
+      const {data}=await supabase.from('products').select('product_images(image_url,is_default,sort_order)').eq('id',w.product_id).maybeSingle();
+      image=primaryImgOf(data);
+    }
+    await window.RKCart.addToCart({id:w.product_id,name:w.name,unit:w.unit,price:w.price,e:w.emoji,cat:w.category,image});
     showToast(`${w.name} cart mein add! 🛒`);
   }
   async function addAll() {
@@ -477,14 +489,15 @@ function WishlistTab({ state, setState, showToast, priceAlerts, toggleAlert }) {
     // Buy Again ki tarah FRESH data use karo — stale price/inactive/OOS items
     // cart me mat daalo (checkout ka create_order reject kar deta).
     const ids = state.wishlist.map(w=>w.product_id);
-    const {data:prods}=await supabase.from('products').select('id,name,selling_price,unit_value,is_active,stock_quantity').in('id',ids);
+    // product_images bhi le lo taaki cart me product image bhi jaye (drawer me dikhe)
+    const {data:prods}=await supabase.from('products').select('id,name,selling_price,unit_value,is_active,stock_quantity,product_images(image_url,is_default,sort_order)').in('id',ids);
     const fresh={}; (prods||[]).forEach(p=>{fresh[p.id]=p;});
     let added=0, skipped=0;
     for (const w of state.wishlist) {
       if (inCart.includes(w.product_id)) continue; // pehle se cart mein hai
       const f=fresh[w.product_id];
       if(!f||!f.is_active||(f.stock_quantity??0)<=0){ skipped++; continue; }
-      await window.RKCart.addToCart({id:w.product_id,name:f.name||w.name,unit:f.unit_value||w.unit,price:f.selling_price??w.price,e:w.emoji,cat:w.category});
+      await window.RKCart.addToCart({id:w.product_id,name:f.name||w.name,unit:f.unit_value||w.unit,price:f.selling_price??w.price,e:w.emoji,cat:w.category,image:primaryImgOf(f)});
       added++;
     }
     showToast(added?`${added} items cart mein add! 🛒`:(skipped?`${skipped} items stock mein nahi hain`:'Sab items pehle se cart mein hain ✅'));

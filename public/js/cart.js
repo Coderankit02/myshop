@@ -38,6 +38,10 @@
       id: r.product_id, name: r.name, unit: r.unit,
       price: r.price, old: r.old_price, e: r.emoji,
       cat: r.category, bg: r.bg_color, qty: r.qty,
+      // BUG FIX (2026-08): cart drawer me product image refresh ke baad bhi
+      // dikhe — pehle image DB me store nahi hoti thi, isliye logged-in cart
+      // DB se load hote hi image gayab ho jati thi.
+      image: r.image || null,
     }));
   }
 
@@ -46,7 +50,8 @@
       user_id: userId, product_id: item.id, name: item.name,
       unit: item.unit, price: item.price, old_price: item.old || null,
       emoji: item.e, category: item.cat, bg_color: item.bg || null,
-      qty: item.qty, updated_at: new Date().toISOString(),
+      qty: item.qty, image: item.image || null,
+      updated_at: new Date().toISOString(),
     }, { onConflict: 'user_id,product_id' });
     if (error) console.error('[RKCart] dbUpsert:', error.message);
   }
