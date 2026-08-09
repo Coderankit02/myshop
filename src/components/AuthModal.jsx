@@ -193,7 +193,7 @@ export default function AuthModal({ mode, onClose, onSwitchMode }) {
 
         <div className="px-5 pt-4 pb-6">
           {error && (
-            <div className="flex items-start gap-2 rounded-xl px-3 py-2.5 mb-3 text-xs font-poppins font-semibold" style={{ background: '#FEE2E2', color: '#B91C1C' }}>
+            <div className="flex items-start gap-2 rounded-xl px-3 py-2.5 mb-3 text-xs font-poppins font-semibold" style={{ background: 'var(--tint-red-bg)', color: 'var(--tint-red-text)' }}>
               <span>⚠️</span>
               <span>{typeof error === 'string' ? error : (
                 <>{error.text} {error.link && <button type="button" onClick={() => switchTo('login')} className="underline font-bold">Login karein →</button>}</>

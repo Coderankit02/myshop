@@ -347,7 +347,7 @@ export function CheckoutForm({cart,total:cartTotal,showToast,onSuccess,user,onLo
             className="w-8 h-8 rounded-full flex items-center justify-center" style={{color:'var(--gray)'}}>✕</button>
           <div className="font-extrabold font-poppins text-sm" style={{color:'var(--dark)'}}>Payment Karein</div>
           <div className={`font-poppins font-bold text-xs px-2.5 py-1 rounded-lg ${remainingSec<=60?'animate-pulse':''}`}
-            style={{background:remainingSec<=60?'#FEE2E2':'var(--primary-light)',color:remainingSec<=60?'#B91C1C':'var(--primary-dark)'}}>⏱ {fmtTime(remainingSec)}</div>
+            style={{background:remainingSec<=60?'var(--tint-red-bg)':'var(--primary-light)',color:remainingSec<=60?'var(--tint-red-text)':'var(--primary-dark)'}}>⏱ {fmtTime(remainingSec)}</div>
         </div>
         <div className="flex-1 overflow-y-auto px-4 py-5 flex flex-col items-center">
           <div className="text-xs font-poppins font-semibold text-center" style={{color:'var(--gray)'}}>
@@ -356,7 +356,7 @@ export function CheckoutForm({cart,total:cartTotal,showToast,onSuccess,user,onLo
           <div className="text-3xl font-extrabold font-poppins mt-1 mb-4" style={{color:'var(--dark)'}}>₹{finalAmount}</div>
           <UpiPayCard total={finalAmount} upiId={UPI_ID}/>
           {showWaitHint&&(
-            <div className="flex items-center gap-2 rounded-xl px-3 py-2.5 mt-4 text-xs font-poppins font-semibold w-full max-w-sm" style={{background:'#FFF8E1',border:'1px solid #FFE0A3',color:'#92600B'}}>
+            <div className="flex items-center gap-2 rounded-xl px-3 py-2.5 mt-4 text-xs font-poppins font-semibold w-full max-w-sm" style={{background:'var(--tint-yellow-bg)',border:'1px solid var(--tint-yellow-border)',color:'var(--tint-yellow-text)'}}>
               <span>⏰</span><span>QR dobara scan karein ya UPI ID <b>{UPI_ID}</b> par manually pay karein</span>
             </div>
           )}
@@ -547,15 +547,15 @@ export function CheckoutForm({cart,total:cartTotal,showToast,onSuccess,user,onLo
           </div>
         </div>
         {pay==='razorpay'&&(
-          <div className="flex items-center gap-2 rounded-xl px-3 py-2.5 mt-2.5 text-[11px] font-poppins font-semibold" style={{background:'#EFF6FF',color:'#1D4ED8',border:'1px solid #BFDBFE'}}>
+          <div className="flex items-center gap-2 rounded-xl px-3 py-2.5 mt-2.5 text-[11px] font-poppins font-semibold" style={{background:'var(--tint-blue-bg)',color:'var(--tint-blue-text)',border:'1px solid var(--tint-blue-border)'}}>
             🔒 Online payment Razorpay se — UPI, cards, netbanking. Payment confirm hote hi order confirm hoga.
           </div>
         )}
       </div>
 
-      {orderError&&<div className="rounded-xl px-3.5 py-2.5 mb-3 text-xs font-poppins font-semibold" role="alert" style={{background:'#FEE2E2',color:'#B91C1C'}}>⚠️ {orderError.replace(/^⚠️\s*/,'')}</div>}
+      {orderError&&<div className="rounded-xl px-3.5 py-2.5 mb-3 text-xs font-poppins font-semibold" role="alert" style={{background:'var(--tint-red-bg)',color:'var(--tint-red-text)'}}>⚠️ {orderError.replace(/^⚠️\s*/,'')}</div>}
       {deliveryInfo&&!deliveryInfo.available&&(
-        <div className="rounded-xl px-3.5 py-2.5 mb-3 text-xs font-poppins font-semibold" role="status" style={{background:'#FFF8E1',color:'#92600B'}}>
+        <div className="rounded-xl px-3.5 py-2.5 mb-3 text-xs font-poppins font-semibold" role="status" style={{background:'var(--tint-yellow-bg)',color:'var(--tint-yellow-text)'}}>
           📍 Aapka location hamari normal delivery area (8 km) se bahar lag raha hai.
           Aap order place kar sakte hain — admin location verify karke order confirm ya cancel karega.
         </div>

@@ -65,8 +65,11 @@ export default {
         soft: '0 2px 12px rgba(0, 0, 0, 0.06)',
         card: '0 4px 16px rgba(0, 0, 0, 0.08)',
       },
+      // BUG FIX: pehle 1440px tha — desktop par content bahut faila hua dikhta
+      // tha (left/right margin kam). 1280px se wide screens par side margins
+      // badh jaate hain, content comfortable rehta hai (standard e-com width).
       maxWidth: {
-        site: '1440px',
+        site: '1280px',
       },
     },
   },

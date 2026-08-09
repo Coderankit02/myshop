@@ -32,7 +32,7 @@ const loyaltyLevel = n => {
   return { label:'🌱 New Member', color:'#10B981' };
 };
 const statusLabel = s => ({ pending:'Pending', confirmed:'Confirmed', out_for_delivery:'Out for Delivery', delivered:'Delivered', cancelled:'Cancelled' }[s]||s);
-const notifColor  = t => ({ offer:'#FFF7ED', order:'#EFF6FF', delivery:'#F5F3FF', stock:'#F0FDF4', system:'#F8FAFC' }[t]||'#F8FAFC');
+const notifColor  = t => ({ offer:'var(--tint-orange-bg)', order:'var(--tint-blue-bg)', delivery:'var(--tint-purple-bg)', stock:'var(--tint-green-bg)', system:'var(--tint-neutral-bg)' }[t]||'var(--tint-neutral-bg)');
 const notifIcon   = t => ({ offer:'🎁', order:'📦', delivery:'🚴', stock:'📢', system:'ℹ️' }[t]||'🔔');
 const addrIcon    = l => { const s=(l||'').toLowerCase(); if(s.includes('home')) return '🏠'; if(s.includes('office')||s.includes('work')) return '🏢'; return '📍'; };
 
@@ -56,7 +56,7 @@ const inputStyle= { background:'var(--light)', border:'1.5px solid var(--border)
 const labelCls  = "text-[10px] font-bold font-poppins uppercase tracking-wide block mb-1.5";
 const btnPrimaryStyle   = { background:'linear-gradient(135deg, var(--primary), var(--primary-dark))', boxShadow:'0 4px 16px rgba(22,163,74,0.3)' };
 const btnSecondaryStyle = { background:'var(--light)', color:'var(--gray)', border:'1.5px solid var(--border)' };
-const btnDangerStyle    = { background:'#FEF2F2', color:'var(--red)', border:'1.5px solid #FECACA' };
+const btnDangerStyle    = { background:'var(--tint-red-bg)', color:'var(--red)', border:'1.5px solid var(--tint-red-border)' };
 
 function Card({ title, icon, action, children, noBody }) {
   return (
@@ -159,7 +159,7 @@ function OverviewTab({ state, switchTab }) {
   );
 }
 
-function OrderRow({ o, onClick }) {
+function OrderRow({ o, onClick, onReorder }) {
   return (
     <div onClick={onClick} className="flex gap-3 items-start px-4 md:px-5 py-3.5 cursor-pointer transition-colors last:border-b-0" style={{borderBottom:'1px solid var(--border)'}}>
       <div className="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style={{background:'var(--light)', border:'1.5px solid var(--border)'}}>🛒</div>
@@ -171,6 +171,10 @@ function OrderRow({ o, onClick }) {
       <div className="text-right flex-shrink-0">
         <div className="text-sm font-extrabold font-poppins" style={{color:'var(--dark)'}}>{fmt(o.final_amount)}</div>
         <Badge status={o.status}/>
+        {o.status==='delivered'&&onReorder&&(
+          <button onClick={e=>{e.stopPropagation();onReorder(o.id);}}
+            className="mt-2 text-white text-[10px] font-bold font-poppins rounded-md px-2.5 py-1.5" style={{background:'var(--primary)'}}>🔁 Buy Again</button>
+        )}
       </div>
     </div>
   );
@@ -201,7 +205,7 @@ function OrdersTab({ state, showToast }) {
     <>
       <Card title={`My Orders (${state.orders.length})`} icon="📦" noBody>
         {state.orders.length
-          ? state.orders.map(o=><OrderRow key={o.id} o={o} onClick={()=>viewOrder(o)}/>)
+          ? state.orders.map(o=><OrderRow key={o.id} o={o} onClick={()=>viewOrder(o)} onReorder={reorder}/>)
           : <EmptyState icon="📦" title="Koi order nahi mila" sub="Pehla order place karo!" cta="Shop Now →" onCta={()=>window.location.href='index.html'}/>}
       </Card>
 
@@ -338,8 +342,8 @@ function AddressesTab({ state, setState, showToast }) {
                 </div>
                 <div className="text-[11px] font-poppins leading-snug" style={{color:'var(--gray)'}}>{a.line1}{a.line2?', '+a.line2:''}<br/>{a.city}{a.pincode?' - '+a.pincode:''}</div>
                 <div className="flex gap-1.5 mt-2 flex-wrap">
-                  <button onClick={()=>setForm({...a})} className="text-[11px] font-bold font-poppins px-2.5 py-1 rounded-md" style={{background:'#EFF6FF',color:'#1D4ED8'}}>✏️ Edit</button>
-                  <button onClick={()=>deleteAddr(a.id)} className="text-[11px] font-bold font-poppins px-2.5 py-1 rounded-md" style={{background:'#FEF2F2',color:'var(--red)'}}>🗑️ Delete</button>
+                  <button onClick={()=>setForm({...a})} className="text-[11px] font-bold font-poppins px-2.5 py-1 rounded-md" style={{background:'var(--tint-blue-bg)',color:'var(--tint-blue-text)'}}>✏️ Edit</button>
+                  <button onClick={()=>deleteAddr(a.id)} className="text-[11px] font-bold font-poppins px-2.5 py-1 rounded-md" style={{background:'var(--tint-red-bg)',color:'var(--red)'}}>🗑️ Delete</button>
                   {!a.is_default&&<button onClick={()=>setDefault(a.id)} className="text-[11px] font-bold font-poppins px-2.5 py-1 rounded-md" style={{background:'var(--primary-light)',color:'var(--primary)'}}>✓ Set Default</button>}
                 </div>
               </div>
@@ -445,13 +449,13 @@ function ProfileTab({ state, setState, showToast }) {
       </div>
       <div className="mb-3">
         <label className={labelCls} style={{color:'var(--gray)'}}>Email</label>
-        <input className={inputCls} style={{...inputStyle, background:'#F1F5F9', color:'var(--gray)', cursor:'not-allowed'}} value={p.email||''} readOnly placeholder="Email"/>
+        <input className={inputCls} style={{...inputStyle, background:'var(--light)', color:'var(--gray)', cursor:'not-allowed'}} value={p.email||''} readOnly placeholder="Email"/>
       </div>
       <div className="mb-3">
         <label className={labelCls} style={{color:'var(--gray)'}}>Phone Number</label>
         <input className={inputCls} style={inputStyle} value={phone} onChange={e=>setPhone(e.target.value)} placeholder="10-digit mobile" type="tel" maxLength={10}/>
       </div>
-      <div className="rounded-xl px-3.5 py-3 text-[12px] font-poppins leading-relaxed mb-3.5" style={{background:'#F0FDF9', border:'1.5px solid #A7F3D0', color:'#065F46'}}>
+      <div className="rounded-xl px-3.5 py-3 text-[12px] font-poppins leading-relaxed mb-3.5" style={{background:'var(--tint-green-bg)', border:'1.5px solid var(--tint-green-border)', color:'var(--tint-green-text)'}}>
         📅 Member since: <b>{memberSince(p.created_at||state.user?.created_at)}</b>
         &nbsp;•&nbsp; 🆔 ID: <span className="text-[10px] opacity-60">{state.user?.id?.slice(0,8)}…</span>
       </div>
@@ -461,33 +465,62 @@ function ProfileTab({ state, setState, showToast }) {
 }
 
 /* ─── Wishlist Tab ────────────────────────── */
-function WishlistTab({ state, setState, showToast }) {
+function WishlistTab({ state, setState, showToast, priceAlerts, toggleAlert }) {
   async function addToCart(w) {
     if (!window.RKCart) return;
     await window.RKCart.addToCart({id:w.product_id,name:w.name,unit:w.unit,price:w.price,e:w.emoji,cat:w.category});
     showToast(`${w.name} cart mein add! 🛒`);
+  }
+  async function addAll() {
+    if (!window.RKCart||!state.wishlist.length) return;
+    const inCart = window.RKCart.getCart().map(i=>i.id);
+    // Buy Again ki tarah FRESH data use karo — stale price/inactive/OOS items
+    // cart me mat daalo (checkout ka create_order reject kar deta).
+    const ids = state.wishlist.map(w=>w.product_id);
+    const {data:prods}=await supabase.from('products').select('id,name,selling_price,unit_value,is_active,stock_quantity').in('id',ids);
+    const fresh={}; (prods||[]).forEach(p=>{fresh[p.id]=p;});
+    let added=0, skipped=0;
+    for (const w of state.wishlist) {
+      if (inCart.includes(w.product_id)) continue; // pehle se cart mein hai
+      const f=fresh[w.product_id];
+      if(!f||!f.is_active||(f.stock_quantity??0)<=0){ skipped++; continue; }
+      await window.RKCart.addToCart({id:w.product_id,name:f.name||w.name,unit:f.unit_value||w.unit,price:f.selling_price??w.price,e:w.emoji,cat:w.category});
+      added++;
+    }
+    showToast(added?`${added} items cart mein add! 🛒`:(skipped?`${skipped} items stock mein nahi hain`:'Sab items pehle se cart mein hain ✅'));
   }
   async function remove(w) {
     const {error}=await supabase.from('wishlist').delete().eq('id',w.id).eq('user_id',state.user.id);
     if (!error) { setState(s=>({...s,wishlist:s.wishlist.filter(x=>x.id!==w.id)})); showToast('Wishlist se hata diya'); }
   }
   return (
-    <Card title={`My Wishlist (${state.wishlist.length})`} icon="❤️" noBody>
+    <Card title={`My Wishlist (${state.wishlist.length})`} icon="❤️"
+      action={state.wishlist.length>0&&<CardActionBtn onClick={addAll}>🛒 Add All to Cart</CardActionBtn>}
+      noBody>
       {state.wishlist.length
-        ? state.wishlist.map(w=>(
-          <div key={w.id} className="flex gap-3 items-center px-4 md:px-5 py-3.5 last:border-b-0" style={{borderBottom:'1px solid var(--border)'}}>
-            <div className="w-[52px] h-[52px] rounded-xl flex items-center justify-center text-2xl flex-shrink-0" style={{background:'var(--light)', border:'1.5px solid var(--border)'}}>{w.emoji||'🛒'}</div>
-            <div className="flex-1 min-w-0">
-              <div className="text-[13px] font-bold font-poppins" style={{color:'var(--dark)'}}>{w.name}</div>
-              <div className="text-[11px] font-poppins mt-0.5" style={{color:'var(--muted)'}}>{w.unit||''}</div>
-              <div className="text-sm font-extrabold font-poppins mt-0.5" style={{color:'var(--primary)'}}>₹{w.price}</div>
+        ? state.wishlist.map(w=>{
+          const alerted=(priceAlerts||[]).includes(w.product_id);
+          return (
+            <div key={w.id} className="flex gap-3 items-center px-4 md:px-5 py-3.5 last:border-b-0" style={{borderBottom:'1px solid var(--border)'}}>
+              <div className="w-[52px] h-[52px] rounded-xl flex items-center justify-center text-2xl flex-shrink-0" style={{background:'var(--light)', border:'1.5px solid var(--border)'}}>{w.emoji||'🛒'}</div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[13px] font-bold font-poppins" style={{color:'var(--dark)'}}>{w.name}</div>
+                <div className="text-[11px] font-poppins mt-0.5" style={{color:'var(--muted)'}}>{w.unit||''}</div>
+                <div className="text-sm font-extrabold font-poppins mt-0.5" style={{color:'var(--primary)'}}>₹{w.price}</div>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <button onClick={()=>addToCart(w)} className="text-white text-[11px] font-bold font-poppins rounded-md px-3 py-1.5" style={{background:'var(--primary)'}}>🛒 Add</button>
+                <button onClick={()=>toggleAlert(w.product_id)}
+                  title={alerted?'Price alert hatao':'Price drop / back-in-stock alert set karo'}
+                  className="text-[11px] font-bold font-poppins rounded-md px-2.5 py-1"
+                  style={alerted?{background:'var(--tint-yellow-bg)', color:'var(--tint-yellow-text)', border:'1px solid var(--tint-yellow-border)'}:{background:'var(--light)', color:'var(--gray)', border:'1px solid var(--border)'}}>
+                  {alerted?'🔔 On':'🔔 Alert'}
+                </button>
+                <button onClick={()=>remove(w)} className="text-[11px] font-bold font-poppins rounded-md px-2.5 py-1" style={{background:'var(--tint-red-bg)', color:'var(--red)'}}>🗑️ Remove</button>
+              </div>
             </div>
-            <div className="flex flex-col gap-1.5">
-              <button onClick={()=>addToCart(w)} className="text-white text-[11px] font-bold font-poppins rounded-md px-3 py-1.5" style={{background:'var(--primary)'}}>🛒 Add</button>
-              <button onClick={()=>remove(w)} className="text-[11px] font-bold font-poppins rounded-md px-2.5 py-1" style={{background:'#FEF2F2', color:'var(--red)'}}>🗑️ Remove</button>
-            </div>
-          </div>
-        ))
+          );
+        })
         : <EmptyState icon="❤️" title="Wishlist khali hai" sub="Products par ❤️ tap karo" cta="Browse Products →" onCta={()=>window.location.href='index.html'}/>}
     </Card>
   );
@@ -568,21 +601,21 @@ function RewardsTab({ state }) {
         </div>
       </div>
 
-      <div className="rounded-2xl p-4 md:p-5 mb-3.5" style={{background:'linear-gradient(135deg,#FFF7ED,#FED7AA)', border:'1.5px solid #FDBA74'}}>
-        <div className="text-[13px] font-extrabold font-poppins" style={{color:'#C2410C'}}>🎁 Dost ko refer karo, dono ko ₹30 cashback!</div>
-        <div className="bg-white rounded-xl px-3.5 py-2.5 flex items-center justify-between my-3" style={{border:'1.5px dashed #FB923C'}}>
+      <div className="rounded-2xl p-4 md:p-5 mb-3.5" style={{background:'linear-gradient(135deg,var(--tint-orange-bg),var(--tint-orange-border))', border:'1.5px solid var(--tint-orange-border)'}}>
+        <div className="text-[13px] font-extrabold font-poppins" style={{color:'var(--tint-orange-text)'}}>🎁 Dost ko refer karo, dono ko ₹30 cashback!</div>
+        <div className="rounded-xl px-3.5 py-2.5 flex items-center justify-between my-3" style={{background:'var(--card-bg)',border:'1.5px dashed var(--tint-orange-border)'}}>
           <span className="text-lg font-black font-poppins" style={{color:'var(--dark)', letterSpacing:'3px'}}>{refCode}</span>
           <button onClick={copy} className="text-white text-[11px] font-bold font-poppins rounded-md px-3 py-1.5 flex items-center gap-1" style={{background:'var(--orange)'}}><Copy size={12}/> Copy</button>
         </div>
-        <div className="text-[11px] font-poppins mb-2.5" style={{color:'#EA580C'}}>Minimum order ₹199 • Ek baar per user</div>
+        <div className="text-[11px] font-poppins mb-2.5" style={{color:'var(--tint-orange-text)'}}>Minimum order ₹199 • Ek baar per user</div>
         <button onClick={share} className="w-full text-white rounded-xl py-3 font-extrabold font-poppins text-sm flex items-center justify-center gap-1.5" style={{background:'linear-gradient(135deg,#EA580C,#DC2626)'}}><Share2 size={15}/> WhatsApp Par Share Karo</button>
       </div>
 
       <Card title="Points Kaise Milenge?" icon="ℹ️">
         {[
-          {i:'🛒',t:'Order Karo',  s:'Har delivered order = 10 points',        bg:'#E8F8F1'},
-          {i:'👥',t:'Refer Karo',  s:'Dost ka pehla order = 50 bonus points',  bg:'#EFF6FF'},
-          {i:'⭐',t:'Redeem Karo', s:'100 points = ₹10 discount (coming soon)', bg:'#FFFBEB'},
+          {i:'🛒',t:'Order Karo',  s:'Har delivered order = 10 points',        bg:'var(--tint-green-bg)'},
+          {i:'👥',t:'Refer Karo',  s:'Dost ka pehla order = 50 bonus points',  bg:'var(--tint-blue-bg)'},
+          {i:'⭐',t:'Redeem Karo', s:'100 points = ₹10 discount (coming soon)', bg:'var(--tint-yellow-bg)'},
         ].map(r=>(
           <div key={r.t} className="flex gap-3 items-center py-2.5 last:border-b-0" style={{borderBottom:'1px solid var(--border)'}}>
             <div className="w-10 h-10 rounded-xl flex items-center justify-center text-base flex-shrink-0" style={{background:r.bg}}>{r.i}</div>
@@ -614,14 +647,14 @@ function SettingsTab({ switchTab }) {
   }
 
   const rows = [
-    {icon:'🔒',bg:'#EFF6FF',label:'Change Password',   sub:'Password update karo',          fn:()=>window.location.href='forgot-password.html'},
-    {icon:'🔔',bg:'#FFF7ED',label:'Notifications',     sub:'Offers aur updates manage karo', fn:()=>switchTab('notifications')},
-    {icon:'👤',bg:'#F0FDF4',label:'Edit Profile',      sub:'Name, phone update karo',        fn:()=>switchTab('profile')},
-    {icon:'📍',bg:'#F5F3FF',label:'Manage Addresses',  sub:'Delivery addresses',             fn:()=>switchTab('addresses')},
-    {icon:'⭐',bg:'#FFFBEB',label:'Rewards & Referral',sub:'Points aur cashback',            fn:()=>switchTab('rewards')},
-    {icon:'📦',bg:'#F0FDF4',label:'Order History',     sub:'Purane orders dekhein',          fn:()=>switchTab('orders')},
-    {icon:'💬',bg:'#ECFDF5',label:'Help & Support',    sub:'Ananya AI — 24x7 assistant',      fn:()=>window.location.href='support.html'},
-    {icon:'📱',bg:'#F8FAFC',label:'App Version',       sub:'v1.0.0 • RK Grocery Mart',        fn:null},
+    {icon:'🔒',bg:'var(--tint-blue-bg)',label:'Change Password',   sub:'Password update karo',          fn:()=>window.location.href='forgot-password.html'},
+    {icon:'🔔',bg:'var(--tint-orange-bg)',label:'Notifications',     sub:'Offers aur updates manage karo', fn:()=>switchTab('notifications')},
+    {icon:'👤',bg:'var(--tint-green-bg)',label:'Edit Profile',      sub:'Name, phone update karo',        fn:()=>switchTab('profile')},
+    {icon:'📍',bg:'var(--tint-purple-bg)',label:'Manage Addresses',  sub:'Delivery addresses',             fn:()=>switchTab('addresses')},
+    {icon:'⭐',bg:'var(--tint-yellow-bg)',label:'Rewards & Referral',sub:'Points aur cashback',            fn:()=>switchTab('rewards')},
+    {icon:'📦',bg:'var(--tint-green-bg)',label:'Order History',     sub:'Purane orders dekhein',          fn:()=>switchTab('orders')},
+    {icon:'💬',bg:'var(--tint-green-bg)',label:'Help & Support',    sub:'Ananya AI — 24x7 assistant',      fn:()=>window.location.href='support.html'},
+    {icon:'📱',bg:'var(--tint-neutral-bg)',label:'App Version',       sub:'v1.0.0 • RK Grocery Mart',        fn:null},
   ];
 
   return (
@@ -639,7 +672,7 @@ function SettingsTab({ switchTab }) {
       </Card>
 
       <Card title="Payment Methods" icon="💳" noBody>
-        {[{icon:'💵',bg:'#F0FDF4',name:'Cash on Delivery',sub:'Ghar pe cash dena'},{icon:'📱',bg:'#EFF6FF',name:'UPI / QR Code',sub:'QR scan karke pay karein'}].map(p=>(
+        {[{icon:'💵',bg:'var(--tint-green-bg)',name:'Cash on Delivery',sub:'Ghar pe cash dena'},{icon:'📱',bg:'var(--tint-blue-bg)',name:'UPI / QR Code',sub:'QR scan karke pay karein'}].map(p=>(
           <div key={p.name} className="flex items-center gap-3 px-4 md:px-5 py-3.5 last:border-b-0" style={{borderBottom:'1px solid var(--border)'}}>
             <div className="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style={{background:p.bg}}>{p.icon}</div>
             <div className="flex-1"><div className="text-[13px] font-bold font-poppins" style={{color:'var(--dark)'}}>{p.name}</div><div className="text-[11px] font-poppins mt-0.5" style={{color:'var(--muted)'}}>{p.sub}</div></div>
@@ -676,7 +709,7 @@ export default function AccountPage() {
   const [toast, setToast]         = useState('');
   const [state, setState]         = useState({
     user:null, profile:null,
-    orders:[], addresses:[], wishlist:[], notifications:[],
+    orders:[], addresses:[], wishlist:[], notifications:[], priceAlerts:[],
     cartCount:0,
   });
 
@@ -695,13 +728,19 @@ export default function AccountPage() {
       const {data:{session}}=await supabase.auth.getSession();
       if (!session?.user) { window.location.href='login.html'; return; }
       const user = session.user;
+      // FIX: account.html par App.jsx (RKCart.init caller) nahi chalta — isliye
+      // RKCart guest mode me rehta tha aur wishlist→cart (Add / Add All) items
+      // localStorage me jaate the, DB me nahi. Yahan user ko RKCart se bind
+      // karte hain → guest cart merge + saare ops seedha user ke DB cart par.
+      if (window.RKCart?.setUser) { window.RKCart.setUser({uid:user.id,email:user.email,name:user.user_metadata?.name}).catch(()=>{}); }
 
-      const [profileR,ordersR,addrR,wishR,notifR] = await Promise.allSettled([
+      const [profileR,ordersR,addrR,wishR,notifR,alertR] = await Promise.allSettled([
         (async()=>{ const {data}=await supabase.from('profiles').select('*').eq('id',user.id).single(); return data||{id:user.id,name:user.user_metadata?.name||user.email.split('@')[0],email:user.email,phone:'',avatar_url:null,created_at:user.created_at}; })(),
         (async()=>{ const {data}=await supabase.from('orders').select('*').eq('user_id',user.id).order('created_at',{ascending:false}).limit(25); return data||[]; })(),
         (async()=>{ if(window.RKProfile?.loadAddresses) return await window.RKProfile.loadAddresses(user.id); const {data}=await supabase.from('addresses').select('*').eq('user_id',user.id).order('is_default',{ascending:false}); return data||[]; })(),
         (async()=>{ const {data}=await supabase.from('wishlist').select('*').eq('user_id',user.id).order('created_at',{ascending:false}); return data||[]; })(),
         (async()=>{ const {data}=await supabase.from('notifications').select('*').eq('user_id',user.id).order('created_at',{ascending:false}).limit(30); return data||[]; })(),
+        (async()=>{ const {data}=await supabase.from('price_alerts').select('product_id').eq('user_id',user.id); return (data||[]).map(d=>d.product_id); })(),
       ]);
 
       setState({
@@ -711,6 +750,7 @@ export default function AccountPage() {
         addresses:    addrR.status==='fulfilled'?addrR.value:[],
         wishlist:     wishR.status==='fulfilled'?wishR.value:[],
         notifications:notifR.status==='fulfilled'?notifR.value:[],
+        priceAlerts:  alertR.status==='fulfilled'?alertR.value:[],
         cartCount:    window.RKCart?window.RKCart.getCount():0,
       });
       setLoading(false);
@@ -724,7 +764,23 @@ export default function AccountPage() {
     </div>
   );
 
-  const tabProps = { state, setState, showToast, switchTab };
+  async function toggleAlert(productId) {
+    if (!state.user) return;
+    const has = state.priceAlerts.includes(productId);
+    if (has) {
+      const {error}=await supabase.from('price_alerts').delete().eq('user_id',state.user.id).eq('product_id',productId);
+      if (!error) { setState(s=>({...s,priceAlerts:s.priceAlerts.filter(x=>x!==productId)})); showToast('Price alert band — hata diya 🔕'); }
+      else showToast('Alert update nahi hua — dobara try karein');
+    } else {
+      const {error}=await supabase.from('price_alerts').insert({user_id:state.user.id,product_id:productId});
+      if (!error) { setState(s=>({...s,priceAlerts:[...s.priceAlerts,productId]})); showToast('Price drop / back-in-stock par notify karenge 🔔'); }
+      // 23505 = pehle se alert hai (double-tap race) — state sync karo, fail mat mano
+      else if (error&&error.code==='23505') { setState(s=>({...s,priceAlerts:[...s.priceAlerts,productId]})); showToast('Price drop / back-in-stock par notify karenge 🔔'); }
+      else showToast('Alert update nahi hua — dobara try karein');
+    }
+  }
+
+  const tabProps = { state, setState, showToast, switchTab, priceAlerts:state.priceAlerts, toggleAlert };
   const p = state.profile;
   const totalOrders = state.orders.length;
   const savings = state.orders.reduce((s,o)=>s+(o.discount||0),0);

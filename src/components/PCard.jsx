@@ -1,11 +1,14 @@
 import { ProdImg } from './ProdImg';
 
 // ── Product Card (Module 3: Tailwind restyle — same props/logic as before) ──
-export function PCard({p,cart,addToCart,updQty,onDetail}){
+// wishlistIds (Set of product ids already in wishlist) + onWishlist(p) toggle
+// are optional — cards outside the store (none today) simply skip the heart.
+export function PCard({p,cart,addToCart,updQty,onDetail,wishlistIds,onWishlist}){
   const inC=cart.find(i=>i.id===p.id);
   const disc=p.discount;
   const oos=p.stock_quantity<=0;
   const atMax=inC&&typeof p.stock_quantity==='number'&&inC.qty>=p.stock_quantity;
+  const wished=wishlistIds&&wishlistIds.has(p.id);
   return(
     <div className="rounded-2xl overflow-hidden cursor-pointer flex flex-col h-full"
       style={{background:'var(--card-bg)',boxShadow:'0 2px 10px rgba(0,0,0,0.06)'}}
@@ -23,6 +26,24 @@ export function PCard({p,cart,addToCart,updQty,onDetail}){
         {oos&&(
           <div className="absolute inset-0 z-10 flex items-center justify-center text-xs font-bold font-poppins text-white"
             style={{background:'rgba(0,0,0,0.45)'}}>Out of Stock</div>
+        )}
+        {/* ❤️ Wishlist heart — top-right. Guest par login modal khulta hai
+            (App.jsx me onWishlist decide karta hai). stopPropagation taaki
+            card ka detail-open click na chale. */}
+        {onWishlist&&(
+          <button
+            aria-label={wished?'Wishlist se hatao':'Wishlist mein jodo'}
+            onClick={e=>{e.stopPropagation();onWishlist(p);}}
+            className="absolute top-2 right-2 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-transform active:scale-90 hover:scale-110"
+            style={{
+              background: wished?'var(--tint-red-bg)':'var(--card-bg)',
+              border:'1px solid '+ (wished?'var(--tint-red-border)':'var(--border)'),
+              boxShadow:'0 2px 8px rgba(0,0,0,0.14)',
+              fontSize:16,lineHeight:1,
+              color: wished?'var(--tint-red-text)':'var(--gray)',
+            }}>
+            {wished?'❤️':'🤍'}
+          </button>
         )}
         <ProdImg src={p.primary_image} alt={p.name}/>
       </div>

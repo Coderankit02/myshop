@@ -278,9 +278,12 @@
   }
 
   /**
-   * BUG FIX (High #5): Reorder ab fresh prices fetch karta hai DB se.
-   * Pehle past order ke saved prices use hote the — agar price badal gayi
-   * to customer purane/galat price par order place kar sakta tha.
+   * Reorder / Buy Again — merge mode (modern grocery app pattern):
+   * - Pehle clearCart() hota tha (user ka poora cart delete). Ab MERGE hota
+   *   hai — existing cart items preserve, missing items add hote hain.
+   * - Fresh price + is_active + stock_quantity DB se fetch (price kabhi stale
+   *   nahi — BUG FIX High #5 preserved).
+   * - Inactive / out-of-stock products skip, qty stock se capped.
    */
   async function reorder(orderId) {
     const order = await getOrderDetails(orderId);
@@ -288,12 +291,12 @@
 
     const productIds = order.items.map(i => i.product_id).filter(Boolean);
 
-    // Fetch current prices from products table
+    // Fetch current prices + stock from products table
     let freshPrices = {};
     if (productIds.length) {
       const { data: freshProducts } = await getDB()
         .from('products')
-        .select('id,name,selling_price,unit_value,is_active')
+        .select('id,name,selling_price,unit_value,is_active,stock_quantity')
         .in('id', productIds);
 
       (freshProducts || []).forEach(p => { freshPrices[p.id] = p; });
@@ -301,6 +304,7 @@
 
     const products = order.items.map(i => {
       const fresh = freshPrices[i.product_id];
+      const stock = fresh ? (fresh.stock_quantity ?? 0) : 0;
       return {
         id   : i.product_id,
         name : fresh?.name || i.name,
@@ -310,17 +314,20 @@
         old  : i.old_price,
         e    : i.emoji,
         cat  : i.category,
-        _unavailable: fresh ? !fresh.is_active : false,
+        qty  : i.qty || 1,
+        // Deleted/inactive/OOS product = unavailable (checkout create_order reject karega)
+        _unavailable: !fresh || !fresh.is_active || stock <= 0,
+        _stock: stock,
       };
     });
 
     if (window.RKCart) {
-      await window.RKCart.clearCart();
       for (const p of products) {
-        if (p._unavailable) continue; // skip inactive products silently
-        const item = order.items.find(i => i.product_id === p.id);
-        for (let q = 0; q < (item?.qty || 1); q++) {
-          await window.RKCart.addToCart(p);
+        if (p._unavailable) continue; // skip deleted / inactive / out-of-stock silently
+        const qty = Math.min(p.qty, Math.max(p._stock, 1)); // stock cap (min 1)
+        const { _unavailable, _stock, ...clean } = p; // helper props cart item me mat le jao
+        for (let q = 0; q < qty; q++) {
+          await window.RKCart.addToCart(clean);
         }
       }
     }

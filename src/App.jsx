@@ -18,7 +18,7 @@ import AuthModal from './components/AuthModal';
 // jab rail actually scrollable ho (scrollWidth > clientWidth) — boundary par
 // auto-hide. Pehle users ko pata hi nahi tha ki rail scroll hoti hai; ab fade/
 // arrows se discoverability — saari 16 categories explore hongi.
-function CategoryRail({cats,catsLoading,catEmoji,onClick,activeCatId=null,heading=null,onSeeAll=null,tileClass='w-16 md:w-20',labelClass='text-[10px] md:text-xs line-clamp-2',fadeColor='var(--page-bg)'}){
+function CategoryRail({cats,catsLoading,catEmoji,onClick,activeCatId=null,heading=null,onSeeAll=null,tileClass='w-16 md:w-20',labelClass='text-[10px] md:text-xs leading-tight',fadeColor='var(--page-bg)'}){
   const ref=useRef(null);
   const [canLeft,setCanLeft]=useState(false);
   const [canRight,setCanRight]=useState(false);
@@ -186,7 +186,7 @@ function TitlePill({children, icon}){
 
 // Category section titles: titlePill ho to sirf TITLE TEXT ke around designer
 // gradient pill (baki layout bilkul same — See All right, products neeche).
-function ProductRail({title,loading,products,onSeeAll,cart,addToCart,updQty,onDetail,titlePill,titleIcon}){
+function ProductRail({title,loading,products,onSeeAll,cart,addToCart,updQty,onDetail,titlePill,titleIcon,wishlistIds,onWishlist}){
   if(!loading&&(!products||products.length===0))return null;
   return(
     <div>
@@ -201,7 +201,7 @@ function ProductRail({title,loading,products,onSeeAll,cart,addToCart,updQty,onDe
           ?[...Array(4)].map((_,i)=><div key={i} className="flex-shrink-0 w-36 md:w-44 snap-start"><SkelCard/></div>)
           :products.map(p=>(
             <div key={p.id} className="flex-shrink-0 w-36 md:w-44 snap-start">
-              <PCard p={p} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}/>
+              <PCard p={p} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail} wishlistIds={wishlistIds} onWishlist={onWishlist}/>
             </div>
           ))
         }
@@ -283,7 +283,7 @@ function Footer({shopSettings,onNav}){
   );
 }
 
-function HomeContent({homepageSections,banners,bannersLoading,bannerIdx,setBannerIdx,bannerWrapRef,handleBannerClick,homeSections,homeLoading,cart,addToCart,updQty,onDetail,cats,catsLoading,catEmoji,sectionProds,sectionProdsReady,featLoading,featuredProds,dbReviews,shopSettings,showToast,setPage,onPickCategory}){
+function HomeContent({homepageSections,banners,bannersLoading,bannerIdx,setBannerIdx,bannerWrapRef,handleBannerClick,homeSections,homeLoading,cart,addToCart,updQty,onDetail,cats,catsLoading,catEmoji,sectionProds,sectionProdsReady,featLoading,featuredProds,dbReviews,shopSettings,showToast,setPage,onPickCategory,wishlistIds,onWishlist}){
   return(
     <div className="max-w-site mx-auto px-4 md:px-8 pt-4 pb-6 md:pb-8">
       {/* Admin Homepage Builder: sections configured order mein + sirf enabled walay */}
@@ -291,12 +291,12 @@ function HomeContent({homepageSections,banners,bannersLoading,bannerIdx,setBanne
         const ordered = homepageSections.length ? homepageSections : DEFAULT_HOMEPAGE_SECTIONS;
         const sectionsMap = {
           hero: <HeroBanner banners={banners} bannersLoading={bannersLoading} bannerIdx={bannerIdx} setBannerIdx={setBannerIdx} wrapRef={bannerWrapRef} handleBannerClick={handleBannerClick}/>,
-          flash_sale: <FlashSale prods={homeSections.flash} loading={homeLoading} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}/>,
-          today_deals: <ProductRail title="🔥 Today's Deals" loading={homeLoading} products={homeSections.deals} onSeeAll={()=>setPage('shop')} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}/>,
+          flash_sale: <FlashSale prods={homeSections.flash} loading={homeLoading} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail} wishlistIds={wishlistIds} onWishlist={onWishlist}/>,
+          today_deals: <ProductRail title="🔥 Today's Deals" loading={homeLoading} products={homeSections.deals} onSeeAll={()=>setPage('shop')} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail} wishlistIds={wishlistIds} onWishlist={onWishlist}/>,
           categories: <CategoryRail heading="Shop by Category" cats={cats} catsLoading={catsLoading} catEmoji={catEmoji} onClick={onPickCategory} onSeeAll={()=>setPage('shop')}/>,
-          featured: <ProductRail title="⭐ Featured Products" loading={featLoading} products={featuredProds} onSeeAll={()=>setPage('shop')} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}/>,
-          best_sellers: <ProductRail title="🏆 Best Sellers" loading={homeLoading} products={homeSections.bestSellers} onSeeAll={()=>setPage('shop')} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}/>,
-          new_arrivals: <ProductRail title="✨ New Arrivals" loading={homeLoading} products={homeSections.newArrivals} onSeeAll={()=>setPage('shop')} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}/>,
+          featured: <ProductRail title="⭐ Featured Products" loading={featLoading} products={featuredProds} onSeeAll={()=>setPage('shop')} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail} wishlistIds={wishlistIds} onWishlist={onWishlist}/>,
+          best_sellers: <ProductRail title="🏆 Best Sellers" loading={homeLoading} products={homeSections.bestSellers} onSeeAll={()=>setPage('shop')} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail} wishlistIds={wishlistIds} onWishlist={onWishlist}/>,
+          new_arrivals: <ProductRail title="✨ New Arrivals" loading={homeLoading} products={homeSections.newArrivals} onSeeAll={()=>setPage('shop')} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail} wishlistIds={wishlistIds} onWishlist={onWishlist}/>,
           // SABHI categories ke sections (pehle sirf 6) + har category ke saare
           // products — page scroll karte hi har category apne poore section ke
           // saath dikhti hai. 0 products wali category bhi dikhti hai (chhota
@@ -306,7 +306,7 @@ function HomeContent({homepageSections,banners,bannersLoading,bannerIdx,setBanne
             if(sectionProdsReady&&(!items||items.length===0)){
               return(
                 <div key={c.id}>
-                  <h2 className="mb-3"><TitlePill icon={catEmoji(c)}>{c.name}</TitlePill></h2>
+                  <h2 className="mb-3"><TitlePill>{c.name}</TitlePill></h2>
                   <div className="rounded-2xl p-5 text-center" style={{background:'var(--card-bg)'}}>
                     <p className="text-xs font-poppins" style={{color:'var(--gray)'}}>Is category ke products jald aa rahe hain 🛒</p>
                   </div>
@@ -316,7 +316,7 @@ function HomeContent({homepageSections,banners,bannersLoading,bannerIdx,setBanne
             return(
               <ProductRail key={c.id} title={c.name} loading={!sectionProdsReady} products={items}
                 onSeeAll={()=>onPickCategory(c.id)} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}
-                titlePill titleIcon={catEmoji(c)}/>
+                titlePill wishlistIds={wishlistIds} onWishlist={onWishlist}/>
             );
           }),
           why_choose_us: <WhyChooseUs/>,
@@ -366,7 +366,7 @@ function HomeContent({homepageSections,banners,bannersLoading,bannerIdx,setBanne
   );
 }
 
-function DesktopShop({allCats,activeCatId,catEmoji,catCounts,visibleShopProds,shopIsLoading,isSearchActive,searchResults,shopTotal,inStockOnly,search,sortBy,setSortBy,cart,addToCart,updQty,onDetail,totalPages,shopPage,setShopPage,onSidebarPick}){
+function DesktopShop({allCats,activeCatId,catEmoji,catCounts,visibleShopProds,shopIsLoading,isSearchActive,searchResults,shopTotal,inStockOnly,search,sortBy,setSortBy,cart,addToCart,updQty,onDetail,totalPages,shopPage,setShopPage,onSidebarPick,wishlistIds,onWishlist}){
   const prods=visibleShopProds;
   const isLoading=shopIsLoading;
   const activeCatName=allCats.find(c=>c.id===activeCatId)?.name||'All Products';
@@ -401,7 +401,7 @@ function DesktopShop({allCats,activeCatId,catEmoji,catCounts,visibleShopProds,sh
                 <p className="mt-2.5 font-semibold font-poppins text-sm" style={{color:'var(--gray)'}}>"{search||activeCatName}" mein koi product nahi mila</p>
                 {inStockOnly&&<button onClick={()=>setInStockOnly(false)} className="text-xs font-bold font-poppins mt-2" style={{color:'var(--primary)'}}>"In stock only" filter hataayein</button>}
               </div>
-              :<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">{prods.map(p=><PCard key={p.id} p={p} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}/>)}</div>
+              :<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">{prods.map(p=><PCard key={p.id} p={p} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail} wishlistIds={wishlistIds} onWishlist={onWishlist}/>)}</div>
           }
           {!search&&totalPages>1&&(
             <div className="flex justify-center flex-wrap gap-2 mt-6">
@@ -438,7 +438,7 @@ function useCountdownToMidnight(){
 }
 
 // ⚡ Flash Sale — real discounted products from useHomeSections, countdown to midnight
-function FlashSale({prods,loading,cart,addToCart,updQty,onDetail}){
+function FlashSale({prods,loading,cart,addToCart,updQty,onDetail,wishlistIds,onWishlist}){
   const left=useCountdownToMidnight();
   if(!loading&&prods.length===0)return null;
   const pad=n=>String(n).padStart(2,'0');
@@ -468,7 +468,7 @@ function FlashSale({prods,loading,cart,addToCart,updQty,onDetail}){
           ?[...Array(4)].map((_,i)=><div key={i} className="flex-shrink-0 w-36 md:w-44 snap-start"><SkelCard/></div>)
           :prods.map(p=>(
             <div key={p.id} className="flex-shrink-0 w-36 md:w-44 snap-start">
-              <PCard p={p} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}/>
+              <PCard p={p} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail} wishlistIds={wishlistIds} onWishlist={onWishlist}/>
             </div>
           ))
         }
@@ -684,6 +684,14 @@ export default function App(){
   // search is locked, so re-opening shop/home doesn't silently resume an old query.
   useEffect(()=>{
     if(searchDisabled&&search) setSearch('');
+  },[page]);
+
+  // Page change par window ko TOP par le jao. Home se "Shop by Category" ke
+  // kisi tile par tap karne par (user neeche scroll kiya hua tha) shop page
+  // khul jata tha, lekin scroll position wahi rehne se products on-screen
+  // nahi dikhte the — ab har page switch par top se shuru hota hai.
+  useEffect(()=>{
+    window.scrollTo({top:0,left:0,behavior:'auto'});
   },[page]);
 
   // Shop products (filtered)
@@ -933,6 +941,101 @@ export default function App(){
     showToast(`${p.name} cart mein add hua! 🛒`);
   };
 
+  // ── Wishlist (heart on every product card) ─────────────────────────
+  // Logged-in user ki wishlist rows Supabase 'wishlist' table se load hoti
+  // hain (user_id ke andar). Guest ke liye heart tap par login modal khulta
+  // hai — guest wishlist localStorage me nahi rakhte (Account page wahi
+  // source of truth hai). toggleWishlist() optimistic nahi hai — DB ke baad
+  // state update hoti hai, taaki Account → Wishlist aur cards hamesha sync
+  // rahein.
+  const [wishlist,setWishlist]=useState([]);
+  const [wishlistBusy,setWishlistBusy]=useState(false);
+  useEffect(()=>{
+    if(!user){setWishlist([]);return;}
+    let cancelled=false;
+    (async()=>{
+      const {data}=await supabase.from('wishlist').select('*').eq('user_id',user.uid).order('created_at',{ascending:false});
+      if(!cancelled)setWishlist(data||[]);
+    })();
+    return()=>{cancelled=true;};
+  },[user]);
+  const wishlistIds=new Set(wishlist.map(w=>w.product_id));
+  const toggleWishlist=async p=>{
+    if(!user){openLogin();showToast('Wishlist ke liye login karein 🔐');return;}
+    if(wishlistBusy)return;
+    setWishlistBusy(true);
+    try{
+      const existing=wishlist.find(w=>w.product_id===p.id);
+      if(existing){
+        const {error}=await supabase.from('wishlist').delete().eq('id',existing.id).eq('user_id',user.uid);
+        if(!error){setWishlist(l=>l.filter(w=>w.id!==existing.id));showToast('Wishlist se hata diya 💔');}
+        else showToast('Wishlist update nahi hua — dobara try karein');
+      }else{
+        // .select() zaroori: insert ke baad REAL DB id chahiye (delete/state sync
+        // ke liye). Pehle 'tmp-' id use karte the — delete par DB me match nahi
+        // hota tha aur heart remove nahi hota tha.
+        const {data,error}=await supabase.from('wishlist').insert({
+          user_id:user.uid,product_id:p.id,name:p.name,unit:p.unit_value,
+          price:p.selling_price,emoji:null,category:p.categories?.name||null,
+        }).select();
+        if(!error&&data&&data[0]){setWishlist(l=>[...l,data[0]]);showToast(`${p.name} wishlist mein add ho gaya ❤️`);}
+        else showToast('Wishlist update nahi hua — dobara try karein');
+      }
+    }finally{setWishlistBusy(false);}
+  };
+
+  // ── Price-drop / back-in-stock alerts (🔔) ──────────────────────────────
+  // price_alerts table (user_id, product_id) + DB trigger notify_price_alerts:
+  // admin price kam kare ya stock 0->>0 ho to notifications table me insert.
+  const [priceAlerts,setPriceAlerts]=useState([]);
+  useEffect(()=>{
+    if(!user){setPriceAlerts([]);return;}
+    let cancelled=false;
+    (async()=>{
+      const {data}=await supabase.from('price_alerts').select('product_id').eq('user_id',user.uid);
+      if(!cancelled)setPriceAlerts((data||[]).map(d=>d.product_id));
+    })();
+    return()=>{cancelled=true;};
+  },[user]);
+  const toggleAlert=async p=>{
+    if(!user){openLogin();showToast('Price alerts ke liye login karein 🔐');return;}
+    const id=p.id||p;
+    const has=priceAlerts.includes(id);
+    if(has){
+      const {error}=await supabase.from('price_alerts').delete().eq('user_id',user.uid).eq('product_id',id);
+      if(!error){setPriceAlerts(l=>l.filter(x=>x!==id));showToast('Price alert band — hata diya 🔕');}
+      else showToast('Alert update nahi hua — dobara try karein');
+    }else{
+      const {error}=await supabase.from('price_alerts').insert({user_id:user.uid,product_id:id});
+      if(!error){setPriceAlerts(l=>[...l,id]);showToast('Price drop / back-in-stock par notify karenge 🔔');}
+      // 23505 = pehle se alert hai (double-tap race) — state sync karo, fail mat mano
+      else if(error&&error.code==='23505'){setPriceAlerts(l=>[...l,id]);showToast('Price drop / back-in-stock par notify karenge 🔔');}
+      else showToast('Alert update nahi hua — dobara try karein');
+    }
+  };
+
+  // ── Save for Later (cart drawer): item cart se nikal kar wishlist me ──
+  const saveForLater=async item=>{
+    if(!user){openLogin();showToast('Wishlist ke liye login karein 🔐');return;}
+    const existing=wishlist.find(w=>w.product_id===item.id);
+    if(existing){
+      if(window.RKCart)await window.RKCart.removeFromCart(item.id);
+      showToast('Cart se nikal kar wishlist mein save ho gaya 🔖');
+      return;
+    }
+    const {data,error}=await supabase.from('wishlist').insert({
+      user_id:user.uid,product_id:item.id,name:item.name,unit:item.unit,
+      price:item.price,emoji:item.e||null,category:item.cat||null,
+    }).select();
+    if(!error&&data&&data[0]){
+      setWishlist(l=>[...l,data[0]]);
+      if(window.RKCart)await window.RKCart.removeFromCart(item.id);
+      showToast('Cart se nikal kar wishlist mein save ho gaya 🔖');
+    }else{
+      showToast('Wishlist mein save nahi hua — dobara try karein');
+    }
+  };
+
   // Frontend-only stock guard: prevents qty from exceeding available stock when known.
   // Bug fix #1: when no explicit stockLimit is passed (as from the cart drawer's '+'
   // button), fall back to looking up the known stock_quantity for that product id so the
@@ -1112,6 +1215,7 @@ export default function App(){
           dbReviews={dbReviews} shopSettings={shopSettings} showToast={showToast}
           setPage={setPage}
           onPickCategory={(id)=>{setActiveCatId(id);setPage('shop');setShopPage(1);setSearch('');}}
+          wishlistIds={wishlistIds} onWishlist={toggleWishlist}
         />}
         {page==='about'&&<InfoPage title="About Us" body={shopSettings.about_text}/>}
         {page==='privacy'&&<InfoPage title="Privacy Policy" body={shopSettings.privacy_policy}/>}
@@ -1130,10 +1234,14 @@ export default function App(){
               cart={cart} addToCart={addToCart} updQty={updQty} onDetail={openDetail}
               totalPages={totalPages} shopPage={shopPage} setShopPage={setShopPage}
               onSidebarPick={(id)=>{setActiveCatId(id);setShopPage(1);setSearch('');}}
+              wishlistIds={wishlistIds} onWishlist={toggleWishlist}
             /></div>
             <div className="m-view">
               <div className="px-4 pt-3" style={{background:'var(--card-bg)'}}>
-                <CategoryRail cats={allCats} catsLoading={catsLoading} activeCatId={activeCatId} catEmoji={catEmoji} fadeColor="var(--card-bg)" tileClass="w-[60px]" labelClass="text-[10px] line-clamp-1" onClick={id=>{setActiveCatId(id);setShopPage(1);setSearch('');}}/>
+                {/* BUG FIX: labelClass me line-clamp-1 tha — "Dairy Products & Milk"
+                    jaise lambi category names cut ho jaate the (… dikhta tha). Ab koi
+                    clamp nahi — naam pura wrap hokar dikhta hai, user ko koi problem nahi. */}
+                <CategoryRail cats={allCats} catsLoading={catsLoading} activeCatId={activeCatId} catEmoji={catEmoji} fadeColor="var(--card-bg)" tileClass="w-[68px]" labelClass="text-[10px] leading-tight" onClick={id=>{setActiveCatId(id);setShopPage(1);setSearch('');}}/>
               </div>
               <div className="px-4 pt-3 pb-2" style={{background:'var(--card-bg)'}}>
                 <div className="flex items-center justify-between gap-2 mb-2.5">
@@ -1154,7 +1262,7 @@ export default function App(){
                   :<>
                     {visibleShopProds.length>0
                       ?<div className="grid grid-cols-2 gap-2.5">
-                        {visibleShopProds.map(p=><PCard key={p.id} p={p} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={openDetail}/>)}
+                        {visibleShopProds.map(p=><PCard key={p.id} p={p} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={openDetail} wishlistIds={wishlistIds} onWishlist={toggleWishlist}/>)}
                       </div>
                       :<div className="text-center py-10">
                         <div style={{fontSize:'3rem'}}>🔍</div>
@@ -1212,7 +1320,7 @@ export default function App(){
 
         {/* ── PRODUCT DETAIL ── */}
         {page==='detail'&&detailProduct&&(
-          <ProductDetail key={detailProduct.id} product={detailProduct} cart={cart} addToCart={addToCart} updQty={updQty} onBack={()=>setPage('shop')} onDetail={openDetail}/>
+          <ProductDetail key={detailProduct.id} product={detailProduct} cart={cart} addToCart={addToCart} updQty={updQty} onBack={()=>setPage('shop')} onDetail={openDetail} wishlistIds={wishlistIds} onWishlist={toggleWishlist} priceAlerts={priceAlerts} onToggleAlert={toggleAlert}/>
         )}
 
         {/* ── CHECKOUT ── */}
@@ -1279,6 +1387,7 @@ export default function App(){
                         <div className="text-[13px] font-bold font-poppins truncate" style={{color:'var(--dark)'}}>{i.name} <span className="font-normal" style={{color:'var(--gray)',fontSize:'0.7rem'}}>({i.unit})</span></div>
                         <div className="text-xs font-poppins font-semibold mt-0.5" style={{color:'var(--primary)'}}>₹{i.price} × {i.qty} = <b>₹{(i.price*i.qty).toFixed(0)}</b></div>
                         {atMax&&<div className="text-[10px] font-poppins font-semibold mt-0.5" style={{color:'var(--red)'}}>Sirf {knownStock} stock mein hai</div>}
+                        <button onClick={()=>saveForLater(i)} className="text-[10px] font-semibold font-poppins mt-1 flex items-center gap-0.5 rounded-md px-2 py-1 transition-colors" style={{color:'var(--gray)',background:'var(--light)',border:'1px solid var(--border)'}}>🔖 Save for Later</button>
                       </div>
                       <div className="flex items-center rounded-lg overflow-hidden flex-shrink-0" style={{border:'1.5px solid var(--primary)'}}>
                         <button aria-label="Quantity kam karein" onClick={()=>updQty(i.id,-1)}
@@ -1295,7 +1404,7 @@ export default function App(){
             {cart.length>0&&(
               <div className="px-5 flex-shrink-0" style={{borderTop:'1.5px solid var(--border)',paddingTop:14,paddingBottom:'calc(env(safe-area-inset-bottom,0px) + 16px)'}}>
                 {!user&&
-                  <div className="flex items-center gap-2 rounded-xl px-2.5 py-2 mb-2.5 text-xs font-semibold font-poppins" style={{background:'#FFF8E1',border:'1px solid #FFE0A3',color:'#92600B'}}>
+                  <div className="flex items-center gap-2 rounded-xl px-2.5 py-2 mb-2.5 text-xs font-semibold font-poppins" style={{background:'var(--tint-yellow-bg)',border:'1px solid var(--tint-yellow-border)',color:'var(--tint-yellow-text)'}}>
                     🔐 Checkout se pehle login zaroori hai
                   </div>
                 }

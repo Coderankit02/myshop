@@ -25,7 +25,7 @@ function buildGalleryImages(product){
   return imgs;
 }
 
-export function ProductDetail({product,cart,addToCart,updQty,onBack,onDetail}){
+export function ProductDetail({product,cart,addToCart,updQty,onBack,onDetail,wishlistIds,onWishlist,priceAlerts,onToggleAlert}){
   // BUG FIX: overview HAMESHA admin ke ⭐ DEFAULT image se start hoti hai —
   // buildGalleryImages default ko pehli position par rakhti hai (isliye selImg 0).
   // Example: 'लहसुन' ke 6 images hain, default sort position 3 par thi → pehle
@@ -46,6 +46,7 @@ export function ProductDetail({product,cart,addToCart,updQty,onBack,onDetail}){
   // kabhi bhi image missing na dikhe (🛒 placeholder). Default image front par.
   const images=buildGalleryImages(product);
   const mainSrc=images[selImg]?.image_url||null;
+  const alerted=priceAlerts&&priceAlerts.includes(product.id);
 
   // Component is remounted (via key={product.id} at the call site) whenever a
   // different product is opened — e.g. from "Related products" below — so
@@ -203,6 +204,17 @@ export function ProductDetail({product,cart,addToCart,updQty,onBack,onDetail}){
             }
           </div>
 
+          {/* 🔔 Price-drop / back-in-stock alert toggle (oos ho to bhi dikhta hai) */}
+          {onToggleAlert&&(
+            <button onClick={()=>onToggleAlert(product)} aria-pressed={!!alerted}
+              className="mt-3 flex items-center gap-1.5 text-xs font-bold font-poppins rounded-xl px-3.5 py-2 transition-colors"
+              style={alerted
+                ?{background:'var(--tint-yellow-bg)',color:'var(--tint-yellow-text)',border:'1.5px solid var(--tint-yellow-border)'}
+                :{background:'var(--light)',color:'var(--gray)',border:'1.5px solid var(--border)'}}>
+              {alerted?'🔔 Price alert ON — tap to hatao':'🔔 Price drop par alert pao'}
+            </button>
+          )}
+
           {/* Add to cart — desktop inline */}
           {!oos&&(
             <div className="hidden md:flex items-center gap-3 mt-6">
@@ -228,7 +240,7 @@ export function ProductDetail({product,cart,addToCart,updQty,onBack,onDetail}){
               ?[...Array(4)].map((_,i)=><div key={i} className="flex-shrink-0 w-36 md:w-44 snap-start"><SkelCard/></div>)
               :related.map(p=>(
                 <div key={p.id} className="flex-shrink-0 w-36 md:w-44 snap-start min-w-0">
-                  <PCard p={p} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}/>
+                  <PCard p={p} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail} wishlistIds={wishlistIds} onWishlist={onWishlist}/>
                 </div>
               ))
             }

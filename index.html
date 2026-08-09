@@ -57,6 +57,14 @@
   --shadow-xl:0 12px 32px rgba(0,0,0,.16);
   --ease-standard:cubic-bezier(.4,0,.2,1);--dur-fast:150ms;--dur-base:200ms;--dur-slow:300ms;
   --focus-ring:0 0 0 3px rgba(22,163,74,.35);
+  /* Soft tint panels (info/warn/error/success) — dark mode par inhe flip karte hain */
+  --tint-yellow-bg:#FFF8E1;--tint-yellow-border:#FFE0A3;--tint-yellow-text:#92600B;
+  --tint-blue-bg:#EFF6FF;--tint-blue-border:#BFDBFE;--tint-blue-text:#1D4ED8;
+  --tint-red-bg:#FEE2E2;--tint-red-border:#FECACA;--tint-red-text:#B91C1C;
+  --tint-green-bg:#F0FDF9;--tint-green-border:#A7F3D0;--tint-green-text:#065F46;
+  --tint-orange-bg:#FFF7ED;--tint-orange-border:#FED7AA;--tint-orange-text:#C2410C;
+  --tint-purple-bg:#F5F3FF;--tint-purple-border:#E9E5FF;--tint-purple-text:#6D28D9;
+  --tint-neutral-bg:#F8FAFC;--tint-neutral-border:#E2E8F0;--tint-neutral-text:#64748B;
 }
 html{-webkit-text-size-adjust:100%;}
 body{font-family:'Poppins',sans-serif;background:#F5F5F5;color:var(--text);margin:0;min-height:100vh;overflow-x:hidden;}
@@ -65,6 +73,8 @@ input,select,textarea{outline:none;border:none;font-family:'Poppins',sans-serif;
 ::-webkit-scrollbar{width:5px;height:5px;}
 ::-webkit-scrollbar-track{background:#f1f1f1;}
 ::-webkit-scrollbar-thumb{background:#ccc;border-radius:3px;}
+html[data-theme="dark"] ::-webkit-scrollbar-track{background:#1A2332;}
+html[data-theme="dark"] ::-webkit-scrollbar-thumb{background:#3A4A5E;}
 /* ══ DOWNLOAD APP BUTTON ══ */
 .dh-getapp-btn{background:var(--primary-light);color:var(--primary-dark);border-radius:10px;padding:10px 14px;font-weight:700;font-size:0.82rem;display:flex;align-items:center;gap:6px;cursor:pointer;border:none;white-space:nowrap;}
 .dh-getapp-btn:hover{background:#d1fae5;}
@@ -322,6 +332,13 @@ html[data-theme="dark"]{
   --shadow-md:0 4px 12px rgba(46,204,130,.25);--shadow-lg:0 6px 18px rgba(0,0,0,.4);
   --shadow-xl:0 12px 32px rgba(0,0,0,.5);
   --focus-ring:0 0 0 3px rgba(46,204,130,.4);
+  --tint-yellow-bg:#3A2E10;--tint-yellow-border:#6B4A1F;--tint-yellow-text:#FFCB47;
+  --tint-blue-bg:#142A3D;--tint-blue-border:#2F5878;--tint-blue-text:#7CB4FF;
+  --tint-red-bg:#3A1414;--tint-red-border:#5A1F1F;--tint-red-text:#FF8A8A;
+  --tint-green-bg:#11241C;--tint-green-border:#1D3A2C;--tint-green-text:#2ECC82;
+  --tint-orange-bg:#2A2110;--tint-orange-border:#5A4A1F;--tint-orange-text:#FDE68A;
+  --tint-purple-bg:#241B3D;--tint-purple-border:#3B2F63;--tint-purple-text:#A78BFA;
+  --tint-neutral-bg:#1A2332;--tint-neutral-border:#2D3B4E;--tint-neutral-text:#94A3B8;
 }
 html[data-theme="dark"] body{background:#0F1521;}
 html[data-theme="dark"] .desktop-header{background:#151B26;box-shadow:0 2px 12px rgba(0,0,0,0.45);}
