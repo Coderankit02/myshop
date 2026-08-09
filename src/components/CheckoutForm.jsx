@@ -357,7 +357,7 @@ export function CheckoutForm({cart,total:cartTotal,showToast,onSuccess,user,onLo
             karna impossible. Ab content kabhi compress nahi hota — chhote screens par
             container proper scroll karta hai. + overscroll-contain (mobile par scroll
             chaining se page 'fixed' feel na ho) + -webkit-overflow-scrolling:touch. */}
-        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-5 flex flex-col items-center" style={{WebkitOverflowScrolling:'touch'}}>
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pt-5 flex flex-col items-center" style={{WebkitOverflowScrolling:'touch', paddingBottom:'calc(8rem + env(safe-area-inset-bottom, 0px))'}}>
           <div className="shrink-0 text-xs font-poppins font-semibold text-center" style={{color:'var(--gray)'}}>
             {orderInfo?.orderNumber?`Order #${orderInfo.orderNumber}`:'Order pending — verification ke baad confirm hoga'}
           </div>
