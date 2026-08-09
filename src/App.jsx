@@ -12,13 +12,13 @@ import AuthModal from './components/AuthModal';
 // ── Universal CategoryRail (MobileCatRow + CategoryGrid ka merge) ───────────
 // Ek hi component DO jagah (Module 13 pattern — module-level stable type, App
 // re-render par scroll position reset nahi hoti):
-//   • Home page  → heading "Shop by Category" + bade tiles
-//   • Shop page (mobile) → active category highlight, chhota tile, bina heading
+//   • Home page  → premium header (icon badge + title + View All pill) + circular tiles
+//   • Shop page (mobile) → active category highlight, chhota circular tile, bina header
 // Scroll affordance: ◀ ▶ arrow buttons + right-edge fade SIRF tab dikhte hain
 // jab rail actually scrollable ho (scrollWidth > clientWidth) — boundary par
 // auto-hide. Pehle users ko pata hi nahi tha ki rail scroll hoti hai; ab fade/
 // arrows se discoverability — saari 16 categories explore hongi.
-function CategoryRail({cats,catsLoading,catEmoji,onClick,activeCatId=null,heading=null,tileClass='w-16 md:w-20',labelClass='text-[10px] md:text-xs line-clamp-2',fadeColor='var(--page-bg)'}){
+function CategoryRail({cats,catsLoading,catEmoji,onClick,activeCatId=null,heading=null,onSeeAll=null,tileClass='w-16 md:w-20',labelClass='text-[10px] md:text-xs line-clamp-2',fadeColor='var(--page-bg)'}){
   const ref=useRef(null);
   const [canLeft,setCanLeft]=useState(false);
   const [canRight,setCanRight]=useState(false);
@@ -54,15 +54,32 @@ function CategoryRail({cats,catsLoading,catEmoji,onClick,activeCatId=null,headin
   };
   return(
     <div>
-      {heading&&<h2 className="text-base md:text-xl font-bold font-poppins" style={{color:'var(--dark)'}}>{heading}</h2>}
-      <div className={`relative ${heading?'mt-3':''}`}>
+      {heading&&(
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-9 h-9 md:w-10 md:h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{background:'linear-gradient(135deg,var(--primary),var(--primary-dark))',boxShadow:'0 4px 12px rgba(22,163,74,0.35)'}}>
+              <span className="text-lg md:text-xl">🛍️</span>
+            </div>
+            <h2 className="text-base md:text-xl font-extrabold font-poppins truncate leading-tight" style={{color:'var(--dark)'}}>{heading}</h2>
+          </div>
+          {onSeeAll&&(
+            <button onClick={onSeeAll}
+              className="flex-shrink-0 text-xs md:text-sm font-bold font-poppins flex items-center gap-1 px-3 md:px-4 py-1.5 md:py-2 rounded-full transition-all hover:scale-105 active:scale-95"
+              style={{background:'var(--primary-light)',color:'var(--primary)'}}>
+              View All <span className="text-[10px] md:text-xs">→</span>
+            </button>
+          )}
+        </div>
+      )}
+      <div className="relative">
         {arrow(-1,canLeft,'left-0 -ml-3')}
         <div ref={ref} className="flex gap-3 md:gap-4 overflow-x-auto pb-1 snap-x scrollbar-hide">
           {catsLoading
             ?[...Array(8)].map((_,i)=>(
               <div key={i} aria-hidden="true" className={`flex-shrink-0 ${tileClass} flex flex-col items-center gap-1.5`}>
-                <div className="w-full aspect-square rounded-2xl animate-pulse" style={{background:'var(--light)'}}/>
-                <div className="h-2.5 w-10 rounded animate-pulse" style={{background:'var(--light)'}}/>
+                <div className="w-full aspect-square rounded-full animate-pulse" style={{background:'var(--light)'}}/>
+                <div className="h-5 w-12 rounded-full animate-pulse" style={{background:'var(--light)'}}/>
               </div>
             ))
             :cats.map(c=>{
@@ -70,15 +87,15 @@ function CategoryRail({cats,catsLoading,catEmoji,onClick,activeCatId=null,headin
               return(
                 <button key={c.id} onClick={()=>onClick(c.id)} title={c.name}
                   className={`flex-shrink-0 ${tileClass} snap-start flex flex-col items-center gap-1.5 group`}>
-                  <div className="w-full aspect-square rounded-2xl flex items-center justify-center text-xl md:text-3xl overflow-hidden transition-transform group-active:scale-95 group-hover:-translate-y-0.5"
-                    style={{background:'var(--primary-light)',boxShadow:active?'0 0 0 2px var(--primary)':'none'}}>
+                  <div className="w-full aspect-square rounded-full flex items-center justify-center text-xl md:text-3xl overflow-hidden transition-all duration-200 group-active:scale-95 group-hover:-translate-y-0.5"
+                    style={{background:'var(--primary-light)',boxShadow:active?'0 0 0 2.5px var(--primary)':'0 2px 8px rgba(0,0,0,0.07)',transition:'box-shadow 0.2s ease'}}>
                     {(c.display_image||c.image_url)
                       ?<img src={c.display_image||c.image_url} alt={c.name} className="w-full h-full object-cover"/>
                       :<span>{catEmoji(c)}</span>
                     }
                   </div>
-                  <span className={`${labelClass} font-poppins text-center leading-tight`}
-                    style={{color:active?'var(--primary)':'var(--dark)',fontWeight:active?700:500}}>{c.name}</span>
+                  <span className={`${labelClass} font-poppins text-center leading-tight px-2 py-0.5 rounded-full max-w-full`}
+                    style={{color:active?'#fff':'var(--dark)',background:active?'var(--primary)':'var(--card-bg)',fontWeight:active?700:600,border:active?'1.5px solid var(--primary)':'1.5px solid var(--border)',boxShadow:active?'0 2px 8px rgba(22,163,74,0.35)':'0 1px 3px rgba(0,0,0,0.05)'}}>{c.name}</span>
                 </button>
               );
             })
@@ -252,7 +269,7 @@ function HomeContent({homepageSections,banners,bannersLoading,bannerIdx,setBanne
           hero: <HeroBanner banners={banners} bannersLoading={bannersLoading} bannerIdx={bannerIdx} setBannerIdx={setBannerIdx} wrapRef={bannerWrapRef} handleBannerClick={handleBannerClick}/>,
           flash_sale: <FlashSale prods={homeSections.flash} loading={homeLoading} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}/>,
           today_deals: <ProductRail title="🔥 Today's Deals" loading={homeLoading} products={homeSections.deals} onSeeAll={()=>setPage('shop')} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}/>,
-          categories: <CategoryRail heading="Shop by Category" cats={cats} catsLoading={catsLoading} catEmoji={catEmoji} onClick={onPickCategory}/>,
+          categories: <CategoryRail heading="Shop by Category" cats={cats} catsLoading={catsLoading} catEmoji={catEmoji} onClick={onPickCategory} onSeeAll={()=>setPage('shop')}/>,
           featured: <ProductRail title="⭐ Featured Products" loading={featLoading} products={featuredProds} onSeeAll={()=>setPage('shop')} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}/>,
           best_sellers: <ProductRail title="🏆 Best Sellers" loading={homeLoading} products={homeSections.bestSellers} onSeeAll={()=>setPage('shop')} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}/>,
           new_arrivals: <ProductRail title="✨ New Arrivals" loading={homeLoading} products={homeSections.newArrivals} onSeeAll={()=>setPage('shop')} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}/>,
