@@ -3,37 +3,90 @@ import { Search, MapPin, ChevronDown, ShoppingCart, User, Download, Home, Shoppi
 import { supabase } from './lib/supabaseClient';
 import { TICKER, calcDiscount, catEmoji } from './lib/helpers';
 import { useCategories, useBanners, useProducts, useSearch, useHomeSections, useHomepageConfig, useReviews, useShopSettings, DEFAULT_HOMEPAGE_SECTIONS } from './hooks/dataHooks';
-import { SkelCard, SkelBanner, SkelCat } from './components/Skeletons';
+import { SkelCard, SkelBanner } from './components/Skeletons';
 import { PCard } from './components/PCard';
 import { ProductDetail } from './components/ProductDetail';
 import { CheckoutForm } from './components/CheckoutForm';
 import AuthModal from './components/AuthModal';
 
-// ── Mobile Category Row (outside App to prevent remount on every render) ──
-// ── Mobile Category Row (Module 4: Tailwind restyle — same props/onClick
-//     contract as before, so App.jsx's usage on the Shop page is unchanged) ──
-function MobileCatRow({cats,catsLoading,activeCatId,catEmoji,onClick}){
+// ── Universal CategoryRail (MobileCatRow + CategoryGrid ka merge) ───────────
+// Ek hi component DO jagah (Module 13 pattern — module-level stable type, App
+// re-render par scroll position reset nahi hoti):
+//   • Home page  → heading "Shop by Category" + bade tiles
+//   • Shop page (mobile) → active category highlight, chhota tile, bina heading
+// Scroll affordance: ◀ ▶ arrow buttons + right-edge fade SIRF tab dikhte hain
+// jab rail actually scrollable ho (scrollWidth > clientWidth) — boundary par
+// auto-hide. Pehle users ko pata hi nahi tha ki rail scroll hoti hai; ab fade/
+// arrows se discoverability — saari 16 categories explore hongi.
+function CategoryRail({cats,catsLoading,catEmoji,onClick,activeCatId=null,heading=null,tileClass='w-16 md:w-20',labelClass='text-[10px] md:text-xs line-clamp-2',fadeColor='var(--page-bg)'}){
+  const ref=useRef(null);
+  const [canLeft,setCanLeft]=useState(false);
+  const [canRight,setCanRight]=useState(false);
+  const update=useCallback(()=>{
+    const el=ref.current;
+    if(!el)return;
+    setCanLeft(el.scrollLeft>4);
+    setCanRight(el.scrollLeft<el.scrollWidth-el.clientWidth-4);
+  },[]);
+  useEffect(()=>{
+    const el=ref.current;
+    if(!el)return;
+    update();
+    const ro=new ResizeObserver(update);
+    ro.observe(el);
+    el.addEventListener('scroll',update,{passive:true});
+    window.addEventListener('resize',update);
+    return()=>{ro.disconnect();el.removeEventListener('scroll',update);window.removeEventListener('resize',update);};
+  },[update]);
+  // Cats load hone / loading state badalne par dobara measure (scrollWidth tabhi
+  // settle hota hai jab tiles render ho jate hain).
+  useEffect(()=>{update();},[cats.length,catsLoading,update]);
+  const scrollBy=dir=>ref.current?.scrollBy({left:dir*250,behavior:'smooth'});
+  const arrow=(dir,shown,edge)=>{
+    if(!shown)return null;
+    return(
+      <button onClick={()=>scrollBy(dir)} aria-label={dir<0?'Pichli categories':'Agli categories'}
+        className={`absolute top-1/2 -translate-y-1/2 z-10 w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center shadow-md transition-transform hover:scale-110 active:scale-90 ${edge}`}
+        style={{background:'var(--card-bg)',color:'var(--primary)',border:'1px solid var(--border)'}}>
+        {dir<0?'◀':'▶'}
+      </button>
+    );
+  };
   return(
-    <div className="flex gap-3 overflow-x-auto pb-1 snap-x scrollbar-hide">
-      {catsLoading
-        ?[...Array(6)].map((_,i)=><SkelCat key={i}/>)
-        :cats.map(c=>{
-          const active=activeCatId===c.id;
-          return(
-            <button key={c.id} onClick={()=>onClick(c.id)} className="flex flex-col items-center gap-1 flex-shrink-0 snap-start w-[60px]">
-              <div className="w-full aspect-square rounded-2xl flex items-center justify-center text-xl overflow-hidden transition-shadow"
-                style={{background:'var(--primary-light)',boxShadow:active?'0 0 0 2px var(--primary)':'none'}}>
-                {(c.display_image||c.image_url)
-                  ?<img src={c.display_image||c.image_url} alt={c.name} className="w-full h-full object-cover"/>
-                  :<span>{catEmoji(c)}</span>
-                }
+    <div>
+      {heading&&<h2 className="text-base md:text-xl font-bold font-poppins" style={{color:'var(--dark)'}}>{heading}</h2>}
+      <div className={`relative ${heading?'mt-3':''}`}>
+        {arrow(-1,canLeft,'left-0 -ml-3')}
+        <div ref={ref} className="flex gap-3 md:gap-4 overflow-x-auto pb-1 snap-x scrollbar-hide">
+          {catsLoading
+            ?[...Array(8)].map((_,i)=>(
+              <div key={i} aria-hidden="true" className={`flex-shrink-0 ${tileClass} flex flex-col items-center gap-1.5`}>
+                <div className="w-full aspect-square rounded-2xl animate-pulse" style={{background:'var(--light)'}}/>
+                <div className="h-2.5 w-10 rounded animate-pulse" style={{background:'var(--light)'}}/>
               </div>
-              <span className="text-[10px] font-poppins text-center leading-tight line-clamp-1"
-                style={{color:active?'var(--primary)':'var(--dark)',fontWeight:active?700:500}}>{c.name}</span>
-            </button>
-          );
-        })
-      }
+            ))
+            :cats.map(c=>{
+              const active=activeCatId===c.id;
+              return(
+                <button key={c.id} onClick={()=>onClick(c.id)} title={c.name}
+                  className={`flex-shrink-0 ${tileClass} snap-start flex flex-col items-center gap-1.5 group`}>
+                  <div className="w-full aspect-square rounded-2xl flex items-center justify-center text-xl md:text-3xl overflow-hidden transition-transform group-active:scale-95 group-hover:-translate-y-0.5"
+                    style={{background:'var(--primary-light)',boxShadow:active?'0 0 0 2px var(--primary)':'none'}}>
+                    {(c.display_image||c.image_url)
+                      ?<img src={c.display_image||c.image_url} alt={c.name} className="w-full h-full object-cover"/>
+                      :<span>{catEmoji(c)}</span>
+                    }
+                  </div>
+                  <span className={`${labelClass} font-poppins text-center leading-tight`}
+                    style={{color:active?'var(--primary)':'var(--dark)',fontWeight:active?700:500}}>{c.name}</span>
+                </button>
+              );
+            })
+          }
+        </div>
+        {canRight&&<div className="pointer-events-none absolute inset-y-0 right-0 w-8 md:w-12 rounded-r-2xl" style={{background:`linear-gradient(90deg,transparent,${fadeColor})`}}/>}
+        {arrow(1,canRight,'right-0 -mr-3')}
+      </div>
     </div>
   );
 }
@@ -92,39 +145,7 @@ function HeroBanner({banners,bannersLoading,bannerIdx,setBannerIdx,wrapRef,handl
   );
 }
 
-function CategoryGrid({cats,catsLoading,catEmoji,onPick}){
-  return(
-    <div>
-      <h2 className="text-base md:text-xl font-bold font-poppins" style={{color:'var(--dark)'}}>Shop by Category</h2>
-      {/* Single row + horizontal scroll — 16 categories ab wrap nahi hongi, ek
-          hi line me scroll karke saari dikhengi (ProductRail/MobileCatRow jaisa
-          hi pattern: flex + overflow-x-auto + snap + scrollbar-hide). */}
-      <div className="flex gap-3 md:gap-4 overflow-x-auto pb-1 snap-x scrollbar-hide mt-3">
-        {catsLoading
-          ?[...Array(8)].map((_,i)=>(
-            <div key={i} aria-hidden="true" className="flex-shrink-0 w-16 md:w-20 flex flex-col items-center gap-1.5">
-              <div className="w-full aspect-square rounded-2xl animate-pulse" style={{background:'var(--light)'}}/>
-              <div className="h-2.5 w-10 rounded animate-pulse" style={{background:'var(--light)'}}/>
-            </div>
-          ))
-          :cats.map(c=>(
-            <button key={c.id} onClick={()=>onPick(c.id)} title={c.name}
-              className="flex-shrink-0 w-16 md:w-20 snap-start flex flex-col items-center gap-1.5 group">
-              <div className="w-full aspect-square rounded-2xl flex items-center justify-center text-2xl md:text-3xl overflow-hidden transition-transform group-active:scale-95 group-hover:-translate-y-0.5"
-                style={{background:'var(--primary-light)'}}>
-                {(c.display_image||c.image_url)
-                  ?<img src={c.display_image||c.image_url} alt={c.name} className="w-full h-full object-cover"/>
-                  :<span>{catEmoji(c)}</span>
-                }
-              </div>
-              <span className="text-[10px] md:text-xs font-medium font-poppins text-center leading-tight line-clamp-2" style={{color:'var(--dark)'}}>{c.name}</span>
-            </button>
-          ))
-        }
-      </div>
-    </div>
-  );
-}
+
 
 function ProductRail({title,loading,products,onSeeAll,cart,addToCart,updQty,onDetail}){
   if(!loading&&(!products||products.length===0))return null;
@@ -148,7 +169,7 @@ function ProductRail({title,loading,products,onSeeAll,cart,addToCart,updQty,onDe
   );
 }
 
-function DesktopSidebar({allCats,activeCatId,catEmoji,onPick}){
+function DesktopSidebar({allCats,activeCatId,catEmoji,onPick,counts}){
   return(
     <div className="sticky rounded-2xl p-3 mr-4 my-4 flex-shrink-0"
       style={{width:200,background:'var(--card-bg)',top:'var(--header-h)',boxShadow:'0 2px 10px rgba(0,0,0,0.06)',maxHeight:'calc(100vh - var(--header-h) - 20px)',overflowY:'auto'}}>
@@ -163,7 +184,10 @@ function DesktopSidebar({allCats,activeCatId,catEmoji,onPick}){
               ?<img src={c.display_image||c.image_url} alt={c.name} className="w-7 h-7 rounded-lg object-cover flex-shrink-0"/>
               :<div className="w-7 h-7 rounded-lg flex items-center justify-center text-base flex-shrink-0" style={{background:'var(--primary-light)'}}>{catEmoji(c)}</div>
             }
-            <span className="truncate">{c.name}</span>
+            <span className="truncate flex-1">{c.name}</span>
+            {counts&&typeof counts[c.id]==='number'&&(
+              <span className="text-[10px] font-bold font-poppins rounded-full px-1.5 py-0.5 flex-shrink-0" style={{background:'var(--primary-light)',color:'var(--primary-dark)'}}>{counts[c.id]}</span>
+            )}
           </div>
         );
       })}
@@ -228,7 +252,7 @@ function HomeContent({homepageSections,banners,bannersLoading,bannerIdx,setBanne
           hero: <HeroBanner banners={banners} bannersLoading={bannersLoading} bannerIdx={bannerIdx} setBannerIdx={setBannerIdx} wrapRef={bannerWrapRef} handleBannerClick={handleBannerClick}/>,
           flash_sale: <FlashSale prods={homeSections.flash} loading={homeLoading} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}/>,
           today_deals: <ProductRail title="🔥 Today's Deals" loading={homeLoading} products={homeSections.deals} onSeeAll={()=>setPage('shop')} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}/>,
-          categories: <div><CategoryGrid cats={cats} catsLoading={catsLoading} catEmoji={catEmoji} onPick={onPickCategory}/></div>,
+          categories: <CategoryRail heading="Shop by Category" cats={cats} catsLoading={catsLoading} catEmoji={catEmoji} onClick={onPickCategory}/>,
           featured: <ProductRail title="⭐ Featured Products" loading={featLoading} products={featuredProds} onSeeAll={()=>setPage('shop')} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}/>,
           best_sellers: <ProductRail title="🏆 Best Sellers" loading={homeLoading} products={homeSections.bestSellers} onSeeAll={()=>setPage('shop')} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}/>,
           new_arrivals: <ProductRail title="✨ New Arrivals" loading={homeLoading} products={homeSections.newArrivals} onSeeAll={()=>setPage('shop')} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}/>,
@@ -298,14 +322,14 @@ function HomeContent({homepageSections,banners,bannersLoading,bannerIdx,setBanne
   );
 }
 
-function DesktopShop({allCats,activeCatId,catEmoji,visibleShopProds,shopIsLoading,isSearchActive,searchResults,shopTotal,inStockOnly,search,sortBy,setSortBy,cart,addToCart,updQty,onDetail,totalPages,shopPage,setShopPage,onSidebarPick}){
+function DesktopShop({allCats,activeCatId,catEmoji,catCounts,visibleShopProds,shopIsLoading,isSearchActive,searchResults,shopTotal,inStockOnly,search,sortBy,setSortBy,cart,addToCart,updQty,onDetail,totalPages,shopPage,setShopPage,onSidebarPick}){
   const prods=visibleShopProds;
   const isLoading=shopIsLoading;
   const activeCatName=allCats.find(c=>c.id===activeCatId)?.name||'All Products';
   const countLabel=isLoading?'Loading…':(inStockOnly?`${prods.length} in stock`:`${isSearchActive?searchResults.length:shopTotal} Products`);
   return(
     <div className="flex items-start max-w-site mx-auto px-4 md:px-7">
-      <DesktopSidebar allCats={allCats} activeCatId={activeCatId} catEmoji={catEmoji} onPick={onSidebarPick}/>
+      <DesktopSidebar allCats={allCats} activeCatId={activeCatId} catEmoji={catEmoji} counts={catCounts} onPick={onSidebarPick}/>
       <div className="flex-1 min-w-0 py-4">
         <div className="rounded-2xl p-4 md:p-5" style={{background:'var(--card-bg)'}}>
           <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
@@ -356,7 +380,7 @@ function DesktopShop({allCats,activeCatId,catEmoji,visibleShopProds,shopIsLoadin
 }
 
 // ── Module 12: Premium homepage sections ────────────────────
-// All standalone (stable component types, like MobileCatRow) so their
+// All standalone (stable component types, like CategoryRail) so their
 // internal timers/state never remount when App re-renders.
 
 function useCountdownToMidnight(){
@@ -695,6 +719,17 @@ export default function App(){
     return()=>{cancelled=true;};
   },[cats]);
 
+  // Desktop sidebar category counts — sectionProds (home ke liye pehle se ek
+  // hi query me loaded) se derived, koi EXTRA query nahi. Sirf ACTIVE products
+  // count hote hain (jo customers ko dikhte hain). 'all' = total.
+  // sectionProdsReady gate: load hone tak keys undefined rehti hain → badge
+  // hidden (0 ka flash nahi aata), ready hone par real count aa jata hai.
+  const catCounts={};
+  if(sectionProdsReady){
+    catCounts.all=0;
+    for(const c of cats){const n=(sectionProds[c.id]||[]).length;catCounts[c.id]=n;catCounts.all+=n;}
+  }
+
   useEffect(()=>{
     if(!banners.length)return;
     const t=setInterval(()=>setBannerIdx(i=>(i+1)%banners.length),4000);
@@ -910,7 +945,7 @@ export default function App(){
     setPage('shop');setShopPage(1);
   },[cats]);
 
-  // HeroBanner & CategoryGrid → hoisted to module level (Module 13: scroll-reset fix).
+  // HeroBanner & CategoryRail → hoisted to module level (Module 13: scroll-reset fix).
 
   // ProductRail & DesktopSidebar → hoisted to module level (Module 13).
 
@@ -1043,7 +1078,7 @@ export default function App(){
         {page==='shop'&&(
           <>
             <div className="d-view"><DesktopShop
-              allCats={allCats} activeCatId={activeCatId} catEmoji={catEmoji}
+              allCats={allCats} activeCatId={activeCatId} catEmoji={catEmoji} catCounts={catCounts}
               visibleShopProds={visibleShopProds} shopIsLoading={shopIsLoading}
               isSearchActive={isSearchActive} searchResults={searchResults} shopTotal={shopTotal}
               inStockOnly={inStockOnly} search={search}
@@ -1054,7 +1089,7 @@ export default function App(){
             /></div>
             <div className="m-view">
               <div className="px-4 pt-3" style={{background:'var(--card-bg)'}}>
-                <MobileCatRow cats={allCats} catsLoading={catsLoading} activeCatId={activeCatId} catEmoji={catEmoji} onClick={id=>{setActiveCatId(id);setShopPage(1);setSearch('');}}/>
+                <CategoryRail cats={allCats} catsLoading={catsLoading} activeCatId={activeCatId} catEmoji={catEmoji} fadeColor="var(--card-bg)" tileClass="w-[60px]" labelClass="text-[10px] line-clamp-1" onClick={id=>{setActiveCatId(id);setShopPage(1);setSearch('');}}/>
               </div>
               <div className="px-4 pt-3 pb-2" style={{background:'var(--card-bg)'}}>
                 <div className="flex items-center justify-between gap-2 mb-2.5">
