@@ -215,7 +215,7 @@ function Footer({shopSettings,onNav}){
   );
 }
 
-function HomeContent({homepageSections,banners,bannersLoading,bannerIdx,setBannerIdx,bannerWrapRef,handleBannerClick,homeSections,homeLoading,cart,addToCart,updQty,onDetail,cats,catsLoading,catEmoji,sectionProds,featLoading,featuredProds,dbReviews,shopSettings,showToast,setPage,onPickCategory}){
+function HomeContent({homepageSections,banners,bannersLoading,bannerIdx,setBannerIdx,bannerWrapRef,handleBannerClick,homeSections,homeLoading,cart,addToCart,updQty,onDetail,cats,catsLoading,catEmoji,sectionProds,sectionProdsReady,featLoading,featuredProds,dbReviews,shopSettings,showToast,setPage,onPickCategory}){
   return(
     <div className="max-w-site mx-auto px-4 md:px-8 pt-4 pb-6 md:pb-8">
       {/* Admin Homepage Builder: sections configured order mein + sirf enabled walay */}
@@ -229,11 +229,22 @@ function HomeContent({homepageSections,banners,bannersLoading,bannerIdx,setBanne
           featured: <ProductRail title="⭐ Featured Products" loading={featLoading} products={featuredProds} onSeeAll={()=>setPage('shop')} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}/>,
           best_sellers: <ProductRail title="🏆 Best Sellers" loading={homeLoading} products={homeSections.bestSellers} onSeeAll={()=>setPage('shop')} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}/>,
           new_arrivals: <ProductRail title="✨ New Arrivals" loading={homeLoading} products={homeSections.newArrivals} onSeeAll={()=>setPage('shop')} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}/>,
-          category_sections: cats.slice(0,6).map(c=>{
+          // SABHI categories ke sections (pehle sirf 6) + har category ke saare
+          // products — page scroll karte hi har category apne poore section ke
+          // saath dikhti hai. 0 products wali category bhi dikhti hai (chhota
+          // empty state) taaki admin me jo bhi category hai wo site par visible ho.
+          category_sections: cats.map(c=>{
             const items=sectionProds[c.id];
-            if(items&&items.length===0)return null;
+            if(sectionProdsReady&&(!items||items.length===0)){
+              return(
+                <div key={c.id} className="mt-8 rounded-2xl p-5 text-center" style={{background:'var(--card-bg)'}}>
+                  <div className="font-extrabold font-poppins text-sm md:text-base" style={{color:'var(--dark)'}}>{c.name}</div>
+                  <p className="text-xs font-poppins mt-1.5" style={{color:'var(--gray)'}}>Is category ke products jald aa rahe hain 🛒</p>
+                </div>
+              );
+            }
             return(
-              <ProductRail key={c.id} title={c.name} loading={!items} products={items}
+              <ProductRail key={c.id} title={c.name} loading={!sectionProdsReady} products={items}
                 onSeeAll={()=>onPickCategory(c.id)} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}/>
             );
           }),
@@ -612,35 +623,56 @@ export default function App(){
   const {reviews:dbReviews}=useReviews();
   const {settings:shopSettings}=useShopSettings();
 
-  // Section products per category (first 3 cats)
+  // Section products per category — SABHI categories + har category ke SABHI
+  // products (pehle sirf 6 cats × 8 items dikhte the). Ek hi query me saare
+  // active products lo aur client-side category_id se group karo (16 alag
+  // queries ki jagah 1) — home page par scroll karte hi har category ka pura
+  // section apne saare products ke saath dikhta hai.
   const [sectionProds,setSectionProds]=useState({});
+  // Ready flag: query complete hone par true — iske bina 0-products wali category
+  // par `items` undefined rehta aur rail hamesha skeleton dikhati thi. Ab ready
+  // hone par undefined/[] dono ko empty state milta hai.
+  const [sectionProdsReady,setSectionProdsReady]=useState(false);
   useEffect(()=>{
     if(!cats.length)return;
-    const topCats=cats.slice(0,6);
-    topCats.forEach(async(c)=>{
-      const {data}=await supabase.from('products')
-        .select('*,product_images(image_url,is_default,sort_order)')
-        .eq('category_id',c.id).eq('is_active',true)
-        .order('is_featured',{ascending:false})
-        .limit(8);
-      setSectionProds(p=>({...p,[c.id]:(data||[]).map(pr=>{
+    let cancelled=false;
+    (async()=>{
+      // try/catch: query fail hone par bhi ready=true set hota hai — warna saari
+      // category rails hamesha skeleton dikhati rehti thin (useHomeSections jaisa
+      // pattern). limit(1000): PostgREST/Supabase ka default cap — catalog 1000
+      // se zyada ho to yahan pagination chahiye (aaj 150 products hain).
+      let data=null;
+      try{
+        const res=await supabase.from('products')
+          .select('*,product_images(image_url,is_default,sort_order)')
+          .eq('is_active',true)
+          .order('is_featured',{ascending:false})
+          .order('created_at',{ascending:false})
+          .limit(1000);
+        data=res.data;
+      }catch(e){data=null;}
+      if(cancelled)return;
+      const map={};
+      for(const pr of (data||[])){
         // BUG FIX: images sorted by sort_order; primary_image = admin ka ⭐ DEFAULT
         // (is_default flag) — dataHooks.js jaisa hi shape. Default nahi hai to
         // pehli sorted image fallback.
         const imgs=(pr.product_images||[]).slice().sort((a,b)=>a.sort_order-b.sort_order);
-        return{
+        const enriched={
           ...pr,
           discount:calcDiscount(pr.selling_price,pr.original_price),
-          // BUG FIX: `images` array yahan set nahi hota tha — sirf primary_image.
-          // ProductDetail component `product.images` padhta hai (gallery + thumbnails
-          // + swipe ke liye), isliye homepage category rails se product click karne
-          // par detail page par image kabhi dikhti hi nahi thi (🛒 placeholder).
-          // Ab dataHooks.js jaisa hi shape — images + primary_image dono.
+          // `images` array + primary_image dono — ProductDetail gallery/thumbnails
+          // aur cards ke liye (dataHooks.js jaisa hi shape).
           images:imgs,
           primary_image:(imgs.find(i=>i.is_default)||imgs[0])?.image_url||null,
         };
-      })}));
-    });
+        if(!map[pr.category_id])map[pr.category_id]=[];
+        map[pr.category_id].push(enriched);
+      }
+      setSectionProds(map);
+      setSectionProdsReady(true);
+    })();
+    return()=>{cancelled=true;};
   },[cats]);
 
   useEffect(()=>{
@@ -977,7 +1009,7 @@ export default function App(){
           homeSections={homeSections} homeLoading={homeLoading}
           cart={cart} addToCart={addToCart} updQty={updQty} onDetail={openDetail}
           cats={cats} catsLoading={catsLoading} catEmoji={catEmoji}
-          sectionProds={sectionProds} featLoading={featLoading} featuredProds={featuredProds}
+          sectionProds={sectionProds} sectionProdsReady={sectionProdsReady} featLoading={featLoading} featuredProds={featuredProds}
           dbReviews={dbReviews} shopSettings={shopSettings} showToast={showToast}
           setPage={setPage}
           onPickCategory={(id)=>{setActiveCatId(id);setPage('shop');setShopPage(1);setSearch('');}}
