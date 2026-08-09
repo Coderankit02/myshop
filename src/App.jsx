@@ -168,30 +168,31 @@ function HeroBanner({banners,bannersLoading,bannerIdx,setBannerIdx,wrapRef,handl
 // layered gradient (theme-aware) + glass shine (diagonal white overlay) +
 // soft glow + inner highlight + subtle border. Sirf text ka background,
 // layout kuch nahi badalta. Module-level (Module 13 pattern).
-function TitlePill({children}){
+function TitlePill({children, icon}){
   return(
-    <span className="inline-block rounded-full font-extrabold font-poppins text-sm md:text-lg text-white leading-tight px-4 py-1.5 md:px-5 md:py-2"
+    <span className="title-pill inline-block rounded-full font-extrabold font-poppins text-sm md:text-lg text-white leading-tight px-4 py-1.5 md:px-5 md:py-2"
       style={{
         background:'linear-gradient(115deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0) 45%, rgba(255,255,255,0) 100%), linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)',
-        boxShadow:'0 6px 18px rgba(22,163,74,0.32), inset 0 1px 0 rgba(255,255,255,0.25), inset 0 -1px 0 rgba(0,0,0,0.08)',
         border:'1px solid rgba(255,255,255,0.18)',
         textShadow:'0 1px 3px rgba(0,0,0,0.22)',
         letterSpacing:'0.01em',
       }}>
+      {icon&&<span className="mr-1.5 align-[-1px]">{icon}</span>}
       {children}
+      <span className="title-pill-shine" aria-hidden="true"/>
     </span>
   );
 }
 
 // Category section titles: titlePill ho to sirf TITLE TEXT ke around designer
 // gradient pill (baki layout bilkul same — See All right, products neeche).
-function ProductRail({title,loading,products,onSeeAll,cart,addToCart,updQty,onDetail,titlePill}){
+function ProductRail({title,loading,products,onSeeAll,cart,addToCart,updQty,onDetail,titlePill,titleIcon}){
   if(!loading&&(!products||products.length===0))return null;
   return(
     <div>
       <div className="flex items-center justify-between mb-3">
         {titlePill
-          ?<h2><TitlePill>{title}</TitlePill></h2>
+          ?<h2><TitlePill icon={titleIcon}>{title}</TitlePill></h2>
           :<h2 className="text-base md:text-xl font-bold font-poppins" style={{color:'var(--dark)'}}>{title}</h2>}
         <button onClick={onSeeAll} className="text-xs md:text-sm font-semibold font-poppins flex items-center gap-0.5" style={{color:'var(--primary)'}}>See All →</button>
       </div>
@@ -305,7 +306,7 @@ function HomeContent({homepageSections,banners,bannersLoading,bannerIdx,setBanne
             if(sectionProdsReady&&(!items||items.length===0)){
               return(
                 <div key={c.id}>
-                  <h2 className="mb-3"><TitlePill>{c.name}</TitlePill></h2>
+                  <h2 className="mb-3"><TitlePill icon={catEmoji(c)}>{c.name}</TitlePill></h2>
                   <div className="rounded-2xl p-5 text-center" style={{background:'var(--card-bg)'}}>
                     <p className="text-xs font-poppins" style={{color:'var(--gray)'}}>Is category ke products jald aa rahe hain 🛒</p>
                   </div>
@@ -315,7 +316,7 @@ function HomeContent({homepageSections,banners,bannersLoading,bannerIdx,setBanne
             return(
               <ProductRail key={c.id} title={c.name} loading={!sectionProdsReady} products={items}
                 onSeeAll={()=>onPickCategory(c.id)} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}
-                titlePill/>
+                titlePill titleIcon={catEmoji(c)}/>
             );
           }),
           why_choose_us: <WhyChooseUs/>,
