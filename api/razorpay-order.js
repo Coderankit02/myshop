@@ -45,7 +45,7 @@ async function fetchJson(path, opts = {}) {
 // selling_price se recompute karte hain + coupon discount coupons table se
 // + delivery charge order row se. Mismatch → order create reject.
 async function verifyOrderTotal(orderId, requestedPaise) {
-  const order = await fetchJson(`orders?select=subtotal,discount,promo_code,delivery_charge,final_amount&id=eq.${encodeURIComponent(orderId)}`);
+  const order = await fetchJson(`orders?select=subtotal,discount,promo_code,delivery_charge,final_amount,rewards_discount&id=eq.${encodeURIComponent(orderId)}`);
   const orderRow = Array.isArray(order) ? order[0] : null;
   if (!orderRow) return { ok: false, status: 404, error: 'Order not found' };
 
@@ -78,7 +78,11 @@ async function verifyOrderTotal(orderId, requestedPaise) {
     }
   }
 
-  const expected = Math.max(0, subtotal - discount + (Number(orderRow.delivery_charge) || 0));
+  // Reward points discount — order par create_order RPC ne server-side compute
+  // kiya tha (100 pts = ₹10). Client ka koi value trust nahi karte.
+  const rewardsDiscount = Number(orderRow.rewards_discount) || 0;
+
+  const expected = Math.max(0, subtotal - discount - rewardsDiscount + (Number(orderRow.delivery_charge) || 0));
   const expectedPaise = Math.round(expected * 100);
   if (Math.abs(expectedPaise - requestedPaise) > 1) {
     return { ok: false, status: 400, error: `Amount mismatch (expected ₹${(expectedPaise / 100).toFixed(2)}) — order total refresh karke dobara try karein` };

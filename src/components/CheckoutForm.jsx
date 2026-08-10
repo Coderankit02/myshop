@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { UpiPayCard } from './UpiPayCard';
 import { useShopSettings, useCouponValidator } from '../hooks/dataHooks';
+import { supabase } from '../lib/supabaseClient';
 
 /* ══════════════════════════════════════════════════════════
    CheckoutForm (Module 8: Tailwind restyle)
@@ -85,7 +86,24 @@ export function CheckoutForm({cart,total:cartTotal,showToast,onSuccess,user,onLo
   const [couponCode,setCouponCode]=useState('');
   const [appliedCoupon,setAppliedCoupon]=useState(null); // {code,discount}
   const [couponError,setCouponError]=useState('');
-  const discount=appliedCoupon?.discount||0;
+  // ── Reward points redeem: 100 pts = ₹10 (server-side create_order RPC validate karta hai) ──
+  const [rewardBalance,setRewardBalance]=useState(0);   // redeemable points (server-computed)
+  const [rewardApplied,setRewardApplied]=useState(0);   // user ne kitne points apply kiye
+  const couponDiscount=appliedCoupon?.discount||0;
+  const rewardDiscount=Math.floor(rewardApplied/10);    // 100 pts = ₹10
+  const discount=couponDiscount+rewardDiscount;
+  // Is order par max kitne points use ho sakte hain (subtotal − coupon tak) —
+  // server bhi yahi cap karta hai, taaki chhote order par saare points na burn hon.
+  const maxRewardPts=Math.min(rewardBalance,Math.max(0,Math.floor((total-couponDiscount)*10)));
+  useEffect(()=>{
+    let active=true;
+    (async()=>{
+      if(!user){setRewardBalance(0);setRewardApplied(0);return;}
+      const {data}=await supabase.rpc('get_redeemable_points',{p_user_id:user.uid});
+      if(active) setRewardBalance(Number(data)||0);
+    })();
+    return()=>{active=false;};
+  },[user]);
   const handleApplyCoupon=async()=>{
     setCouponError('');
     const result=await validateCoupon(couponCode,cartTotal);
@@ -196,7 +214,7 @@ export function CheckoutForm({cart,total:cartTotal,showToast,onSuccess,user,onLo
       const wantAmount=Math.round(finalAmount*100);
       let result=(rzpAmountRef.current===wantAmount)?rzpOrderRef.current:null;
       if(!result){
-        result=await window.RKOrders.createOrder(user.uid,{cart,total,address:addressPayload,paymentMethod:'razorpay',promoCode:appliedCoupon?.code||null,discount,...locationPayload});
+        result=await window.RKOrders.createOrder(user.uid,{cart,total,address:addressPayload,paymentMethod:'razorpay',promoCode:appliedCoupon?.code||null,discount,rewardsPoints:rewardApplied,...locationPayload});
         if(!result){setRzpBusy(false);setOrderError('⚠️ Order save nahi hua. Kripya dobara try karein.');return;}
         rzpOrderRef.current={orderId:result.orderId,orderNumber:result.orderNumber};
         rzpAmountRef.current=wantAmount;
@@ -282,7 +300,7 @@ export function CheckoutForm({cart,total:cartTotal,showToast,onSuccess,user,onLo
       setPlacing(true);
       try{
         let result=null;
-        if(window.RKOrders&&user)result=await window.RKOrders.createOrder(user.uid,{cart,total,address:addressPayload,paymentMethod:pay,promoCode:appliedCoupon?.code||null,discount,...locationPayload});
+        if(window.RKOrders&&user)result=await window.RKOrders.createOrder(user.uid,{cart,total,address:addressPayload,paymentMethod:pay,promoCode:appliedCoupon?.code||null,discount,rewardsPoints:rewardApplied,...locationPayload});
         // Frontend-only fix: previously a failed/null createOrder() still showed the
         // success screen with a randomly-generated fake order number. Now we only
         // show success if the order actually saved (or if no backend hook exists at all,
@@ -319,7 +337,7 @@ export function CheckoutForm({cart,total:cartTotal,showToast,onSuccess,user,onLo
     if(!pendingOrder){showToast('Order data missing');return;}
     setSubmittingVerify(true);
     let result=null;
-    if(window.RKOrders&&user)result=await window.RKOrders.createOrder(user.uid,{cart,total,address:pendingOrder.address,paymentMethod:pendingOrder.paymentMethod,promoCode:appliedCoupon?.code||null,discount,...(pendingOrder.locationPayload||{})});
+    if(window.RKOrders&&user)result=await window.RKOrders.createOrder(user.uid,{cart,total,address:pendingOrder.address,paymentMethod:pendingOrder.paymentMethod,promoCode:appliedCoupon?.code||null,discount,rewardsPoints:rewardApplied,...(pendingOrder.locationPayload||{})});
     if(!result){setSubmittingVerify(false);showToast('Order create nahi hua');return;}
     const realOrderId=result.orderId;
     const realOrderNumber=result.orderNumber||('RK'+Math.floor(1000+Math.random()*9000));
@@ -426,9 +444,33 @@ export function CheckoutForm({cart,total:cartTotal,showToast,onSuccess,user,onLo
           )}
           {couponError&&<div className="text-[11px] font-poppins font-semibold mt-1" style={{color:'var(--red)'}}>⚠️ {couponError}</div>}
         </div>
+        {/* Reward points redeem — 100 pts = ₹10 (server-side validated) */}
+        {user&&maxRewardPts>=100&&(
+          <div className="mt-2 pt-2" style={{borderTop:'1px dashed var(--border)'}}>
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[10px] font-bold font-poppins uppercase tracking-wide" style={{color:'var(--gray)'}}>⭐ Reward Points</span>
+              <span className="text-[11px] font-poppins font-bold" style={{color:'var(--tint-yellow-text)'}}>{maxRewardPts} pts = ₹{Math.floor(maxRewardPts/10)}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button type="button" disabled={rewardApplied<=0} onClick={()=>setRewardApplied(a=>Math.max(0,a-100))} aria-label="Points kam karo"
+                className="w-9 h-9 rounded-lg font-black text-base disabled:opacity-30" style={{background:'var(--light)',color:'var(--primary-dark)',border:'1.5px solid var(--border)'}}>−</button>
+              <div className="flex-1 text-center text-xs font-extrabold font-poppins rounded-lg py-2" style={{background:'var(--light)',color:'var(--dark)'}}>
+                {rewardApplied>0?`${rewardApplied} pts (−₹${rewardDiscount})`:'Apply points karo'}
+              </div>
+              <button type="button" disabled={rewardApplied+100>maxRewardPts} onClick={()=>setRewardApplied(a=>Math.min(maxRewardPts,a+100))} aria-label="Points badhao"
+                className="w-9 h-9 rounded-lg font-black text-base disabled:opacity-30" style={{background:'var(--light)',color:'var(--primary-dark)',border:'1.5px solid var(--border)'}}>+</button>
+              <button type="button" onClick={()=>setRewardApplied(rewardApplied>0?0:Math.floor(maxRewardPts/100)*100)}
+                className="px-3 py-2 rounded-lg text-[11px] font-bold font-poppins" style={{background:'var(--tint-yellow-bg)',color:'var(--tint-yellow-text)',border:'1px solid var(--tint-yellow-border)'}}>
+                {rewardApplied>0?'Clear':'Apply All'}
+              </button>
+            </div>
+            <div className="text-[10px] font-poppins mt-1" style={{color:'var(--muted)'}}>100 points = ₹10 discount • Is order par max {maxRewardPts} pts use ho sakte hain</div>
+          </div>
+        )}
         <div className="mt-2 text-xs font-poppins" style={{color:'var(--gray)'}}>
           <div className="flex justify-between"><span>Subtotal</span><span>₹{total.toFixed(0)}</span></div>
-          {discount>0&&<div className="flex justify-between" style={{color:'var(--primary)'}}><span>Coupon Discount</span><span>−₹{discount.toFixed(0)}</span></div>}
+          {couponDiscount>0&&<div className="flex justify-between" style={{color:'var(--primary)'}}><span>Coupon Discount</span><span>−₹{couponDiscount.toFixed(0)}</span></div>}
+          {rewardDiscount>0&&<div className="flex justify-between" style={{color:'var(--tint-yellow-text)'}}><span>⭐ Reward Discount</span><span>−₹{rewardDiscount.toFixed(0)}</span></div>}
           {deliveryCharge>0&&<div className="flex justify-between"><span>Delivery Charge</span><span>₹{deliveryCharge.toFixed(0)}</span></div>}
         </div>
         <div className="flex justify-between font-extrabold font-poppins text-sm mt-2 pt-2" style={{borderTop:'1px solid var(--border)'}}>

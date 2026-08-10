@@ -604,6 +604,17 @@ function RewardsTab({ state }) {
   const pts            = deliveredCount*10;
   const savings        = state.orders.reduce((s,o)=>s+(o.discount||0),0);
   const refCode        = 'RK'+(state.user?.id||'').slice(0,6).toUpperCase();
+  // Redeemable balance = earned (delivered×10) − already redeemed (server-computed)
+  const [redeemable,setRedeemable]=useState(null);
+  useEffect(()=>{
+    let active=true;
+    (async()=>{
+      if(!state.user){return;}
+      const {data}=await supabase.rpc('get_redeemable_points',{p_user_id:state.user.id});
+      if(active) setRedeemable(Number(data)||0);
+    })();
+    return()=>{active=false;};
+  },[state.user]);
   const nextTarget     = totalOrders<5?5:totalOrders<20?20:50;
   const progress       = Math.min((totalOrders/nextTarget)*100,100);
   const loyalty        = loyaltyLevel(totalOrders);
@@ -635,6 +646,19 @@ function RewardsTab({ state }) {
         </div>
       </div>
 
+      {redeemable!==null&&redeemable>0&&(
+        <div className="rounded-2xl p-4 md:p-5 mb-3.5" style={{background:'linear-gradient(135deg,var(--tint-yellow-bg),var(--tint-yellow-border))', border:'1.5px solid var(--tint-yellow-border)'}}>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-[13px] font-extrabold font-poppins" style={{color:'var(--tint-yellow-text)'}}>⭐ Redeemable Points</div>
+              <div className="text-[11px] font-poppins mt-0.5" style={{color:'var(--tint-yellow-text)'}}>{redeemable} pts = <b>₹{Math.floor(redeemable/10)}</b> discount</div>
+            </div>
+            <div className="text-2xl font-black font-poppins" style={{color:'var(--tint-yellow-text)'}}>{redeemable}</div>
+          </div>
+          <div className="text-[11px] font-poppins mt-2.5" style={{color:'var(--tint-yellow-text)'}}>💡 Checkout par apply karo — 100 points = ₹10 OFF (coupon ke saath bhi chalega)</div>
+        </div>
+      )}
+
       <div className="rounded-2xl p-4 md:p-5 mb-3.5" style={{background:'linear-gradient(135deg,var(--tint-orange-bg),var(--tint-orange-border))', border:'1.5px solid var(--tint-orange-border)'}}>
         <div className="text-[13px] font-extrabold font-poppins" style={{color:'var(--tint-orange-text)'}}>🎁 Dost ko refer karo, dono ko ₹30 cashback!</div>
         <div className="rounded-xl px-3.5 py-2.5 flex items-center justify-between my-3" style={{background:'var(--card-bg)',border:'1.5px dashed var(--tint-orange-border)'}}>
@@ -649,7 +673,7 @@ function RewardsTab({ state }) {
         {[
           {i:'🛒',t:'Order Karo',  s:'Har delivered order = 10 points',        bg:'var(--tint-green-bg)'},
           {i:'👥',t:'Refer Karo',  s:'Dost ka pehla order = 50 bonus points',  bg:'var(--tint-blue-bg)'},
-          {i:'⭐',t:'Redeem Karo', s:'100 points = ₹10 discount (coming soon)', bg:'var(--tint-yellow-bg)'},
+          {i:'⭐',t:'Redeem Karo', s:'100 points = ₹10 discount — checkout par apply karo', bg:'var(--tint-yellow-bg)'},
         ].map(r=>(
           <div key={r.t} className="flex gap-3 items-center py-2.5 last:border-b-0" style={{borderBottom:'1px solid var(--border)'}}>
             <div className="w-10 h-10 rounded-xl flex items-center justify-center text-base flex-shrink-0" style={{background:r.bg}}>{r.i}</div>
