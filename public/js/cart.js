@@ -67,18 +67,87 @@
       updated_at: new Date().toISOString(),
     }, { onConflict: 'user_id,product_id,variant' });
     if (error) console.error('[RKCart] dbUpsert:', error.message);
+    return error || null; // null = success
   }
 
   async function dbDelete(userId, productId, variant) {
     const { error } = await getDB().from('cart_items').delete()
       .eq('user_id', userId).eq('product_id', productId).eq('variant', variant || '');
     if (error) console.error('[RKCart] dbDelete:', error.message);
+    return error || null; // null = success
   }
 
   async function dbClear(userId) {
     const { error } = await getDB().from('cart_items').delete().eq('user_id', userId);
     if (error) console.error('[RKCart] dbClear:', error.message);
+    return error || null; // null = success
   }
+
+  // Network drop = queue karo; baaki errors (RLS/validation) ko kabhi retry
+  // mat karo — wo permanently fail honge aur queue ko rot karte rahenge.
+  function _isNetworkError(err) {
+    if (!err) return false;
+    const m = String(err.message || '').toLowerCase();
+    return m.includes('fetch') || m.includes('network') || m.includes('networkerror') ||
+           m.includes('failed to fetch') || m.includes('typeerror') || m.includes('load failed');
+  }
+
+  /* ── BACKGROUND SYNC (offline cart replay) ──────────────────────────
+   * Logged-in user offline ho to DB write fail hota hai — action ko
+   * IndexedDB queue (sync-queue.js) mein daal do. Online hote hi:
+   *   1. page 'online' event par flushQueue() — turant replay
+   *   2. service worker 'sync-cart' background sync — replay (browser level)
+   * Dono idempotent hain (upsert same data / delete / clear), isliye
+   * concurrent replay safe hai.
+   */
+  async function _getSessionToken() {
+    try {
+      const { data: { session } } = await getDB().auth.getSession();
+      return session?.access_token || null;
+    } catch (_) { return null; }
+  }
+
+  async function _registerSync() {
+    try {
+      if (!('serviceWorker' in navigator) || !('SyncManager' in window)) return;
+      const reg = await navigator.serviceWorker.ready;
+      await reg.sync.register('sync-cart');
+    } catch (_) { /* unsupported/denied — page flush fallback handle kar leta hai */ }
+  }
+
+  async function _queueAction(action) {
+    try {
+      if (!window.RKSyncQueue) return;
+      const token = await _getSessionToken();
+      if (!token) return; // bina token replay possible nahi — session refresh par dobara try
+      await window.RKSyncQueue.enqueue('sync-cart', { ...action, userId: _userId, token });
+      await _registerSync();
+    } catch (e) { console.warn('[RKCart] queue:', e.message); }
+  }
+
+  // Queue mein baaki actions ko page se hi replay (browsers bina background
+  // sync ke bhi kaam karein + turant sync ke liye).
+  async function flushQueue() {
+    try {
+      if (!window.RKSyncQueue) return;
+      const entries = await window.RKSyncQueue.list('sync-cart');
+      if (!entries.length) return;
+      const { data: { session } } = await getDB().auth.getSession();
+      if (!session?.user) return;
+      for (const entry of entries) {
+        const p = entry.payload || {};
+        if (p.userId !== session.user.id) continue;
+        let ok = false;
+        if (p.type === 'upsert' && p.item) ok = !(await dbUpsert(p.userId, p.item));
+        else if (p.type === 'delete') ok = !(await dbDelete(p.userId, p.productId, p.variant || ''));
+        else if (p.type === 'clear') ok = !(await dbClear(p.userId));
+        if (ok) await window.RKSyncQueue.remove(entry.id);
+      }
+      await _registerSync();
+    } catch (e) { console.warn('[RKCart] flush:', e.message); }
+  }
+
+  window.addEventListener('online', () => { flushQueue(); _registerSync(); });
 
   /**
    * BUG FIX (High #6): mergeGuestCart ab merged result return karta hai.
@@ -88,6 +157,16 @@
    */
   async function mergeGuestCart(userId) {
     const guestItems = lsLoad();
+
+    // BUG FIX (2026-08): offline hone par DB read/write fail hoga — guest
+    // items ko localStorage se mat hatana aur DB write queue kar do. Online
+    // hote hi sync replay karega aur agla init proper merge karega.
+    if (!navigator.onLine) {
+      if (guestItems.length) {
+        for (const g of guestItems) await _queueAction({ type: 'upsert', userId, item: g });
+      }
+      return guestItems;
+    }
 
     const dbItems = await dbLoad(userId);
 
@@ -139,6 +218,8 @@
       _cart = lsLoad();
     }
     notify(_cart);
+    // Pending queued actions ko replay karo (SW sync ke alawa — turant + fallback)
+    flushQueue();
   }
 
   async function addToCart(product) {
@@ -158,8 +239,14 @@
     const item = _cart.find(i => lineKey(i) === key);
     const variant = item && item.variant ? item.variant : '';
     _cart = _cart.filter(i => lineKey(i) !== key);
-    if (_userId) { await dbDelete(_userId, productId, variant); }
-    else { lsSave(_cart); }
+    if (_userId) {
+      if (navigator.onLine) {
+        const err = await dbDelete(_userId, productId, variant);
+        if (err && _isNetworkError(err)) await _queueAction({ type: 'delete', userId: _userId, productId, variant });
+      } else {
+        await _queueAction({ type: 'delete', userId: _userId, productId, variant });
+      }
+    } else { lsSave(_cart); }
     notify(_cart);
   }
 
@@ -175,15 +262,31 @@
 
   async function clearCart() {
     _cart = [];
-    if (_userId) { await dbClear(_userId); }
-    else { lsClear(); }
+    if (_userId) {
+      if (navigator.onLine) {
+        const err = await dbClear(_userId);
+        if (err && _isNetworkError(err)) await _queueAction({ type: 'clear', userId: _userId });
+      } else {
+        await _queueAction({ type: 'clear', userId: _userId });
+      }
+    } else { lsClear(); }
     notify(_cart);
   }
 
   async function _persist(item, productId) {
     if (_userId) {
-      if (item) { await dbUpsert(_userId, item); }
-      else { await dbDelete(_userId, productId); }
+      if (navigator.onLine) {
+        if (item) {
+          const err = await dbUpsert(_userId, item);
+          if (err && _isNetworkError(err)) await _queueAction({ type: 'upsert', userId: _userId, item });
+        } else {
+          const err = await dbDelete(_userId, productId, '');
+          if (err && _isNetworkError(err)) await _queueAction({ type: 'delete', userId: _userId, productId, variant: '' });
+        }
+      } else {
+        if (item) await _queueAction({ type: 'upsert', userId: _userId, item });
+        else await _queueAction({ type: 'delete', userId: _userId, productId, variant: '' });
+      }
     } else {
       lsSave(_cart);
     }
