@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import AuthLayout, { BrandBar, MsgBox, FeatureChips } from './AuthLayout.jsx';
+import { GoogleIcon, FacebookIcon, useSocialProviders, SOCIAL_DISABLED_MSG, signInWithProvider } from '../../lib/socialAuth.jsx';
 
 export default function LoginPage() {
   const [email, setEmail]       = useState('');
@@ -8,8 +9,10 @@ export default function LoginPage() {
   const [remember, setRemember] = useState(false);
   const [showPw, setShowPw]     = useState(false);
   const [loading, setLoading]   = useState(false);
+  const [socialLoading, setSocialLoading] = useState(null); // 'google' | 'facebook' | null
   const [error, setError]       = useState('');
   const [success, setSuccess]   = useState('');
+  const social = useSocialProviders();
 
   // V4.1: support page redirects here with ?next=support.html so the user lands
   // back on the chat after logging in (default stays index.html).
@@ -57,6 +60,19 @@ export default function LoginPage() {
     setTimeout(() => { window.location.href = next; }, 1200);
   }
 
+  // Social (OAuth) login — browser redirect hoga, wapas aane par App.jsx ka
+  // onAuthStateChange session utha lega (email login jaisa hi flow).
+  async function handleOAuth(provider) {
+    setError(''); setSuccess('');
+    if (!social.ready) return; // preflight abhi chal raha hai — raw error page se bachne ke liye ruko
+    if (!social[provider]) { setError(SOCIAL_DISABLED_MSG); return; }
+    setSocialLoading(provider);
+    // new URL() — next '/support.html' ho ya 'index.html', dono sahi resolve hote hain
+    const msg = await signInWithProvider(provider, new URL(next, window.location.origin).href);
+    setSocialLoading(null);
+    if (msg) setError(msg);
+  }
+
   return (
     <AuthLayout>
       <BrandBar badge1="⚡ 10-min delivery" badge2="🔒 100% Secure"/>
@@ -75,14 +91,16 @@ export default function LoginPage() {
         </div>
 
         <div className="social-grid">
-          <button className="social-btn" onClick={() => alert('🚧 Social login coming soon!\nAbhi email se login karein.')}>
-            <span className="social-icon">🌐</span> Google
+          <button className="social-btn" onClick={() => handleOAuth('google')} disabled={!!socialLoading || !social.ready}
+            style={{ opacity: (!social.ready || (socialLoading && socialLoading !== 'google')) ? .55 : 1, cursor: socialLoading ? 'wait' : 'pointer' }}>
+            <span className="social-icon"><GoogleIcon/></span> Google
           </button>
-          <button className="social-btn" onClick={() => alert('🚧 Social login coming soon!\nAbhi email se login karein.')}>
-            <span className="social-icon">📱</span> Mobile OTP
+          <button className="social-btn" onClick={() => handleOAuth('facebook')} disabled={!!socialLoading || !social.ready}
+            style={{ opacity: (!social.ready || (socialLoading && socialLoading !== 'facebook')) ? .55 : 1, cursor: socialLoading ? 'wait' : 'pointer' }}>
+            <span className="social-icon"><FacebookIcon/></span> Facebook
           </button>
         </div>
-        <div className="social-note">Social login coming soon • Abhi email se login karein</div>
+        <div className="social-note">Google ya Facebook se 1-tap login • Koi password nahi chahiye</div>
 
         <div className="divider">
           <div className="divider-line"/><div className="divider-text">ya email se</div><div className="divider-line"/>

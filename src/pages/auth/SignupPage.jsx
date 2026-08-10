@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import AuthLayout, { BrandBar, MsgBox, FeatureChips } from './AuthLayout.jsx';
+import { GoogleIcon, FacebookIcon, useSocialProviders, SOCIAL_DISABLED_MSG, signInWithProvider } from '../../lib/socialAuth.jsx';
 
 function getStrength(pw) {
   let s = 0;
@@ -25,8 +26,10 @@ export default function SignupPage() {
   const [showPw1,   setShowPw1]   = useState(false);
   const [showPw2,   setShowPw2]   = useState(false);
   const [loading,   setLoading]   = useState(false);
+  const [socialLoading, setSocialLoading] = useState(null); // 'google' | 'facebook' | null
   const [error,     setError]     = useState('');
   const [success,   setSuccess]   = useState('');
+  const social = useSocialProviders();
   const [emailSent, setEmailSent] = useState(false);
   const strength = getStrength(password);
 
@@ -69,6 +72,17 @@ export default function SignupPage() {
       setSuccess(`Welcome <b>${fullName}</b>! Account ban gaya 🎉 Redirect ho rahe hain…`);
       setTimeout(() => { window.location.href = 'index.html'; }, 1200);
     }
+  }
+
+  // Social (OAuth) signup — pehli baar login par account khud ban jayega.
+  async function handleOAuth(provider) {
+    setError(''); setSuccess('');
+    if (!social.ready) return; // preflight abhi chal raha hai
+    if (!social[provider]) { setError(SOCIAL_DISABLED_MSG); return; }
+    setSocialLoading(provider);
+    const msg = await signInWithProvider(provider, window.location.origin + '/index.html');
+    setSocialLoading(null);
+    if (msg) setError(msg);
   }
 
   if (emailSent) {
@@ -122,14 +136,16 @@ export default function SignupPage() {
         </div>
 
         <div className="social-grid">
-          <button className="social-btn" onClick={() => alert('🚧 Social login coming soon!\nAbhi email se signup karein.')}>
-            <span className="social-icon">🌐</span> Google
+          <button className="social-btn" onClick={() => handleOAuth('google')} disabled={!!socialLoading || !social.ready}
+            style={{ opacity: (!social.ready || (socialLoading && socialLoading !== 'google')) ? .55 : 1, cursor: socialLoading ? 'wait' : 'pointer' }}>
+            <span className="social-icon"><GoogleIcon/></span> Google
           </button>
-          <button className="social-btn" onClick={() => alert('🚧 Social login coming soon!\nAbhi email se signup karein.')}>
-            <span className="social-icon">📱</span> Mobile OTP
+          <button className="social-btn" onClick={() => handleOAuth('facebook')} disabled={!!socialLoading || !social.ready}
+            style={{ opacity: (!social.ready || (socialLoading && socialLoading !== 'facebook')) ? .55 : 1, cursor: socialLoading ? 'wait' : 'pointer' }}>
+            <span className="social-icon"><FacebookIcon/></span> Facebook
           </button>
         </div>
-        <div className="social-note">Social login coming soon • Abhi email se signup karein</div>
+        <div className="social-note">Google ya Facebook se 1-tap signup • Koi password nahi chahiye</div>
 
         <div className="divider">
           <div className="divider-line"/><div className="divider-text">ya email se</div><div className="divider-line"/>

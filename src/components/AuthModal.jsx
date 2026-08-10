@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { X, Mail, Lock, Eye, EyeOff, User as UserIcon, Phone, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import { GoogleIcon, FacebookIcon, useSocialProviders, SOCIAL_DISABLED_MSG, signInWithProvider } from '../lib/socialAuth.jsx';
 
 // ── Auth Modal (Module 7) ──────────────────────────────────────────────
 // This REPLACES the primary login/signup entry point inside the SPA
@@ -90,8 +91,10 @@ export default function AuthModal({ mode, onClose, onSwitchMode }) {
   const strength = getStrength(suPassword);
 
   const [loading, setLoading] = useState(false);
+  const [socialLoading, setSocialLoading] = useState(null); // 'google' | 'facebook' | null
   const [error,   setError]   = useState(null); // string | {text,link}
   const [success, setSuccess] = useState('');
+  const social = useSocialProviders();
 
   const isLogin = mode === 'login';
 
@@ -144,6 +147,18 @@ export default function AuthModal({ mode, onClose, onSwitchMode }) {
       setSuccess(`Welcome ${fullName}! Account ban gaya 🎉`);
       setTimeout(() => onClose(), 700);
     }
+  }
+
+  // Social (OAuth) login/signup — browser redirect hoga, wapas aane par
+  // App.jsx ka onAuthStateChange session utha lega (email flow jaisa hi).
+  async function handleOAuth(provider) {
+    setError(null); setSuccess('');
+    if (!social.ready) return; // preflight abhi chal raha hai
+    if (!social[provider]) { setError(SOCIAL_DISABLED_MSG); return; }
+    setSocialLoading(provider);
+    const msg = await signInWithProvider(provider, window.location.origin + '/index.html');
+    setSocialLoading(null);
+    if (msg) setError(msg);
   }
 
   const switchTo = (m) => { setError(null); setSuccess(''); setEmailSent(false); onSwitchMode(m); };
@@ -208,6 +223,24 @@ export default function AuthModal({ mode, onClose, onSwitchMode }) {
 
           {/* ── LOGIN ── */}
           {isLogin && (
+            <>
+            <div className="grid grid-cols-2 gap-2.5 mb-3">
+              <button type="button" disabled={!!socialLoading || !social.ready} onClick={() => handleOAuth('google')}
+                className="flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold font-poppins transition-all hover:-translate-y-px"
+                style={{ background:'#fff', border:'1.5px solid var(--border)', color:'var(--dark)', opacity: (!social.ready || (socialLoading && socialLoading !== 'google')) ? .55 : 1, cursor: socialLoading ? 'wait' : 'pointer' }}>
+                <GoogleIcon /> Google
+              </button>
+              <button type="button" disabled={!!socialLoading || !social.ready} onClick={() => handleOAuth('facebook')}
+                className="flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold font-poppins transition-all hover:-translate-y-px"
+                style={{ background:'#fff', border:'1.5px solid var(--border)', color:'var(--dark)', opacity: (!social.ready || (socialLoading && socialLoading !== 'facebook')) ? .55 : 1, cursor: socialLoading ? 'wait' : 'pointer' }}>
+                <FacebookIcon /> Facebook
+              </button>
+            </div>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex-1 h-px" style={{ background:'var(--border)' }} />
+              <span className="text-[10px] font-poppins uppercase tracking-wide" style={{ color:'var(--gray)' }}>ya email se</span>
+              <div className="flex-1 h-px" style={{ background:'var(--border)' }} />
+            </div>
             <form onSubmit={handleLogin} className="space-y-3">
               <FieldWrap icon={Mail}>
                 <input type="email" inputMode="email" autoComplete="email" placeholder="aapka@email.com"
@@ -236,6 +269,7 @@ export default function AuthModal({ mode, onClose, onSwitchMode }) {
                 Naya account? <button type="button" onClick={() => switchTo('signup')} className="font-bold" style={{ color: 'var(--primary)' }}>Signup Karein →</button>
               </p>
             </form>
+            </>
           )}
 
           {/* ── SIGNUP: email-sent confirmation ── */}
@@ -255,6 +289,24 @@ export default function AuthModal({ mode, onClose, onSwitchMode }) {
 
           {/* ── SIGNUP: form ── */}
           {!isLogin && !emailSent && (
+            <>
+            <div className="grid grid-cols-2 gap-2.5 mb-3">
+              <button type="button" disabled={!!socialLoading || !social.ready} onClick={() => handleOAuth('google')}
+                className="flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold font-poppins transition-all hover:-translate-y-px"
+                style={{ background:'#fff', border:'1.5px solid var(--border)', color:'var(--dark)', opacity: (!social.ready || (socialLoading && socialLoading !== 'google')) ? .55 : 1, cursor: socialLoading ? 'wait' : 'pointer' }}>
+                <GoogleIcon /> Google
+              </button>
+              <button type="button" disabled={!!socialLoading || !social.ready} onClick={() => handleOAuth('facebook')}
+                className="flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold font-poppins transition-all hover:-translate-y-px"
+                style={{ background:'#fff', border:'1.5px solid var(--border)', color:'var(--dark)', opacity: (!social.ready || (socialLoading && socialLoading !== 'facebook')) ? .55 : 1, cursor: socialLoading ? 'wait' : 'pointer' }}>
+                <FacebookIcon /> Facebook
+              </button>
+            </div>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex-1 h-px" style={{ background:'var(--border)' }} />
+              <span className="text-[10px] font-poppins uppercase tracking-wide" style={{ color:'var(--gray)' }}>ya email se</span>
+              <div className="flex-1 h-px" style={{ background:'var(--border)' }} />
+            </div>
             <form onSubmit={handleSignup} className="space-y-3">
               <div className="grid grid-cols-2 gap-2.5">
                 <FieldWrap icon={UserIcon}>
@@ -311,6 +363,7 @@ export default function AuthModal({ mode, onClose, onSwitchMode }) {
                 Pehle se account hai? <button type="button" onClick={() => switchTo('login')} className="font-bold" style={{ color: 'var(--primary)' }}>Login Karein →</button>
               </p>
             </form>
+            </>
           )}
         </div>
       </div>

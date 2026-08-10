@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL     = 'https://pffaflasgwhydkmxwkky.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable__tFDYhkM3blZ0pIVT0YxLA_YvkKq79L';
+export const SUPABASE_URL      = 'https://pffaflasgwhydkmxwkky.supabase.co';
+export const SUPABASE_ANON_KEY = 'sb_publishable__tFDYhkM3blZ0pIVT0YxLA_YvkKq79L';
 
 // Reuse existing client if already created (avoids duplicate realtime subscriptions)
 export const supabase = window.sb || createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
