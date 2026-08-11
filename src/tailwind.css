@@ -37,3 +37,16 @@
 @media (prefers-reduced-motion: reduce){
   .title-pill-shine{animation:none;}
 }
+
+/* ── scrollbar-hide — horizontal rails/ad strips ka scrollbar hide (CSS
+   standard + webkit + firefox). Ye class App.jsx me saari rails par use hoti
+   hai; pehle defined hi nahi thi isliye niche scrollbar dikhta tha. */
+.scrollbar-hide{
+  scrollbar-width:none;
+  -ms-overflow-style:none;
+}
+.scrollbar-hide::-webkit-scrollbar{
+  display:none;
+  width:0;
+  height:0;
+}

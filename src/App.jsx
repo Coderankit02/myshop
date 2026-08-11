@@ -175,6 +175,8 @@ function AdStripSection({strip,onAdClick}){
     const el=ref.current;
     if(!el)return;
     const t=setInterval(()=>{
+      // Desktop par saari images flex-wrap se ek saath dikhti hain — scroll ki zaroorat nahi
+      if(el.scrollWidth<=el.clientWidth+1)return;
       const children=Array.from(el.children);
       if(children.length<2)return;
       idxRef.current=(idxRef.current+1)%children.length;
@@ -186,13 +188,15 @@ function AdStripSection({strip,onAdClick}){
   },[strip.images.length]);
   return(
     <div>
-      <div ref={ref} className="flex gap-3 md:gap-4 overflow-x-auto pb-1 snap-x scrollbar-hide">
+      {/** Mobile: full-width EK image (snap-mandatory + auto-advance = carousel).
+          Desktop (md+): flex-basis 0 + flex-grow → saari images barabar width me ek saath (3 ya 4 jo bhi). */}
+      <div ref={ref} className="flex gap-3 md:gap-4 overflow-x-auto pb-1 snap-x snap-mandatory md:snap-none md:flex-wrap scrollbar-hide">
         {strip.images.map(img=>(
           <button key={img.id} type="button" onClick={()=>onAdClick(img)}
-            className="flex-shrink-0 w-56 md:w-72 snap-start rounded-2xl overflow-hidden group text-left"
+            className="flex-shrink-0 w-full snap-start md:flex-1 md:basis-0 md:min-w-0 rounded-2xl overflow-hidden group text-left"
             style={{border:'1.5px solid var(--border)',boxShadow:'0 2px 10px rgba(0,0,0,0.06)'}}>
             <img src={img.image_url} alt={strip.title} loading="lazy"
-              className="w-full h-32 md:h-44 object-cover transition-transform duration-300 group-hover:scale-[1.04]"/>
+              className="w-full h-36 md:h-44 object-cover transition-transform duration-300 group-hover:scale-[1.04]"/>
           </button>
         ))}
       </div>
