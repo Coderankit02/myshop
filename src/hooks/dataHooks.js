@@ -263,11 +263,13 @@ export function useHomepageConfig(){
   const fetch=useCallback(async()=>{
     try{
       const {data,error}=await supabase.from('homepage_sections')
-        .select('section_key,enabled,sort_order')
+        .select('section_key,enabled,sort_order,ad_strip_id')
         .eq('enabled',true)
         .order('sort_order');
       if(!error&&data&&data.length){
-        setSections(data.map(s=>s.section_key));
+        // Har section ab object hai (key + ad_strip_id) — taaki Ad Strips bhi
+        // Section Order ke andar hi position/visibility control ho sake.
+        setSections(data.map(s=>({key:s.section_key,ad_strip_id:s.ad_strip_id||null})));
         setConfigured(true);
       }else{
         setSections(DEFAULT_HOMEPAGE_SECTIONS);

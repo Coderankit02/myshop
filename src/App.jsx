@@ -196,7 +196,7 @@ function AdStripSection({strip,onAdClick}){
             className="flex-shrink-0 w-full snap-start md:flex-1 md:basis-0 md:min-w-0 rounded-2xl overflow-hidden group text-left"
             style={{border:'1.5px solid var(--border)',boxShadow:'0 2px 10px rgba(0,0,0,0.06)'}}>
             <img src={img.image_url} alt={strip.title} loading="lazy"
-              className="w-full h-36 md:h-44 object-cover transition-transform duration-300 group-hover:scale-[1.04]"/>
+              className="w-full h-24 md:h-32 object-cover transition-transform duration-300 group-hover:scale-[1.04]"/>
           </button>
         ))}
       </div>
@@ -380,9 +380,22 @@ function HomeContent({homepageSections,banners,bannersLoading,bannerIdx,setBanne
         };
         let firstSection=true;
         const out=[];
-        // Ad strips ko unke position ke hisaab se sections ke BEECH me daalo
-        // (position 1 = hero ke baad, 2 = flash sale ke baad, ...).
-        ordered.forEach((key,i)=>{
+        // Ad strips ab Section Order ke andar hi hain (homepage_sections me
+        // section_key='ad_strip' + ad_strip_id) — isliye yahan position-based
+        // interleave nahi, seedha order ke hisaab se render hota hai. Admin
+        // Section Order list me drag karke upar-niche kar sakta hai.
+        ordered.forEach((sec)=>{
+          const key=typeof sec==='string'?sec:sec?.key;
+          const stripId=typeof sec==='object'?(sec?.ad_strip_id||null):null;
+          if(key==='ad_strip'){
+            const strip=(adStrips||[]).find(s=>s.id===stripId);
+            if(strip){
+              const cls=firstSection?'':'mt-6 md:mt-8';
+              firstSection=false;
+              out.push(<div key={`ad-${strip.id}`} className={cls}><AdStripSection strip={strip} onAdClick={onAdClick}/></div>);
+            }
+            return;
+          }
           const el=sectionsMap[key];
           if(!el)return;
           const items=Array.isArray(el)?el:[el];
@@ -391,14 +404,6 @@ function HomeContent({homepageSections,banners,bannersLoading,bannerIdx,setBanne
             firstSection=false;
             out.push(<div key={`${key}-${idx}`} className={cls}>{item}</div>);
           });
-          const pos=i+1;
-          (adStrips||[]).filter(s=>s.position===pos).forEach(s=>{
-            out.push(<div key={`ad-${s.id}`} className="mt-6 md:mt-8"><AdStripSection strip={s} onAdClick={onAdClick}/></div>);
-          });
-        });
-        // Jo strips ki position list ke end se bahar hai wo aakhri me dikhein
-        (adStrips||[]).filter(s=>s.position>ordered.length).forEach(s=>{
-          out.push(<div key={`ad-${s.id}`} className="mt-6 md:mt-8"><AdStripSection strip={s} onAdClick={onAdClick}/></div>);
         });
         return out;
       })()}
