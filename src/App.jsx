@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react';
-import { Search, MapPin, ChevronDown, ShoppingCart, User, Download, Home, ShoppingBag, SlidersHorizontal, X, Zap, Leaf, BadgePercent, ShieldCheck, Package, Headphones, Send, MessageCircle } from 'lucide-react';
+import { Search, ShoppingCart, User, Download, Home, ShoppingBag, SlidersHorizontal, X, Zap, Leaf, BadgePercent, ShieldCheck, Package, Headphones, Send, MessageCircle } from 'lucide-react';
 import { supabase } from './lib/supabaseClient';
 import { TICKER, calcDiscount, catEmoji } from './lib/helpers';
 import { useCategories, useBanners, useProducts, useSearch, useHomeSections, useHomepageConfig, useReviews, useAdStrips, useShopSettings, DEFAULT_HOMEPAGE_SECTIONS } from './hooks/dataHooks';
@@ -8,7 +8,6 @@ import { PCard } from './components/PCard';
 import { ProductDetail } from './components/ProductDetail';
 import { CheckoutForm } from './components/CheckoutForm';
 import AuthModal from './components/AuthModal';
-import LocationSelectModal from './components/LocationSelectModal';
 
 // ── Universal CategoryRail (MobileCatRow + CategoryGrid ka merge) ───────────
 // Ek hi component DO jagah (Module 13 pattern — module-level stable type, App
@@ -687,34 +686,6 @@ export default function App(){
     else if(sortBy==='price-high') out=[...out].sort((a,b)=>b.selling_price-a.selling_price);
     return out;
   };
-  // Header "📍 Aapka Mohalla ▾" → becomes the user's saved address city once
-  // known. Distance gets appended in two ways: (1) silently on every page
-  // load/refresh IF the browser has already granted geolocation permission
-  // (no prompt — see the silent-geo effect below), or (2) reused from
-  // checkout's own (user-initiated) GPS fetch. If no address is saved at
-  // all, header stays fully on the hardcoded "Aapka Mohalla" fallback,
-  // regardless of distance. GPS is NEVER prompted for on the home page —
-  // only read silently when permission already exists.
-  //
-  // BUG FIX (complete): Ab header pill ek proper LocationSelectModal kholta
-  // hai (pehle sirf toast "Location change abhi available nahi hai" aata tha).
-  // `savedLoc` = localStorage `rk_header_location` — GPS ya manual city/pincode
-  // jo user ne modal se confirm kiya. Ye GUEST users ke liye bhi persist hota
-  // hai (sirf logged-in saved-address par depend nahi). Label precedence:
-  // savedLoc.city > saved address city (headerCity) > 'Aapka Mohalla'.
-  const [savedLoc,setSavedLoc]=useState(()=>{
-    try{const s=localStorage.getItem('rk_header_location');if(s){const p=JSON.parse(s);if(p&&p.city)return p;}}catch(_){}
-    return null;
-  });
-  const [locModalOpen,setLocModalOpen]=useState(false);
-  const applySavedLocation=(loc)=>{
-    try{localStorage.setItem('rk_header_location',JSON.stringify(loc));}catch(_){}
-    setSavedLoc(loc);
-    if(loc?.city)setHeaderCity(loc.city);
-    if(loc?.distanceKm!=null)setHeaderDistanceKm(loc.distanceKm);
-  };
-  const [headerCity,setHeaderCity]=useState(null);
-  const [headerDistanceKm,setHeaderDistanceKm]=useState(null);
   const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true || document.referrer.includes('android-app://');
   const [theme,setTheme]=useState(()=>{
     try{const s=localStorage.getItem('rk_theme');if(s==='dark'||s==='light')return s;}catch(e){}
@@ -944,7 +915,6 @@ export default function App(){
         setUser(u);
         if(window.RKCart)window.RKCart.setUser(u);
         if(window.RKProfile)window.RKProfile.loadProfile(session.user.id);
-        _loadHeaderCity(u.uid);
       }
     });
     const {data:{subscription}}=supabase.auth.onAuthStateChange((_,session)=>{
@@ -953,66 +923,12 @@ export default function App(){
         const u={uid:session.user.id,email:session.user.email,name:meta?.name||session.user.email.split('@')[0]};
         setUser(u);
         if(window.RKCart)window.RKCart.setUser(u);
-        _loadHeaderCity(u.uid);
-      } else {setUser(null);if(window.RKCart)window.RKCart.setUser(null);setHeaderCity(null);setHeaderDistanceKm(null);}
+      } else {setUser(null);if(window.RKCart)window.RKCart.setUser(null);}
     });
     return()=>subscription.unsubscribe();
   },[]);
 
-  // Pulls the city from the user's default (or first) saved address — no
-  // GPS involved. Used to populate the header label as soon as we know who
-  // the user is, without ever prompting for location on the home page.
-  async function _loadHeaderCity(uid){
-    if(!window.RKProfile?.loadAddresses)return;
-    try{
-      const addrs=await window.RKProfile.loadAddresses(uid);
-      const def=(addrs||[]).find(a=>a.is_default)||(addrs||[])[0];
-      if(def?.city)setHeaderCity(def.city);
-    }catch(_){/* header stays on hardcoded fallback */}
-  }
 
-  // Builds the "📍 ..." header label: city (once known) plus a live distance
-  // once GPS resolves at checkout. Falls back to the generic placeholder when
-  // neither piece of info is available yet.
-  const _labelCity=(savedLoc?.city)||headerCity;
-  const headerLabel=_labelCity
-    ?(headerDistanceKm!=null
-        ?`${_labelCity} • ${headerDistanceKm<1?Math.round(headerDistanceKm*1000)+' m':headerDistanceKm.toFixed(1)+' km'}`
-        :_labelCity)
-    :'Aapka Mohalla';
-  // The label can get long once distance is appended (e.g. "Jaunpur • 2.3 km").
-  // Rather than truncate it with "...", shrink the font a notch so the FULL
-  // text always stays visible — wrapping is also allowed in CSS as a backstop
-  // for extreme cases.
-  const headerLabelStyle=headerLabel.length>13?{fontSize:'0.7rem'}:headerLabel.length>9?{fontSize:'0.76rem'}:undefined;
-
-  // Called by CheckoutForm once its own (optional, best-effort) GPS fetch
-  // resolves a distance — lets the header pick up a live "X km away" without
-  // ever triggering a GPS prompt itself.
-  const handleLocationResolved=useCallback((distanceKm)=>{
-    if(typeof distanceKm==='number')setHeaderDistanceKm(distanceKm);
-  },[]);
-
-  // Silent header distance on load/refresh: ONLY runs the actual GPS read if
-  // the browser reports geolocation permission as already 'granted' — i.e.
-  // no permission popup will appear. If it's 'prompt' or 'denied' (or the
-  // Permissions API isn't supported), this does nothing and the header
-  // simply waits for checkout's own user-initiated fetch instead. This means
-  // a returning user who already said "yes" once gets their distance back
-  // automatically on every page load, without us ever asking again.
-  useEffect(()=>{
-    if(!navigator.permissions||!window.RKLocation||!window.RKDelivery)return;
-    let cancelled=false;
-    navigator.permissions.query({name:'geolocation'}).then(status=>{
-      if(cancelled||status.state!=='granted')return;
-      window.RKLocation.getCurrentPosition(false).then(pos=>{
-        if(cancelled)return;
-        const info=window.RKDelivery.calculate(pos.lat,pos.lng);
-        if(info&&typeof info.distanceKm==='number')setHeaderDistanceKm(info.distanceKm);
-      }).catch(()=>{/* best-effort only — header just stays without distance */});
-    }).catch(()=>{/* Permissions API unsupported in this browser — skip silently */});
-    return()=>{cancelled=true;};
-  },[]);
 
   useEffect(()=>{
     if(!window.RKCart)return;
@@ -1244,13 +1160,6 @@ export default function App(){
                   <span className="text-[8px] sm:text-[9px] md:text-[10px] font-poppins font-medium mt-0.5 truncate" style={{color:'var(--primary)'}}>{shopSettings.footer_text||'हर घर की पसंद'}</span>
                 </span>
               </button>
-              <button className="flex items-center gap-1 mt-0.5 max-w-[150px] sm:max-w-[220px]" style={{background:'none'}}
-                title="Location change karein" aria-label="Location change karein"
-                onClick={()=>setLocModalOpen(true)}>
-                <MapPin size={12} style={{color:'var(--primary)'}} className="flex-shrink-0"/>
-                <span className="text-xs font-poppins truncate" style={{color:'var(--gray)',...headerLabelStyle}}>{headerLabel}</span>
-                <ChevronDown size={11} style={{color:'var(--gray)'}} className="flex-shrink-0"/>
-              </button>
             </div>
 
             {/* Search — desktop only, center (mobile gets a full-width row below) */}
@@ -1452,7 +1361,6 @@ export default function App(){
             <button className="pdp-back" style={{marginBottom:6}} onClick={()=>setPage('home')}>← Checkout se Bahar Jao</button>
             <h2>🚚 Checkout</h2>
             <CheckoutForm cart={cart} total={total} showToast={showToast} user={user}
-              onLocationResolved={handleLocationResolved}
               onSuccess={(id,pay)=>{setSuccess({id,pay});setPage('success');}}/>
           </div>
         )}
@@ -1596,7 +1504,6 @@ export default function App(){
       {/* ── AUTH MODAL (Module 7) ── */}        {authModal&&(
           <AuthModal mode={authModal} onClose={()=>setAuthModal(null)} onSwitchMode={m=>setAuthModal(m)}/>
         )}
-        <LocationSelectModal open={locModalOpen} current={savedLoc} onClose={()=>setLocModalOpen(false)} onConfirm={applySavedLocation}/>
     </div>
   );
 }
