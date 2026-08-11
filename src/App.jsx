@@ -2,12 +2,13 @@ import { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react
 import { Search, MapPin, ChevronDown, ShoppingCart, User, Download, Home, ShoppingBag, SlidersHorizontal, X, Zap, Leaf, BadgePercent, ShieldCheck, Package, Headphones, Send, MessageCircle } from 'lucide-react';
 import { supabase } from './lib/supabaseClient';
 import { TICKER, calcDiscount, catEmoji } from './lib/helpers';
-import { useCategories, useBanners, useProducts, useSearch, useHomeSections, useHomepageConfig, useReviews, useShopSettings, DEFAULT_HOMEPAGE_SECTIONS } from './hooks/dataHooks';
+import { useCategories, useBanners, useProducts, useSearch, useHomeSections, useHomepageConfig, useReviews, useAdStrips, useShopSettings, DEFAULT_HOMEPAGE_SECTIONS } from './hooks/dataHooks';
 import { SkelCard, SkelBanner } from './components/Skeletons';
 import { PCard } from './components/PCard';
 import { ProductDetail } from './components/ProductDetail';
 import { CheckoutForm } from './components/CheckoutForm';
 import AuthModal from './components/AuthModal';
+import LocationSelectModal from './components/LocationSelectModal';
 
 // ── Universal CategoryRail (MobileCatRow + CategoryGrid ka merge) ───────────
 // Ek hi component DO jagah (Module 13 pattern — module-level stable type, App
@@ -164,6 +165,41 @@ function HeroBanner({banners,bannersLoading,bannerIdx,setBannerIdx,wrapRef,handl
 
 
 
+// 🎯 AdStripSection — homepage builder ki "Ad Images" strips: auto-scroll wali
+// images, na text overlay na dots (user ki demand — sirf images scroll hoti
+// hain). Har image click karne par category ya product khulta hai.
+function AdStripSection({strip,onAdClick}){
+  const ref=useRef(null);
+  const idxRef=useRef(0);
+  useEffect(()=>{
+    const el=ref.current;
+    if(!el)return;
+    const t=setInterval(()=>{
+      const children=Array.from(el.children);
+      if(children.length<2)return;
+      idxRef.current=(idxRef.current+1)%children.length;
+      const child=children[idxRef.current];
+      // scrollIntoView page-jump bug tha pehle — container.scrollTo use karo (banner jaisa fix)
+      el.scrollTo({left:child.offsetLeft,behavior:'smooth'});
+    },3500);
+    return()=>clearInterval(t);
+  },[strip.images.length]);
+  return(
+    <div>
+      <div ref={ref} className="flex gap-3 md:gap-4 overflow-x-auto pb-1 snap-x scrollbar-hide">
+        {strip.images.map(img=>(
+          <button key={img.id} type="button" onClick={()=>onAdClick(img)}
+            className="flex-shrink-0 w-56 md:w-72 snap-start rounded-2xl overflow-hidden group text-left"
+            style={{border:'1.5px solid var(--border)',boxShadow:'0 2px 10px rgba(0,0,0,0.06)'}}>
+            <img src={img.image_url} alt={strip.title} loading="lazy"
+              className="w-full h-32 md:h-44 object-cover transition-transform duration-300 group-hover:scale-[1.04]"/>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // 💎 TitlePill — category naam ke text ke around PREMIUM designer pill:
 // layered gradient (theme-aware) + glass shine (diagonal white overlay) +
 // soft glow + inner highlight + subtle border. Sirf text ka background,
@@ -283,7 +319,7 @@ function Footer({shopSettings,onNav}){
   );
 }
 
-function HomeContent({homepageSections,banners,bannersLoading,bannerIdx,setBannerIdx,bannerWrapRef,handleBannerClick,homeSections,homeLoading,cart,addToCart,updQty,onDetail,cats,catsLoading,catEmoji,sectionProds,sectionProdsReady,featLoading,featuredProds,dbReviews,shopSettings,showToast,setPage,onPickCategory,wishlistIds,onWishlist}){
+function HomeContent({homepageSections,banners,bannersLoading,bannerIdx,setBannerIdx,bannerWrapRef,handleBannerClick,homeSections,homeLoading,cart,addToCart,updQty,onDetail,cats,catsLoading,catEmoji,sectionProds,sectionProdsReady,featLoading,featuredProds,dbReviews,shopSettings,showToast,setPage,onPickCategory,wishlistIds,onWishlist,adStrips,onAdClick}){
   return(
     <div className="max-w-site mx-auto px-4 md:px-8 pt-4 pb-6 md:pb-8">
       {/* Admin Homepage Builder: sections configured order mein + sirf enabled walay */}
@@ -339,26 +375,28 @@ function HomeContent({homepageSections,banners,bannersLoading,bannerIdx,setBanne
           ),
         };
         let firstSection=true;
-        return ordered.map(key=>{
+        const out=[];
+        // Ad strips ko unke position ke hisaab se sections ke BEECH me daalo
+        // (position 1 = hero ke baad, 2 = flash sale ke baad, ...).
+        ordered.forEach((key,i)=>{
           const el=sectionsMap[key];
-          if(!el)return null;
-          // UNIFORM SECTION GAP: pehla section container ke pt-4 par flush rehta
-          // hai, baaki har section ko SAME top margin (mt-6 md:mt-8) milta hai.
-          // Pehle har section ka apna baked-in margin tha (flash mt-5, rails mt-8,
-          // hero 0) — isliye Homepage Builder me reorder karne par kabhi gap
-          // jyada hota tha (flash upar to), kabhi carousel 'sata' dikhta tha
-          // (hero kisi section ke turant neeche). Ab kisi bhi order me spacing
-          // hamesha consistent.
-          // category_sections ek ARRAY hai (har category ka rail) — flatten karke
-          // HAR rail ko apna gap wrapper mile, warna saare rails ek div ke andar
-          // bina margin ke atak jate.
+          if(!el)return;
           const items=Array.isArray(el)?el:[el];
-          return items.map((item,i)=>{
+          items.forEach((item,idx)=>{
             const cls=firstSection?'':'mt-6 md:mt-8 empty:hidden';
             firstSection=false;
-            return <div key={`${key}-${i}`} className={cls}>{item}</div>;
+            out.push(<div key={`${key}-${idx}`} className={cls}>{item}</div>);
+          });
+          const pos=i+1;
+          (adStrips||[]).filter(s=>s.position===pos).forEach(s=>{
+            out.push(<div key={`ad-${s.id}`} className="mt-6 md:mt-8"><AdStripSection strip={s} onAdClick={onAdClick}/></div>);
           });
         });
+        // Jo strips ki position list ke end se bahar hai wo aakhri me dikhein
+        (adStrips||[]).filter(s=>s.position>ordered.length).forEach(s=>{
+          out.push(<div key={`ad-${s.id}`} className="mt-6 md:mt-8"><AdStripSection strip={s} onAdClick={onAdClick}/></div>);
+        });
+        return out;
       })()}
 
       <div className="mt-6 md:mt-8"><Footer shopSettings={shopSettings} onNav={setPage}/></div>
@@ -529,7 +567,7 @@ function CustomerReviews({reviews=[]}){
         <span className="hidden md:flex items-center gap-1 text-xs font-bold font-poppins px-3 py-1.5 rounded-full" style={{background:'var(--primary-light)',color:'var(--primary-dark)'}}>⭐ 4.8/5 average</span>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-        {reviews.map(r=>(
+        {list.map(r=>(
           <div key={r.name} className="rounded-2xl p-4 md:p-5" style={{background:'var(--card-bg)',boxShadow:'0 2px 10px rgba(0,0,0,0.06)'}}>
             <div className="text-[#FFB800] text-sm tracking-tight">{"★★★★★".slice(0,r.stars)}{"☆".repeat(5-r.stars)}</div>
             <p className="mt-2.5 text-xs md:text-[13px] font-poppins leading-relaxed" style={{color:'var(--text)'}}>“{r.text}”</p>
@@ -648,6 +686,24 @@ export default function App(){
   // all, header stays fully on the hardcoded "Aapka Mohalla" fallback,
   // regardless of distance. GPS is NEVER prompted for on the home page —
   // only read silently when permission already exists.
+  //
+  // BUG FIX (complete): Ab header pill ek proper LocationSelectModal kholta
+  // hai (pehle sirf toast "Location change abhi available nahi hai" aata tha).
+  // `savedLoc` = localStorage `rk_header_location` — GPS ya manual city/pincode
+  // jo user ne modal se confirm kiya. Ye GUEST users ke liye bhi persist hota
+  // hai (sirf logged-in saved-address par depend nahi). Label precedence:
+  // savedLoc.city > saved address city (headerCity) > 'Aapka Mohalla'.
+  const [savedLoc,setSavedLoc]=useState(()=>{
+    try{const s=localStorage.getItem('rk_header_location');if(s){const p=JSON.parse(s);if(p&&p.city)return p;}}catch(_){}
+    return null;
+  });
+  const [locModalOpen,setLocModalOpen]=useState(false);
+  const applySavedLocation=(loc)=>{
+    try{localStorage.setItem('rk_header_location',JSON.stringify(loc));}catch(_){}
+    setSavedLoc(loc);
+    if(loc?.city)setHeaderCity(loc.city);
+    if(loc?.distanceKm!=null)setHeaderDistanceKm(loc.distanceKm);
+  };
   const [headerCity,setHeaderCity]=useState(null);
   const [headerDistanceKm,setHeaderDistanceKm]=useState(null);
   const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true || document.referrer.includes('android-app://');
@@ -717,7 +773,31 @@ export default function App(){
   // Admin Homepage Builder: section order/visibility + approved reviews + live shop settings
   const {sections:homepageSections}=useHomepageConfig();
   const {reviews:dbReviews}=useReviews();
+  const {strips:adStrips}=useAdStrips();
   const {settings:shopSettings}=useShopSettings();
+
+  // Ad strip image click → category ya product par redirect
+  const handleAdClick=async (img)=>{
+    if(img.link_type==='category'&&img.link_value){
+      setActiveCatId(img.link_value);
+      setSearch('');
+      setShopPage(1);
+      setPage('shop');
+      window.scrollTo(0,0);
+    }else if(img.link_type==='product'&&img.link_value){
+      try{
+        const {data}=await supabase.from('products')
+          .select('*,categories(id,name,slug),product_images(id,image_url,is_default,sort_order)')
+          .eq('id',img.link_value).maybeSingle();
+        if(data){
+          const imgs=(data.product_images||[]).slice().sort((a,b)=>a.sort_order-b.sort_order);
+          setDetailProduct({...data,discount:calcDiscount(data.selling_price,data.original_price),images:imgs,primary_image:(imgs.find(i=>i.is_default)||imgs[0])?.image_url||null});
+          setPage('detail');
+          window.scrollTo(0,0);
+        }
+      }catch(_){/* ignore */}
+    }
+  };
 
   // Section products per category — SABHI categories + har category ke SABHI
   // products (pehle sirf 6 cats × 8 items dikhte the). Ek hi query me saare
@@ -874,10 +954,11 @@ export default function App(){
   // Builds the "📍 ..." header label: city (once known) plus a live distance
   // once GPS resolves at checkout. Falls back to the generic placeholder when
   // neither piece of info is available yet.
-  const headerLabel=headerCity
+  const _labelCity=(savedLoc?.city)||headerCity;
+  const headerLabel=_labelCity
     ?(headerDistanceKm!=null
-        ?`${headerCity} • ${headerDistanceKm<1?Math.round(headerDistanceKm*1000)+' m':headerDistanceKm.toFixed(1)+' km'}`
-        :headerCity)
+        ?`${_labelCity} • ${headerDistanceKm<1?Math.round(headerDistanceKm*1000)+' m':headerDistanceKm.toFixed(1)+' km'}`
+        :_labelCity)
     :'Aapka Mohalla';
   // The label can get long once distance is appended (e.g. "Jaunpur • 2.3 km").
   // Rather than truncate it with "...", shrink the font a notch so the FULL
@@ -1144,7 +1225,8 @@ export default function App(){
                 </span>
               </button>
               <button className="flex items-center gap-1 mt-0.5 max-w-[150px] sm:max-w-[220px]" style={{background:'none'}}
-                onClick={()=>showToast('📍 Location change abhi available nahi hai')}>
+                title="Location change karein" aria-label="Location change karein"
+                onClick={()=>setLocModalOpen(true)}>
                 <MapPin size={12} style={{color:'var(--primary)'}} className="flex-shrink-0"/>
                 <span className="text-xs font-poppins truncate" style={{color:'var(--gray)',...headerLabelStyle}}>{headerLabel}</span>
                 <ChevronDown size={11} style={{color:'var(--gray)'}} className="flex-shrink-0"/>
@@ -1236,6 +1318,7 @@ export default function App(){
           setPage={setPage}
           onPickCategory={(id)=>{setActiveCatId(id);setPage('shop');setShopPage(1);setSearch('');}}
           wishlistIds={wishlistIds} onWishlist={toggleWishlist}
+          adStrips={adStrips} onAdClick={handleAdClick}
         />}
         {page==='about'&&<InfoPage title="About Us" body={shopSettings.about_text}/>}
         {page==='privacy'&&<InfoPage title="Privacy Policy" body={shopSettings.privacy_policy}/>}
@@ -1490,10 +1573,10 @@ export default function App(){
 
       {toast&&<div className="toast" role="status" aria-live="polite">{toast}</div>}
 
-      {/* ── AUTH MODAL (Module 7) ── */}
-      {authModal&&(
-        <AuthModal mode={authModal} onClose={()=>setAuthModal(null)} onSwitchMode={m=>setAuthModal(m)}/>
-      )}
+      {/* ── AUTH MODAL (Module 7) ── */}        {authModal&&(
+          <AuthModal mode={authModal} onClose={()=>setAuthModal(null)} onSwitchMode={m=>setAuthModal(m)}/>
+        )}
+        <LocationSelectModal open={locModalOpen} current={savedLoc} onClose={()=>setLocModalOpen(false)} onConfirm={applySavedLocation}/>
     </div>
   );
 }

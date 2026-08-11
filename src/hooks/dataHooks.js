@@ -307,6 +307,31 @@ export function useReviews(){
   return{reviews,loading};
 }
 
+/* ── Homepage Ad Strips (mid-page auto-scrolling image strips, no text/dots) ── */
+export function useAdStrips(){
+  const [strips,setStrips]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const fetch=useCallback(async()=>{
+    try{
+      const {data,error}=await supabase.from('homepage_ad_sections')
+        .select('id,title,position,homepage_ad_images(id,image_url,link_type,link_value,sort_order)')
+        .eq('is_active',true)
+        .order('position',{ascending:true});
+      if(error)return;
+      const out=(data||[])
+        .map(s=>({
+          ...s,
+          images:(s.homepage_ad_images||[]).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0)),
+        }))
+        .filter(s=>s.images.length>0);
+      setStrips(out);
+    }catch(_){/* keep [] */}
+    setLoading(false);
+  },[]);
+  useEffect(()=>{fetch();},[fetch]);
+  return{strips,loading,refetch:fetch};
+}
+
 export function useSearch(query,active){
   const [results,setResults]=useState([]);
   const [loading,setLoading]=useState(false);

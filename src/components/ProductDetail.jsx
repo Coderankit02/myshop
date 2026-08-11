@@ -1,9 +1,10 @@
-import { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Minus, Plus } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { ChevronLeft, ChevronRight, Minus, Plus, Star } from 'lucide-react';
 import { ProdImg } from './ProdImg';
 import { PCard } from './PCard';
 import { SkelCard } from './Skeletons';
 import { useProducts } from '../hooks/dataHooks';
+import { supabase } from '../lib/supabaseClient';
 
 // ── Product Detail Page (Module 5: Tailwind restyle — same product-fetch,
 //    add-to-cart, and stock-guard logic as before. Only new *data* usage is
@@ -68,6 +69,43 @@ export function ProductDetail({product,cart,addToCart,updQty,onBack,onDetail,wis
   // the Shop page — no new backend query shape, just a different call site.
   const {products:relatedRaw,loading:relatedLoading}=useProducts({categoryId:product.category_id,pageSize:9});
   const related=(relatedRaw||[]).filter(p=>p.id!==product.id).slice(0,8);
+
+  // ── Customer Reviews (list + submit) ───────────────────────────────
+  const [reviews,setReviews]=useState([]);
+  const [rvRating,setRvRating]=useState(5);
+  const [rvComment,setRvComment]=useState('');
+  const [rvSending,setRvSending]=useState(false);
+  const loadReviews=useCallback(async (pid)=>{
+    try{
+      const {data}=await supabase.from('reviews')
+        .select('customer_name,rating,comment,admin_reply,created_at')
+        .eq('product_id',pid).eq('status','approved')
+        .order('created_at',{ascending:false}).limit(20);
+      setReviews(data||[]);
+    }catch(_){/* ignore */}
+  },[]);
+  useEffect(()=>{ loadReviews(product.id); },[product.id,loadReviews]);
+
+  const submitReview=async ()=>{
+    const {data:{session}}=await supabase.auth.getSession();
+    if(!session?.user){ openLogin?.(); return; }
+    const text=rvComment.trim();
+    if(text.length<3){ return; }
+    setRvSending(true);
+    const meta=session.user.user_metadata||{};
+    const {error}=await supabase.from('reviews').insert({
+      product_id:product.id,
+      user_id:session.user.id,
+      customer_name:meta.name||session.user.email?.split('@')[0]||'Customer',
+      rating:rvRating,
+      comment:text,
+      status:'pending',
+    });
+    setRvSending(false);
+    if(error) return;
+    setRvComment('');
+    setTimeout(()=>loadReviews(product.id),2500);
+  };
 
   // Touch (mobile)
   function handleTouchStart(e){
@@ -266,6 +304,59 @@ export function ProductDetail({product,cart,addToCart,updQty,onBack,onDetail,wis
               <p className="text-sm font-poppins leading-relaxed" style={{color:'var(--gray)'}}>{product.description}</p>
             </div>
           )}
+
+          {/* ── Customer Reviews ── */}
+          <div className="mt-6 pt-6" style={{borderTop:'1px solid var(--border)'}}>
+            <p className="text-sm font-bold font-poppins mb-1" style={{color:'var(--dark)'}}>
+              ⭐ Customer Reviews <span style={{color:'var(--gray)',fontWeight:600}}>({reviews.length})</span>
+            </p>
+
+            {/* Submit form (login required) */}
+            <div className="rounded-2xl p-4 mt-3" style={{background:'var(--light)',border:'1.5px solid var(--border)'}}>
+              <p className="text-xs font-bold font-poppins mb-2" style={{color:'var(--dark)'}}>Apna review likhein:</p>
+              <div className="flex items-center gap-1 mb-2">
+                {[1,2,3,4,5].map(s=>(
+                  <button key={s} type="button" onClick={()=>setRvRating(s)} aria-label={`${s} star`}
+                    className="transition-transform hover:scale-125 active:scale-90">
+                    <Star size={20} style={{color:s<=rvRating?'#FFB800':'var(--border)',fill:s<=rvRating?'#FFB800':'transparent'}}/>
+                  </button>
+                ))}
+                <span className="text-xs font-poppins ml-2" style={{color:'var(--gray)'}}>{rvRating}/5</span>
+              </div>
+              <textarea value={rvComment} onChange={e=>setRvComment(e.target.value)} rows={2}
+                placeholder="Product ka experience share karein…"
+                className="w-full rounded-xl px-3 py-2.5 text-sm font-poppins outline-none resize-none"
+                style={{border:'1.5px solid var(--border)',background:'var(--card-bg)',color:'var(--dark)'}}/>
+              <button onClick={submitReview} disabled={rvSending||rvComment.trim().length<3}
+                className="mt-2.5 text-white text-xs font-bold font-poppins rounded-xl px-4 py-2.5 disabled:opacity-50 transition-transform hover:scale-[1.02] active:scale-95"
+                style={{background:'linear-gradient(135deg,var(--primary),var(--primary-dark))'}}>
+                {rvSending?'Bhej rahe hain…':'📨 Review Bhejein'}
+              </button>
+              <p className="text-[10px] font-poppins mt-1.5" style={{color:'var(--gray)'}}>
+                Review admin approval ke baad public dikhta hai.
+              </p>
+            </div>
+
+            {/* List */}
+            {reviews.length
+              ?reviews.map((r,i)=>(
+                <div key={i} className="pt-4 mt-4" style={{borderTop:'1px solid var(--border)'}}>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-bold font-poppins" style={{color:'var(--dark)'}}>{r.customer_name||'Customer'}</span>
+                    <span className="text-[#FFB800] text-xs tracking-tight">{"★★★★★".slice(0,Math.max(1,Math.min(5,r.rating||5)))}{"☆".repeat(5-Math.max(1,Math.min(5,r.rating||5)))}</span>
+                  </div>
+                  <p className="text-sm font-poppins leading-relaxed mt-1.5" style={{color:'var(--text)'}}>{r.comment}</p>
+                  {r.admin_reply&&(
+                    <div className="rounded-xl px-3 py-2.5 mt-2" style={{background:'var(--primary-light)'}}>
+                      <p className="text-[10px] font-bold font-poppins" style={{color:'var(--primary-dark)'}}>🛡️ Store ka reply:</p>
+                      <p className="text-xs font-poppins mt-0.5" style={{color:'var(--text)'}}>{r.admin_reply}</p>
+                    </div>
+                  )}
+                </div>
+              ))
+              :<p className="text-xs font-poppins text-center mt-4" style={{color:'var(--gray)'}}>Abhi koi review nahi — pehle aap likhein! ✍️</p>
+            }
+          </div>
         </div>
       </div>
 
