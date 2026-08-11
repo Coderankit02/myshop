@@ -131,7 +131,7 @@ function HeroBanner({banners,bannersLoading,bannerIdx,setBannerIdx,wrapRef,handl
         {bannersLoading
           ?<SkelBanner/>
           :banners.map(b=>(
-            <div key={b.id} className="relative w-full h-full flex-shrink-0 snap-start cursor-pointer"
+            <div key={b.id} className="relative w-full h-full flex-shrink-0 snap-start snap-always cursor-pointer"
               style={{background:b.bg_gradient||'linear-gradient(135deg,#064E3B,#047857)'}}
               onClick={()=>handleBannerClick(b)}>
               {b.image_url&&<img src={b.image_url} alt={b.title} className="absolute inset-0 w-full h-full object-cover opacity-70"/>}
@@ -871,10 +871,21 @@ export default function App(){
     for(const c of cats){const n=(sectionProds[c.id]||[]).length;catCounts[c.id]=n;catCounts.all+=n;}
   }
 
+  // Auto-advance: har 4s next slide. Lekin jab user touch/swipe kar raha ho to interval
+  // PAUSE ho jaata hai (warna JS smooth-scroll user ke haath se ladta hai aur carousel
+  // bhaag ke aakhri slide tak chala jaata hai). touchend par fresh interval shuru.
   useEffect(()=>{
     if(!banners.length)return;
-    const t=setInterval(()=>setBannerIdx(i=>(i+1)%banners.length),4000);
-    return()=>clearInterval(t);
+    let t=setInterval(()=>setBannerIdx(i=>(i+1)%banners.length),4000);
+    const el=bannerWrapRef.current;
+    const pause=()=>clearInterval(t);
+    const resume=()=>{clearInterval(t);t=setInterval(()=>setBannerIdx(i=>(i+1)%banners.length),4000);};
+    if(el){
+      el.addEventListener('touchstart',pause,{passive:true});
+      el.addEventListener('touchend',resume,{passive:true});
+      el.addEventListener('touchcancel',resume,{passive:true});
+    }
+    return()=>{clearInterval(t);if(el){el.removeEventListener('touchstart',pause);el.removeEventListener('touchend',resume);el.removeEventListener('touchcancel',resume);}};
   },[banners.length]);
 
   // Keep carousel scroll position in sync with bannerIdx (fixes auto-rotate not scrolling).
@@ -907,7 +918,7 @@ export default function App(){
           if(dist<minDist){minDist=dist;closest=i;}
         });
         setBannerIdx(closest);
-      },120);
+      },60);
     };
     el.addEventListener('scroll',onScroll,{passive:true});
     return()=>{el.removeEventListener('scroll',onScroll);clearTimeout(bannerScrollTimer.current);};
