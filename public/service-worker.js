@@ -30,7 +30,7 @@ importScripts("/js/sync-queue.js");
 
 // BUG FIX (Info #13): Version string ab comments mein clearly marked hai.
 // Har deploy par yahan ka number badhao agar OPTION C use kar rahe ho.
-const CACHE_VERSION = "v19"; // ← sync-cart background sync (offline cart replay)
+const CACHE_VERSION = "v20"; // ← 2026-08-13: per-category homepage sections + ad strips (OLD JS + new DB = duplicate categories — bump zaroori tha)
 const CACHE_NAME = `rk-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = "/offline.html";
 
