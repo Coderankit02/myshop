@@ -262,14 +262,18 @@ export function useHomepageConfig(){
   const instanceId=useRef(Math.random().toString(36).slice(2)).current;
   const fetch=useCallback(async()=>{
     try{
+      // Saare rows (enabled + disabled) — taaki aggregate fallback ko pata ho ki
+      // kis category ka apna row hai (disabled category ko fallback mein dobara
+      // nahi dikhna chahiye). Rendering App.jsx me enabled filter karta hai.
       const {data,error}=await supabase.from('homepage_sections')
-        .select('section_key,enabled,sort_order,ad_strip_id')
-        .eq('enabled',true)
+        .select('section_key,enabled,sort_order,ad_strip_id,category_id')
         .order('sort_order');
       if(!error&&data&&data.length){
-        // Har section ab object hai (key + ad_strip_id) — taaki Ad Strips bhi
-        // Section Order ke andar hi position/visibility control ho sake.
-        setSections(data.map(s=>({key:s.section_key,ad_strip_id:s.ad_strip_id||null})));
+        // Har section ab object hai (key + ad_strip_id + category_id + enabled) —
+        // taaki Ad Strips aur HAR CATEGORY dono Section Order ke andar hi
+        // position/visibility control ho sakein (admin har category ko alag se
+        // drag karke kahin bhi rakh sakta hai — ad strips categories ke beech bhi).
+        setSections(data.map(s=>({key:s.section_key,ad_strip_id:s.ad_strip_id||null,category_id:s.category_id||null,enabled:s.enabled!==false})));
         setConfigured(true);
       }else{
         setSections(DEFAULT_HOMEPAGE_SECTIONS);

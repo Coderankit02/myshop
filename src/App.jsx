@@ -327,7 +327,35 @@ function HomeContent({homepageSections,banners,bannersLoading,bannerIdx,setBanne
     <div className="max-w-site mx-auto px-4 md:px-8 pt-4 pb-6 md:pb-8">
       {/* Admin Homepage Builder: sections configured order mein + sirf enabled walay */}
       {(() => {
-        const ordered = homepageSections.length ? homepageSections : DEFAULT_HOMEPAGE_SECTIONS;
+        // Hook ab saare rows (enabled + disabled) deta hai — yahan rendering ke
+        // liye sirf enabled sections filter karo. ownCatIds ko saare rows se
+        // banao taaki hidden category ko aggregate fallback mein dobara na dikhaye.
+        const ordered=(homepageSections.length?homepageSections:DEFAULT_HOMEPAGE_SECTIONS).filter(s=>typeof s==='string'||s?.enabled!==false);
+        // Category Sections: har category ka apna Section Order row hota hai
+        // (admin drag karke kahin bhi rakh sakta hai — ad strips categories ke
+        // beech bhi). ownCatIds = jinke apne row hain (hidden wale bhi).
+        // Aggregate entry sirf un categories ko dikhati hai jinka apna row NAHI
+        // bana (nayi category banne par turant dikhti hai, jab tak admin "Sync
+        // Categories" na dabaye).
+        const ownCatIds=new Set((homepageSections||[]).filter(s=>typeof s==='object'&&s?.key==='category_sections'&&s?.category_id).map(s=>s.category_id));
+        const catRail=(c)=>{
+          const items=sectionProds[c.id];
+          if(sectionProdsReady&&(!items||items.length===0)){
+            return(
+              <div key={c.id}>
+                <h2 className="mb-3"><TitlePill>{c.name}</TitlePill></h2>
+                <div className="rounded-2xl p-5 text-center" style={{background:'var(--card-bg)'}}>
+                  <p className="text-xs font-poppins" style={{color:'var(--gray)'}}>Is category ke products jald aa rahe hain 🛒</p>
+                </div>
+              </div>
+            );
+          }
+          return(
+            <ProductRail key={c.id} title={c.name} loading={!sectionProdsReady} products={items}
+              onSeeAll={()=>onPickCategory(c.id)} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}
+              titlePill wishlistIds={wishlistIds} onWishlist={onWishlist}/>
+          );
+        };
         const sectionsMap = {
           hero: <HeroBanner banners={banners} bannersLoading={bannersLoading} bannerIdx={bannerIdx} setBannerIdx={setBannerIdx} wrapRef={bannerWrapRef} handleBannerClick={handleBannerClick}/>,
           flash_sale: <FlashSale prods={homeSections.flash} loading={homeLoading} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail} wishlistIds={wishlistIds} onWishlist={onWishlist}/>,
@@ -336,28 +364,10 @@ function HomeContent({homepageSections,banners,bannersLoading,bannerIdx,setBanne
           featured: <ProductRail title="⭐ Featured Products" loading={featLoading} products={featuredProds} onSeeAll={()=>setPage('shop')} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail} wishlistIds={wishlistIds} onWishlist={onWishlist}/>,
           best_sellers: <ProductRail title="🏆 Best Sellers" loading={homeLoading} products={homeSections.bestSellers} onSeeAll={()=>setPage('shop')} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail} wishlistIds={wishlistIds} onWishlist={onWishlist}/>,
           new_arrivals: <ProductRail title="✨ New Arrivals" loading={homeLoading} products={homeSections.newArrivals} onSeeAll={()=>setPage('shop')} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail} wishlistIds={wishlistIds} onWishlist={onWishlist}/>,
-          // SABHI categories ke sections (pehle sirf 6) + har category ke saare
-          // products — page scroll karte hi har category apne poore section ke
-          // saath dikhti hai. 0 products wali category bhi dikhti hai (chhota
-          // empty state) taaki admin me jo bhi category hai wo site par visible ho.
-          category_sections: cats.map(c=>{
-            const items=sectionProds[c.id];
-            if(sectionProdsReady&&(!items||items.length===0)){
-              return(
-                <div key={c.id}>
-                  <h2 className="mb-3"><TitlePill>{c.name}</TitlePill></h2>
-                  <div className="rounded-2xl p-5 text-center" style={{background:'var(--card-bg)'}}>
-                    <p className="text-xs font-poppins" style={{color:'var(--gray)'}}>Is category ke products jald aa rahe hain 🛒</p>
-                  </div>
-                </div>
-              );
-            }
-            return(
-              <ProductRail key={c.id} title={c.name} loading={!sectionProdsReady} products={items}
-                onSeeAll={()=>onPickCategory(c.id)} cart={cart} addToCart={addToCart} updQty={updQty} onDetail={onDetail}
-                titlePill wishlistIds={wishlistIds} onWishlist={onWishlist}/>
-            );
-          }),
+          // Aggregate fallback: sirf wo categories jinka apna Section Order row
+          // NAHI hai (nayi categories — admin sync na karne tak yahan dikhti hain).
+          category_sections: cats.filter(c=>!ownCatIds.has(c.id)).map(catRail),
+
           why_choose_us: <WhyChooseUs/>,
           reviews: <CustomerReviews reviews={dbReviews}/>,
           download_app: <DownloadApp onInstall={()=>{if(window.RKPwa?.promptInstall){window.RKPwa.promptInstall();}else{showToast('Browser ke ⋮ menu se “Add to Home Screen” chunein 📱');}}}/>,
@@ -386,12 +396,24 @@ function HomeContent({homepageSections,banners,bannersLoading,bannerIdx,setBanne
         ordered.forEach((sec)=>{
           const key=typeof sec==='string'?sec:sec?.key;
           const stripId=typeof sec==='object'?(sec?.ad_strip_id||null):null;
+          const catId=typeof sec==='object'?(sec?.category_id||null):null;
           if(key==='ad_strip'){
             const strip=(adStrips||[]).find(s=>s.id===stripId);
             if(strip){
               const cls=firstSection?'':'mt-6 md:mt-8';
               firstSection=false;
               out.push(<div key={`ad-${strip.id}`} className={cls}><AdStripSection strip={strip} onAdClick={onAdClick}/></div>);
+            }
+            return;
+          }
+          // Per-category section: sirf us category ka rail (Section Order me
+          // har category ka apna row hota hai — ad strips categories ke beech bhi)
+          if(key==='category_sections'&&catId){
+            const c=cats.find(x=>x.id===catId);
+            if(c){
+              const cls=firstSection?'':'mt-6 md:mt-8';
+              firstSection=false;
+              out.push(<div key={`cat-${c.id}`} className={cls}>{catRail(c)}</div>);
             }
             return;
           }
